@@ -1,4 +1,8 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Adopta perrito - Frontend
+
+Este es un proyecto frontend desarrollado con [Next.js](https://nextjs.org), inicializado usando [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app). Forma parte de una arquitectura separada donde el frontend consume una API REST del backend.
+
+## Tecnología utilizada
 
 ## Getting Started
 
