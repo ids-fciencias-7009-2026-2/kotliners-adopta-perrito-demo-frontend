@@ -1,10 +1,15 @@
-Adopta perrito - Frontend
+## Adopta perrito - Frontend
 
 Este es un proyecto frontend desarrollado con [Next.js](https://nextjs.org), inicializado usando [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app). Forma parte de una arquitectura separada donde el frontend consume una API REST del backend.
 
 ## Tecnología utilizada
 
-## Getting Started
+- Next.js 
+- React
+- Node (Para ejecutar el proyecto y manejar dependencias)
+- Next/font (de vercel y maneja fuentes de forma optimizada)
+
+## Requisitos previos
 
 First, run the development server:
 
