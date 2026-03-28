@@ -10,8 +10,52 @@ Este es un proyecto frontend desarrollado con [Next.js](https://nextjs.org), ini
 - Next/font (de vercel y maneja fuentes de forma optimizada)
 
 ## Requisitos previos
+- Node.js >= 18
+- npm, yarn, pnpm o bun
+- PostgreSQL
 
-First, run the development server:
+## Instalación de dependencias y ejecución 
+
+1. Clonar el repositorio:
+   ```bash
+    git clone 
+    cd 
+    ```
+2. Instalar dependencias:
+   Con npm
+    ```bash
+    npm install
+    ```
+    Con yarn
+   ```bash
+    yarn install
+   ```
+    Con pnpm
+   ```bash
+    pnpm install
+   ```
+    Con bun
+   ```bash
+    bun install
+    ```
+
+    Instalación de PostgreSQL:
+   Para Linux:
+   ```bash
+   sudo apt update
+   sudo apt install postgresql postgresql-contrib
+   ```
+   Para MacOs:
+   ```bash
+    brew install postgresql
+    brew services start postgresql
+   ```
+   Para Windows:
+   1) Descargar instalador en: [PostgreSQL](https://www.postgresql.org/download/windows/)
+   2) Descargar el instalador de EnterpriseDB
+   3) Ejecutar instalación
+
+3. Ejecutar el servidor de desarrollo:
 
 ```bash
 npm run dev
@@ -23,23 +67,16 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+4. Abrir en el navegador: 
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Se puede editar la aplicación modificando el archivo `app/page.tsx`, la página se actualizará automáticamente conforme se hagan cambios.
 
-## Learn More
+Para ejecutar el script de SQL: 
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+psql -U <usuario> -d postgres -f database/schema.sql
+```
