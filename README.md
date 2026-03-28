@@ -18,8 +18,8 @@ Este es un proyecto frontend desarrollado con [Next.js](https://nextjs.org), ini
 
 1. Clonar el repositorio:
    ```bash
-    git clone 
-    cd 
+    git clone git@github.com:ids-fciencias-7009-2026-2/kotliners-adopta-perrito-demo-frontend.git
+    cd kotliners-adopta-perrito-demo-frontend
     ```
 2. Instalar dependencias:
    Con npm
