@@ -1,7 +1,6 @@
-@import "tailwindcss";
-@plugin "daisyui" {
-  themes: cupcake --default;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
   --background: #ffffff;
