@@ -22,7 +22,9 @@ export default function LoginPage() {
   function validate(): boolean {
     const newErrors: Record<string, string> = {};
     if (!form.username.trim()) newErrors.username = "El correo es obligatorio.";
+    else if (!/\S+@\S+\.\S+/.test(form.username)) newErrors.username = "El correo no es válido.";
     if (!form.password.trim()) newErrors.password = "La contraseña es obligatoria.";
+    else if (form.password.length < 8) newErrors.password = "La contraseña debe tener al menos 8 caracteres.";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }
