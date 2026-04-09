@@ -6,8 +6,12 @@ import Link from "next/link";
 import FormField from "@/components/FormField";
 import ErrorMessage from "@/components/ErrorMessage";
 import { register } from "@/api/authApi";
+import { useRedirectIfLoggedIn } from "@/hooks/useRedirectIfLoggedIn";
 
 export default function RegistroPage() {
+  const checking = useRedirectIfLoggedIn();
+  if (checking) return null;
+  
   const router = useRouter();
   const [form, setForm] = useState({
     nombres: "", curp: "", username: "", apellidoPaterno: "",

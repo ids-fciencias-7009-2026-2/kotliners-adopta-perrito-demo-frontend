@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getToken } from "./session";
 
@@ -15,13 +15,19 @@ import { getToken } from "./session";
  *   return <div>Contenido protegido</div>;
  * }
  */
-export function useAuthGuard(): void {
+export function useAuthGuard(): boolean {
   const router = useRouter();
+  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    // Si no hay token válido, redirigir a login
-    if (!getToken()) {
+    const token = getToken();
+
+    if (!token) {
       router.replace("/login");
+    } else {
+      setChecking(false);
     }
   }, [router]);
+
+  return checking;
 }

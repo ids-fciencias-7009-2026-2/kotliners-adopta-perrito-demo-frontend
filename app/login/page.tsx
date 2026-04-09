@@ -6,8 +6,12 @@ import Link from "next/link";
 import FormField from "@/components/FormField";
 import ErrorMessage from "@/components/ErrorMessage";
 import { login, getPerfil } from "@/api/authApi";
+import { useRedirectIfLoggedIn } from "@/hooks/useRedirectIfLoggedIn";
 
 export default function LoginPage() {
+  const checking = useRedirectIfLoggedIn();
+  if (checking) return null;
+  
   const router = useRouter();
   const [form, setForm] = useState({ username: "", password: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
