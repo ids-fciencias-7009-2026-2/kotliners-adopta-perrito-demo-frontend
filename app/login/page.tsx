@@ -6,11 +6,9 @@ import Link from "next/link";
 import FormField from "@/components/FormField";
 import ErrorMessage from "@/components/ErrorMessage";
 import { login, getPerfil } from "@/api/authApi";
-import { useRedirectIfLoggedIn } from "@/hooks/useRedirectIfLoggedIn";
+import { ROUTES } from "@/lib/routes";
 
 export default function LoginPage() {
-  const checking = useRedirectIfLoggedIn();
-  if (checking) return null;
   
   const router = useRouter();
   const [form, setForm] = useState({ username: "", password: "" });
@@ -55,7 +53,7 @@ export default function LoginPage() {
       sessionStorage.setItem('usuario', JSON.stringify(usuario))
 
       // Paso 5 — navegamos al home
-      router.push('/home')
+      router.push(ROUTES.HOME);
     } catch {
       setServerError("Credenciales incorrectas. Verifica tu correo y contraseña.");
     } finally {
@@ -92,7 +90,7 @@ export default function LoginPage() {
           </form>
 
           <div className="divider text-xs">¿No tienes cuenta?</div>
-          <Link href="/registro" className="btn btn-outline btn-secondary w-full btn-sm">
+          <Link href={ROUTES.REGISTRO} className="btn btn-outline btn-secondary w-full btn-sm">
             Regístrate aquí 🐱
           </Link>
         </div>

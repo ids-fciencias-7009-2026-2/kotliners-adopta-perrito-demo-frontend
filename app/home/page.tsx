@@ -4,10 +4,8 @@ import Image from "next/image";
 import Carousel from "@/components/Carousel";
 import PetList from "@/components/PetList";
 import MapView from "@/components/MapView";
-import { useAuthGuard } from "@/lib/authGuard";
 
 export default function HomePage() {
-    useAuthGuard();
   return (
     <main className="bg-base-100 text-base-content min-h-screen font-sans">
 

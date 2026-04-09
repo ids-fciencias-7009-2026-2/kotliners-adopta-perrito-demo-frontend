@@ -1,13 +1,12 @@
 "use client";
 
-import { useAuthGuard } from "@/lib/authGuard";
 import { useEffect, useState } from "react";
 import { actualizarPerfil } from "@/lib/apiClient";
 import { getToken } from "@/lib/session";
 import ErrorMessage from "@/components/ErrorMessage";
+import { ROUTES } from "@/lib/routes";
 
 export default function PerfilPage() {
-  useAuthGuard();
 
   const [usuario, setUsuario] = useState<any>(null);
   const [form, setForm] = useState<any>(null);
@@ -60,7 +59,7 @@ export default function PerfilPage() {
       if (!res.ok) {
         if (res.error === "SESSION_EXPIRED") {
           sessionStorage.clear();
-          window.location.href = "/login";
+          window.location.href = ROUTES.LOGIN;
           return;
         }
         setError(res.error);

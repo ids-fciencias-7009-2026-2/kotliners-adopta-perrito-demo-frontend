@@ -6,12 +6,10 @@ import Link from "next/link";
 import FormField from "@/components/FormField";
 import ErrorMessage from "@/components/ErrorMessage";
 import { register } from "@/api/authApi";
-import { useRedirectIfLoggedIn } from "@/hooks/useRedirectIfLoggedIn";
+import { ROUTES } from "@/lib/routes";
 
 export default function RegistroPage() {
-  const checking = useRedirectIfLoggedIn();
-  if (checking) return null;
-  
+
   const router = useRouter();
   const [form, setForm] = useState({
     nombres: "", curp: "", username: "", apellidoPaterno: "",
@@ -54,7 +52,7 @@ export default function RegistroPage() {
     setLoading(true);
     try {
       await register(form);
-      router.push("/login");
+      router.push(ROUTES.LOGIN);
     } catch {
       setServerError("Error al registrar. Verifica que los datos no estén duplicados.");
     } finally {
@@ -101,7 +99,7 @@ export default function RegistroPage() {
           </form>
 
           <div className="divider text-xs">¿Ya tienes cuenta?</div>
-          <Link href="/login" className="btn btn-outline btn-secondary w-full btn-sm">
+          <Link href={ROUTES.LOGIN} className="btn btn-outline btn-secondary w-full btn-sm">
             Iniciar sesión 🐶
           </Link>
         </div>

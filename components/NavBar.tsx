@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { logoutUsuario } from "@/lib/apiClient";
 import { getToken, removeToken } from "@/lib/session";
+import { ROUTES } from "@/lib/routes";
 
 export default function NavBar() {
   const router = useRouter();
@@ -21,7 +22,7 @@ async function handleLogout() {
   } finally {
     removeToken();
     sessionStorage.removeItem("usuario");
-    router.push("/login");
+    router.push(ROUTES.LOGIN);
   }
 }
 
@@ -37,16 +38,16 @@ useEffect(() => {
   
   {/* LEFT */}
   <div className="flex-1">
-    <Link href="/home" className="text-xl font-bold text-primary">
+    <Link href={ROUTES.HOME} className="text-xl font-bold text-primary">
       🐾 Colitas Felices
     </Link>
   </div>
 
   {/* CENTER */}
   <div className="hidden md:flex flex-1 justify-center gap-8">
-    <Link href="/home" className="link link-hover">Inicio</Link>
-    <Link href="/home#mapa" className="link link-hover">Mapa</Link>
-    <Link href="/home#mascotas" className="link link-hover">Mascotas</Link>
+    <Link href={ROUTES.HOME} className="link link-hover">Inicio</Link>
+    <Link href={ROUTES.HOME + "#mapa"} className="link link-hover">Mapa</Link>
+    <Link href={ROUTES.HOME + "#mascotas"} className="link link-hover">Mascotas</Link>
   </div>
 
   {/* RIGHT */}
@@ -58,7 +59,7 @@ useEffect(() => {
       </span>
     )}
 
-    <Link href="/profile" className="btn btn-sm btn-outline">
+    <Link href={ROUTES.PROFILE} className="btn btn-sm btn-outline">
       Perfil
     </Link>
 

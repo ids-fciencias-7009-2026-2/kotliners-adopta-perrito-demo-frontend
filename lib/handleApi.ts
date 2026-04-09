@@ -1,10 +1,11 @@
 import { removeToken } from "./session";
+import { ROUTES } from "@/lib/routes";
 
 export function handleApiError(error: string, router: any) {
   if (error === "SESSION_EXPIRED") {
     removeToken();
     sessionStorage.removeItem("usuario");
-    router.push("/login");
+    router.push(ROUTES.LOGIN);
     return;
   }
 
