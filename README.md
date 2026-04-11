@@ -6,6 +6,9 @@ Este es un proyecto frontend desarrollado con [Next.js](https://nextjs.org), ini
 
 - Next.js 
 - React
+- TypeScript
+- Tailwind CSS + DaisyUI
+- Axios (comunicación con el backend)
 - Node (Para ejecutar el proyecto y manejar dependencias)
 - Next/font (de vercel y maneja fuentes de forma optimizada)
 
@@ -80,3 +83,24 @@ Para ejecutar el script de SQL:
 ```bash
 psql -U <usuario> -d postgres -f database/schema.sql
 ```
+
+## Variables de entorno
+
+Crea un archivo `.env.local` en la raíz del proyecto:
+
+```
+NEXT_PUBLIC_API_URL=http://localhost:8080
+```
+
+## Vistas disponibles
+
+| Ruta | Descripción |
+|------|-------------|
+| `/login` | Inicio de sesión |
+| `/registro` | Registro de nuevo usuario |
+| `/home` | Pantalla principal (requiere autenticación) |
+| `/perfil` | Información y edición del usuario autenticado (requiere autenticación) |
+
+## Autenticación
+
+El token de sesión se almacena en `sessionStorage`. Las vistas protegidas redirigen a `/login` si no hay token válido.
