@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-// Instancia base de Axios — igual que el ejemplo del profesor
+// Instancia base de Axios
 const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080',
   headers: {
