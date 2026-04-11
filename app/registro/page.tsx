@@ -12,7 +12,7 @@ export default function RegistroPage() {
   const [form, setForm] = useState({
     nombres: "", curp: "", username: "", apellidoPaterno: "",
     apellidoMaterno: "", email: "", codigoPostal: "", password: "",
-    rol: "INTERESADO",
+    rol: "ADOPTANTE",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState<string | null>(null);
@@ -79,7 +79,7 @@ export default function RegistroPage() {
             <fieldset className="fieldset">
               <legend className="fieldset-legend">Rol <span className="text-error ml-1">*</span></legend>
               <select name="rol" value={form.rol} onChange={handleChange} className="select w-full">
-                <option value="INTERESADO">🏠 Quiero adoptar</option>
+                <option value="ADOPTANTE">🏠 Quiero adoptar</option>
                 <option value="CUIDADOR">🐕 Soy cuidador</option>
               </select>
             </fieldset>
