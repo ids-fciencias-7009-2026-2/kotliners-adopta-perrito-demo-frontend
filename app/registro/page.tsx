@@ -6,8 +6,10 @@ import Link from "next/link";
 import FormField from "@/components/FormField";
 import ErrorMessage from "@/components/ErrorMessage";
 import { register } from "@/api/authApi";
+import { ROUTES } from "@/lib/routes";
 
 export default function RegistroPage() {
+
   const router = useRouter();
   const [form, setForm] = useState({
     nombres: "", curp: "", username: "", apellidoPaterno: "",
@@ -27,11 +29,14 @@ export default function RegistroPage() {
     const newErrors: Record<string, string> = {};
     if (!form.nombres.trim()) newErrors.nombres = "El nombre es obligatorio.";
     if (!form.curp.trim()) newErrors.curp = "La CURP es obligatoria.";
+    if (!form.curp.match(/^[A-Z0-9]{18}$/)) newErrors.curp = "La CURP no es válida.";
     if (!form.username.trim()) newErrors.username = "El usuario es obligatorio.";
     if (!form.apellidoPaterno.trim()) newErrors.apellidoPaterno = "El apellido paterno es obligatorio.";
     if (!form.apellidoMaterno.trim()) newErrors.apellidoMaterno = "El apellido materno es obligatorio.";
     if (!form.email.trim()) newErrors.email = "El correo es obligatorio.";
+    if (!form.email.match(/\S+@\S+\.\S+/)) newErrors.email = "El correo no es válido.";
     if (!form.codigoPostal.trim()) newErrors.codigoPostal = "El código postal es obligatorio.";
+    if (!form.codigoPostal.match(/^\d{5}$/)) newErrors.codigoPostal = "El código postal no es válido.";
     if (!form.password.trim()) newErrors.password = "La contraseña es obligatoria.";
     if (form.password.length > 0 && form.password.length < 8)
       newErrors.password = "Mínimo 8 caracteres.";
@@ -47,7 +52,7 @@ export default function RegistroPage() {
     setLoading(true);
     try {
       await register(form);
-      router.push("/login");
+      router.push(ROUTES.LOGIN);
     } catch {
       setServerError("Error al registrar. Verifica que los datos no estén duplicados.");
     } finally {
@@ -94,7 +99,7 @@ export default function RegistroPage() {
           </form>
 
           <div className="divider text-xs">¿Ya tienes cuenta?</div>
-          <Link href="/login" className="btn btn-outline btn-secondary w-full btn-sm">
+          <Link href={ROUTES.LOGIN} className="btn btn-outline btn-secondary w-full btn-sm">
             Iniciar sesión 🐶
           </Link>
         </div>

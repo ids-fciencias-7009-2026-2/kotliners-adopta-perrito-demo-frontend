@@ -6,8 +6,10 @@ import Link from "next/link";
 import FormField from "@/components/FormField";
 import ErrorMessage from "@/components/ErrorMessage";
 import { login, getPerfil } from "@/api/authApi";
+import { ROUTES } from "@/lib/routes";
 
 export default function LoginPage() {
+  
   const router = useRouter();
   const [form, setForm] = useState({ username: "", password: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -22,7 +24,9 @@ export default function LoginPage() {
   function validate(): boolean {
     const newErrors: Record<string, string> = {};
     if (!form.username.trim()) newErrors.username = "El correo es obligatorio.";
+    else if (!/\S+@\S+\.\S+/.test(form.username)) newErrors.username = "El correo no es válido.";
     if (!form.password.trim()) newErrors.password = "La contraseña es obligatoria.";
+    else if (form.password.length < 8) newErrors.password = "La contraseña debe tener al menos 8 caracteres.";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }
@@ -49,7 +53,7 @@ export default function LoginPage() {
       sessionStorage.setItem('usuario', JSON.stringify(usuario))
 
       // Paso 5 — navegamos al home
-      router.push('/home')
+      router.push(ROUTES.HOME);
     } catch {
       setServerError("Credenciales incorrectas. Verifica tu correo y contraseña.");
     } finally {
@@ -86,7 +90,7 @@ export default function LoginPage() {
           </form>
 
           <div className="divider text-xs">¿No tienes cuenta?</div>
-          <Link href="/registro" className="btn btn-outline btn-secondary w-full btn-sm">
+          <Link href={ROUTES.REGISTRO} className="btn btn-outline btn-secondary w-full btn-sm">
             Regístrate aquí 🐱
           </Link>
         </div>
