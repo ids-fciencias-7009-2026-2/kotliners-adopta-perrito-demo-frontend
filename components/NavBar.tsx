@@ -7,6 +7,12 @@ import { logoutUsuario } from "@/lib/apiClient";
 import { getToken, removeToken } from "@/lib/session";
 import { ROUTES } from "@/lib/routes";
 
+/**
+ * Barra de navegación principal de la aplicación.
+ * Muestra el nombre del usuario autenticado, enlaces de navegación,
+ * acceso al perfil y el botón de cierre de sesión.
+ * Solo se renderiza en vistas protegidas (no en /login ni /registro).
+ */
 export default function NavBar() {
   const router = useRouter();
 

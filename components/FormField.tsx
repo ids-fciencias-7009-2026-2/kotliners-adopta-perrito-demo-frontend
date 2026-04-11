@@ -1,5 +1,8 @@
 "use client";
 
+/**
+ * Props del componente FormField.
+ */
 interface FormFieldProps {
   label: string;
   name: string;
@@ -11,6 +14,18 @@ interface FormFieldProps {
   required?: boolean;
 }
 
+/**
+ * Campo de formulario reutilizable con etiqueta, input y mensaje de error.
+ * Aplica estilos de error automáticamente cuando se proporciona el prop `error`.
+ * @param label - Texto de la etiqueta visible.
+ * @param name - Nombre del campo (usado como id y name del input).
+ * @param type - Tipo del input (text, email, password, etc.). Por defecto "text".
+ * @param value - Valor controlado del input.
+ * @param onChange - Handler para cambios en el input.
+ * @param error - Mensaje de error a mostrar debajo del input.
+ * @param placeholder - Texto de placeholder del input.
+ * @param required - Si el campo es obligatorio (muestra asterisco rojo).
+ */
 export default function FormField({
   label, name, type = "text", value, onChange, error, placeholder, required = false,
 }: FormFieldProps) {

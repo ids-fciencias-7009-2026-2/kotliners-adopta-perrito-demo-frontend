@@ -8,6 +8,15 @@ import ErrorMessage from "@/components/ErrorMessage";
 import { login, getPerfil } from "@/api/authApi";
 import { ROUTES } from "@/lib/routes";
 
+/**
+ * Página de inicio de sesión.
+ * Permite a usuarios registrados autenticarse con su correo y contraseña.
+ * Al autenticarse correctamente:
+ * - Guarda el token en sessionStorage bajo la clave "user_token".
+ * - Guarda los datos del usuario en sessionStorage bajo la clave "usuario".
+ * - Redirige al home.
+ * Ruta: /login (pública)
+ */
 export default function LoginPage() {
   
   const router = useRouter();
