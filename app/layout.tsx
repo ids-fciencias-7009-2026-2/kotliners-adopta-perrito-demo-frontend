@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
     title: "Colitas Felices",
-    description: "Adopta una mascota y encuentra tu nuevo mejor amigo en Colitas Felices. Explora perfiles de perros adorables, conoce sus historias y encuentra el compañero perfecto para tu hogar. ",
+    description: "Adopta una mascota y encuentra tu nuevo mejor amigo en Colitas Felices.",
 };
 
 export default function RootLayout({
@@ -26,24 +26,18 @@ export default function RootLayout({
 }: Readonly<{
     children: React.ReactNode;
 }>) {
-  return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">{children}<Footer /></body>
-    </html>
-  );
+    return (
         <html
-        lang="en"
-        suppressHydrationWarning
-        className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+            lang="es"
+            suppressHydrationWarning
+            className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
         >
-        <body className="min-h-full flex flex-col">
-            <LayoutWrapper>
-                {children}
-            </LayoutWrapper>
-        </body>
+            <body className="min-h-full flex flex-col">
+                <LayoutWrapper>
+                    {children}
+                </LayoutWrapper>
+                <Footer />
+            </body>
         </html>
     );
 }
