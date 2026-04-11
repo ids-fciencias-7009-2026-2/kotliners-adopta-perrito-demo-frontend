@@ -8,6 +8,14 @@ import ErrorMessage from "@/components/ErrorMessage";
 import { register } from "@/api/authApi";
 import { ROUTES } from "@/lib/routes";
 
+/**
+ * Página de registro de nuevos usuarios.
+ * Permite crear una cuenta proporcionando nombre, CURP, username, apellidos,
+ * correo, código postal, rol y contraseña.
+ * Valida los campos en el frontend antes de enviar al backend.
+ * Al registrarse correctamente redirige a /login.
+ * Ruta: /registro (pública)
+ */
 export default function RegistroPage() {
 
   const router = useRouter();
