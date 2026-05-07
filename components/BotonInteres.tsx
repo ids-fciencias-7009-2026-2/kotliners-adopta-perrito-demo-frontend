@@ -3,8 +3,6 @@
 import { useState } from "react";
 import { manifestarInteres, eliminarInteres } from "@/lib/apiClient";
 import { getToken } from "@/lib/session";
-import { useRouter } from "next/navigation";
-import { ROUTES } from "@/lib/routes";
 import { Heart } from "lucide-react";
 
 /** Props del componente BotonInteres. */
@@ -28,11 +26,11 @@ export default function BotonInteres({ animalId, tieneInteres: initialInteres }:
 
   /**
    * Registra o elimina el interes del usuario en el animal.
-   * Redirige al login si el token es invalido o expiro.
+   * Si el token expira, el evento session:expired se encarga de redirigir.
    */
   async function handleClick() {
     const token = getToken();
-    if (!token) { router.replace(ROUTES.LOGIN); return; }
+    if (!token) return; // El evento session:expired redirige si no hay token
 
     setLoading(true);
     setError(null);
@@ -43,8 +41,6 @@ export default function BotonInteres({ animalId, tieneInteres: initialInteres }:
 
     if (res.ok) {
       setTieneInteres(!tieneInteres);
-    } else if (res.error === "SESSION_EXPIRED") {
-      router.replace(ROUTES.LOGIN);
     } else {
       setError(res.error);
     }

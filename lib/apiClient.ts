@@ -1,6 +1,8 @@
 /** URL base del backend, configurada en .env.local */
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
+import sessionEvents from "@/lib/sessionEvents";
+
 // ---------------------------------------------------------------------------
 // Tipos
 // ---------------------------------------------------------------------------
@@ -93,6 +95,8 @@ async function handleResponse<T>(response: Response): Promise<ApiResult<T>> {
     return { ok: true, data };
   }
   if (response.status === 401 || response.status === 403) {
+    // Emitir evento para que todos los observadores reaccionen
+    if (typeof window !== "undefined") sessionEvents.emit("session:expired");
     return { ok: false, error: "SESSION_EXPIRED" };
   }
   const errorText = await response.text();

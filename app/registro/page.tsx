@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ErrorMessage from "@/components/ErrorMessage";
+import PasswordField from "@/components/PasswordField";
 import { register } from "@/api/authApi";
 import { ROUTES } from "@/lib/routes";
 import { PawPrint, UserPlus } from "lucide-react";
@@ -129,7 +130,14 @@ export default function RegistroPage() {
               </select>
             </div>
 
-            <Field label="Contrasena" name="password" type="password" placeholder="Minimo 8 caracteres" />
+            <PasswordField
+              name="password"
+              label="Contrasena"
+              value={form.password}
+              onChange={handleChange}
+              error={errors.password}
+              placeholder="Minimo 8 caracteres"
+            />
 
             {/* Indicador de fortaleza de contrasena usando zxcvbn */}
             {form.password.length > 0 && (() => {
