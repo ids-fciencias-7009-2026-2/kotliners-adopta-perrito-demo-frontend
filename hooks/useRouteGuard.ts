@@ -1,15 +1,17 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { getToken } from "@/lib/session";
+import { getToken, removeToken } from "@/lib/session";
 import { PUBLIC_ROUTES, PROTECTED_ROUTES, ROUTES } from "@/lib/routes";
+import { obtenerPerfil } from "@/lib/apiClient";
 
 /**
- * Protege rutas según el estado de autenticación del usuario.
- * - Si el usuario no tiene token y accede a una ruta protegida, se redirige a /login.
- * - Si el usuario tiene token y accede a una ruta pública, se redirige a /home.
- * Debe llamarse al inicio de cada página para aplicar la protección.
+ * Hook que protege rutas segun el estado de autenticacion del usuario.
+ * - Ruta protegida sin token: redirige a /login.
+ * - Ruta publica con token: redirige a /home.
+ * - Token invalido en el backend: limpia sesion y redirige a /login.
+ * @returns true mientras se verifica la autenticacion, false cuando termina.
  */
 export function useRouteGuard(): boolean {
     const router = useRouter();
@@ -19,20 +21,39 @@ export function useRouteGuard(): boolean {
     const isProtectedRoute = PROTECTED_ROUTES.some((r) => pathname.startsWith(r));
     const isPublicRoute = PUBLIC_ROUTES.some((r) => pathname.startsWith(r));
 
-    const shouldRedirectToLogin = isProtectedRoute && !token;
-    const shouldRedirectToHome = isPublicRoute && !!token;
-    const checking = shouldRedirectToLogin || shouldRedirectToHome;
+    const [checking, setChecking] = useState(true);
 
     useEffect(() => {
-        if (shouldRedirectToLogin) {
+        // Ruta protegida sin token — redirigir inmediatamente
+        if (isProtectedRoute && !token) {
             router.replace(ROUTES.LOGIN);
+            setChecking(false);
             return;
         }
 
-        if (shouldRedirectToHome) {
+        // Ruta publica con token — redirigir al home
+        if (isPublicRoute && !!token) {
             router.replace(ROUTES.HOME);
+            setChecking(false);
+            return;
         }
-    }, [router, shouldRedirectToLogin, shouldRedirectToHome]);
+
+        // Ruta protegida con token — validar contra el backend
+        if (isProtectedRoute && token) {
+            obtenerPerfil(token).then((res) => {
+                if (!res.ok) {
+                    // Token invalidado en el backend (ej. logout desde Postman)
+                    removeToken();
+                    sessionStorage.removeItem("usuario");
+                    router.replace(ROUTES.LOGIN);
+                }
+                setChecking(false);
+            });
+            return;
+        }
+
+        setChecking(false);
+    }, [pathname]);
 
     return checking;
 }

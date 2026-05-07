@@ -6,21 +6,18 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 // ---------------------------------------------------------------------------
 
 /**
- * Resultado genérico de una llamada al API.
- * - `ok: true`  → la petición fue exitosa y `data` contiene la respuesta.
- * - `ok: false` → ocurrió un error y `error` contiene el mensaje descriptivo.
+ * Resultado generico de una llamada al API.
+ * - ok: true  — la peticion fue exitosa y data contiene la respuesta.
+ * - ok: false — ocurrio un error y error contiene el mensaje descriptivo.
  */
 export type ApiResult<T> =
   | { ok: true; data: T }
   | { ok: false; error: string };
 
-/**
- * Rol del usuario en el sistema.
- * Debe coincidir con el enum Rol.kt del backend.
- */
+/** Roles disponibles para el usuario. Deben coincidir con el enum Rol.kt del backend. */
 export type Rol = "ADOPTANTE" | "CUIDADOR";
 
-/** Atributos del usuario devueltos por GET /usuarios/me */
+/** Datos del usuario devueltos por GET /usuarios/me */
 export interface Usuario {
   id: number | null;
   curp: string;
@@ -65,18 +62,16 @@ export interface ActualizarPerfilPayload {
 }
 
 // ---------------------------------------------------------------------------
-// Utilidad interna
+// Utilidades internas
 // ---------------------------------------------------------------------------
 
 /**
- * Construye los headers comunes para las peticiones JSON.
- * @param token - Token de autenticación (opcional, solo para endpoints protegidos)
- * @returns Objeto de headers HTTP
+ * Construye los headers HTTP para las peticiones JSON.
+ * @param token - Token de autenticacion (opcional, solo para endpoints protegidos).
+ * @returns Objeto con los headers necesarios.
  */
 export function buildHeaders(token?: string): Record<string, string> {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (token) {
     // El backend espera el formato: Authorization: Bearer <token>
     headers["Authorization"] = `Bearer ${token}`;
@@ -86,38 +81,34 @@ export function buildHeaders(token?: string): Record<string, string> {
 
 /**
  * Procesa la respuesta de fetch y la convierte en ApiResult.
- * - HTTP 401/403 → error especial "SESSION_EXPIRED"
- * - Otros errores HTTP → texto del cuerpo de la respuesta
- * @param response - Respuesta de fetch
+ * - HTTP 401/403 devuelve el error especial "SESSION_EXPIRED".
+ * - Otros errores HTTP devuelven el texto del cuerpo de la respuesta.
+ * @param response - Respuesta de fetch a procesar.
  */
 async function handleResponse<T>(response: Response): Promise<ApiResult<T>> {
   if (response.ok) {
-    // Algunos endpoints pueden no devolver cuerpo JSON
+    // Algunos endpoints no devuelven cuerpo JSON
     const text = await response.text();
     const data = text ? (JSON.parse(text) as T) : ({} as T);
     return { ok: true, data };
   }
-
   if (response.status === 401 || response.status === 403) {
     return { ok: false, error: "SESSION_EXPIRED" };
   }
-
   const errorText = await response.text();
   return { ok: false, error: errorText || `Error ${response.status}` };
 }
 
 // ---------------------------------------------------------------------------
-// Funciones del API
+// Endpoints de usuarios
 // ---------------------------------------------------------------------------
 
 /**
  * Registra un nuevo usuario en el sistema.
  * Endpoint: POST /usuarios/register
- * @param body - Datos del nuevo usuario
+ * @param body - Datos del nuevo usuario.
  */
-export async function registrarUsuario(
-  body: RegistroPayload
-): Promise<ApiResult<void>> {
+export async function registrarUsuario(body: RegistroPayload): Promise<ApiResult<void>> {
   try {
     const response = await fetch(`${BASE_URL}/usuarios/register`, {
       method: "POST",
@@ -126,18 +117,16 @@ export async function registrarUsuario(
     });
     return handleResponse<void>(response);
   } catch {
-    return { ok: false, error: "El servicio no está disponible. Intenta más tarde." };
+    return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
   }
 }
 
 /**
- * Autentica al usuario con email y contraseña, devuelve el token de sesión.
+ * Autentica al usuario y devuelve el token de sesion.
  * Endpoint: POST /usuarios/login
- * @param body - Credenciales del usuario (email + password)
+ * @param body - Credenciales del usuario (email y password).
  */
-export async function loginUsuario(
-  body: LoginPayload
-): Promise<ApiResult<{ token: string }>> {
+export async function loginUsuario(body: LoginPayload): Promise<ApiResult<{ token: string }>> {
   try {
     const response = await fetch(`${BASE_URL}/usuarios/login`, {
       method: "POST",
@@ -146,18 +135,16 @@ export async function loginUsuario(
     });
     return handleResponse<{ token: string }>(response);
   } catch {
-    return { ok: false, error: "El servicio no está disponible. Intenta más tarde." };
+    return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
   }
 }
 
 /**
- * Cierra la sesión del usuario autenticado.
+ * Cierra la sesion del usuario autenticado e invalida el token en el backend.
  * Endpoint: POST /usuarios/logout
- * @param token - Token de autenticación activo
+ * @param token - Token de autenticacion activo.
  */
-export async function logoutUsuario(
-  token: string
-): Promise<ApiResult<void>> {
+export async function logoutUsuario(token: string): Promise<ApiResult<void>> {
   try {
     const response = await fetch(`${BASE_URL}/usuarios/logout`, {
       method: "POST",
@@ -165,18 +152,16 @@ export async function logoutUsuario(
     });
     return handleResponse<void>(response);
   } catch {
-    return { ok: false, error: "El servicio no está disponible. Intenta más tarde." };
+    return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
   }
 }
 
 /**
- * Obtiene la información del usuario autenticado.
+ * Obtiene la informacion del usuario autenticado.
  * Endpoint: GET /usuarios/me
- * @param token - Token de autenticación activo
+ * @param token - Token de autenticacion activo.
  */
-export async function obtenerPerfil(
-  token: string
-): Promise<ApiResult<Usuario>> {
+export async function obtenerPerfil(token: string): Promise<ApiResult<Usuario>> {
   try {
     const response = await fetch(`${BASE_URL}/usuarios/me`, {
       method: "GET",
@@ -184,20 +169,17 @@ export async function obtenerPerfil(
     });
     return handleResponse<Usuario>(response);
   } catch {
-    return { ok: false, error: "El servicio no está disponible. Intenta más tarde." };
+    return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
   }
 }
 
 /**
- * Actualiza la información del usuario autenticado.
+ * Actualiza la informacion del usuario autenticado.
  * Endpoint: PUT /usuarios
- * @param token - Token de autenticación activo
- * @param body - Campos a actualizar
+ * @param token - Token de autenticacion activo.
+ * @param body - Campos a actualizar.
  */
-export async function actualizarPerfil(
-  token: string,
-  body: ActualizarPerfilPayload
-): Promise<ApiResult<Usuario>> {
+export async function actualizarPerfil(token: string, body: ActualizarPerfilPayload): Promise<ApiResult<Usuario>> {
   try {
     const response = await fetch(`${BASE_URL}/usuarios`, {
       method: "PUT",
@@ -206,15 +188,15 @@ export async function actualizarPerfil(
     });
     return handleResponse<Usuario>(response);
   } catch {
-    return { ok: false, error: "El servicio no está disponible. Intenta más tarde." };
+    return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
   }
 }
 
 // ---------------------------------------------------------------------------
-// Intereses 
+// Endpoints de intereses
 // ---------------------------------------------------------------------------
 
-/** Animal de interés devuelto por GET /api/usuarios/me/intereses */
+/** Datos de un animal favorito devueltos por GET /api/usuarios/me/intereses */
 export interface AnimalInteresResponse {
   animalId: string;
   nombre: string;
@@ -229,15 +211,12 @@ export interface AnimalInteresResponse {
 }
 
 /**
- * Manifiesta interés del usuario autenticado en un animal.
+ * Registra el interes del usuario autenticado en un animal.
  * Endpoint: POST /api/animales/{id}/interes
- * @param token - Token de autenticación activo
- * @param animalId - ID del animal
+ * @param token - Token de autenticacion activo.
+ * @param animalId - ID del animal.
  */
-export async function manifestarInteres(
-  token: string,
-  animalId: string
-): Promise<ApiResult<void>> {
+export async function manifestarInteres(token: string, animalId: string): Promise<ApiResult<void>> {
   try {
     const response = await fetch(`${BASE_URL}/api/animales/${animalId}/interes`, {
       method: "POST",
@@ -245,20 +224,17 @@ export async function manifestarInteres(
     });
     return handleResponse<void>(response);
   } catch {
-    return { ok: false, error: "El servicio no está disponible. Intenta más tarde." };
+    return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
   }
 }
 
 /**
- * Elimina el interés del usuario autenticado en un animal.
+ * Elimina el interes del usuario autenticado en un animal.
  * Endpoint: DELETE /api/animales/{id}/interes
- * @param token - Token de autenticación activo
- * @param animalId - ID del animal
+ * @param token - Token de autenticacion activo.
+ * @param animalId - ID del animal.
  */
-export async function eliminarInteres(
-  token: string,
-  animalId: string
-): Promise<ApiResult<void>> {
+export async function eliminarInteres(token: string, animalId: string): Promise<ApiResult<void>> {
   try {
     const response = await fetch(`${BASE_URL}/api/animales/${animalId}/interes`, {
       method: "DELETE",
@@ -266,18 +242,16 @@ export async function eliminarInteres(
     });
     return handleResponse<void>(response);
   } catch {
-    return { ok: false, error: "El servicio no está disponible. Intenta más tarde." };
+    return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
   }
 }
 
 /**
- * Obtiene la lista de animales en los que el usuario autenticado ha manifestado interés.
+ * Obtiene la lista de animales favoritos del usuario autenticado.
  * Endpoint: GET /api/usuarios/me/intereses
- * @param token - Token de autenticación activo
+ * @param token - Token de autenticacion activo.
  */
-export async function listarIntereses(
-  token: string
-): Promise<ApiResult<AnimalInteresResponse[]>> {
+export async function listarIntereses(token: string): Promise<ApiResult<AnimalInteresResponse[]>> {
   try {
     const response = await fetch(`${BASE_URL}/api/usuarios/me/intereses`, {
       method: "GET",
@@ -285,6 +259,6 @@ export async function listarIntereses(
     });
     return handleResponse<AnimalInteresResponse[]>(response);
   } catch {
-    return { ok: false, error: "El servicio no está disponible. Intenta más tarde." };
+    return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
   }
 }

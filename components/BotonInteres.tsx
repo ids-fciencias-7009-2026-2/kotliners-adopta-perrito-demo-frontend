@@ -5,17 +5,20 @@ import { manifestarInteres, eliminarInteres } from "@/lib/apiClient";
 import { getToken } from "@/lib/session";
 import { useRouter } from "next/navigation";
 import { ROUTES } from "@/lib/routes";
+import { Heart } from "lucide-react";
 
+/** Props del componente BotonInteres. */
 interface BotonInteresProps {
-  /** ID del animal */
+  /** ID del animal. */
   animalId: string;
-  /** Si el usuario ya tiene interés registrado en este animal */
+  /** Indica si el usuario ya tiene interes registrado en este animal. */
   tieneInteres: boolean;
 }
 
 /**
- * Botón "Me interesa" / "Ya no me interesa" para usar en la vista de detalle de animal.
- * Llama al backend para registrar o eliminar el interés del usuario autenticado.
+ * Boton de interes para un animal.
+ * Alterna entre "Me interesa" y "En favoritos" llamando al backend.
+ * Redirige al login si la sesion expira.
  */
 export default function BotonInteres({ animalId, tieneInteres: initialInteres }: BotonInteresProps) {
   const router = useRouter();
@@ -23,6 +26,10 @@ export default function BotonInteres({ animalId, tieneInteres: initialInteres }:
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * Registra o elimina el interes del usuario en el animal.
+   * Redirige al login si el token es invalido o expiro.
+   */
   async function handleClick() {
     const token = getToken();
     if (!token) { router.replace(ROUTES.LOGIN); return; }
@@ -49,11 +56,17 @@ export default function BotonInteres({ animalId, tieneInteres: initialInteres }:
       <button
         onClick={handleClick}
         disabled={loading}
-        className={`btn ${tieneInteres ? "btn-error btn-outline" : "btn-primary"}`}
+        className={`btn gap-2 ${tieneInteres ? "btn-error btn-active" : "btn-outline btn-primary"}`}
+        aria-label={tieneInteres ? "Quitar de favoritos" : "Agregar a favoritos"}
       >
-        {loading
-          ? <span className="loading loading-spinner loading-sm" />
-          : tieneInteres ? "💔 Ya no me interesa" : "❤️ Me interesa"}
+        {loading ? (
+          <span className="loading loading-spinner loading-sm" />
+        ) : (
+          <>
+            <Heart size={18} className={tieneInteres ? "fill-current" : ""} />
+            {tieneInteres ? "En favoritos" : "Me interesa"}
+          </>
+        )}
       </button>
       {error && <p className="text-error text-xs">{error}</p>}
     </div>
