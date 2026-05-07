@@ -26,7 +26,6 @@ export default function FavoritosPage() {
 
     listarIntereses(token).then((res) => {
       if (!res.ok) {
-        if (res.error === "SESSION_EXPIRED") { router.replace(ROUTES.LOGIN); return; }
         setError(res.error);
       } else {
         setAnimales(res.data);

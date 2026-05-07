@@ -20,7 +20,7 @@ export default function PerfilPage() {
     const token = getToken();
     if (!token) { window.location.href = ROUTES.LOGIN; return; }
     obtenerPerfil(token).then((res) => {
-      if (!res.ok) { sessionStorage.clear(); window.location.href = ROUTES.LOGIN; return; }
+      if (!res.ok) return; // El evento session:expired se encarga de redirigir
       sessionStorage.setItem("usuario", JSON.stringify(res.data));
       setUsuario(res.data);
       setForm(res.data);
@@ -52,7 +52,6 @@ export default function PerfilPage() {
         fotoPerfil: form.fotoPerfil || null,
       });
       if (!res.ok) {
-        if (res.error === "SESSION_EXPIRED") { sessionStorage.clear(); window.location.href = ROUTES.LOGIN; return; }
         setError(res.error);
         return;
       }

@@ -1,4 +1,5 @@
 import axios from 'axios'
+import sessionEvents from '@/lib/sessionEvents'
 
 /** Instancia base de Axios con la URL del backend configurada en .env.local */
 const apiClient = axios.create({
@@ -6,7 +7,7 @@ const apiClient = axios.create({
   headers: { 'Content-Type': 'application/json' }
 })
 
-/** Interceptor de request: agrega el token de sesion en el header Authorization antes de cada peticion. */
+/** Interceptor de request: agrega el token de sesion en el header Authorization. */
 apiClient.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
     const token = sessionStorage.getItem('user_token')
@@ -17,16 +18,18 @@ apiClient.interceptors.request.use((config) => {
   return config
 })
 
-/** Interceptor de response: si el backend devuelve 401 o 403, limpia la sesion y redirige al login. */
+/**
+ * Interceptor de response: si el backend devuelve 401 o 403,
+ * emite el evento "session:expired" usando el patron observador.
+ * Los componentes suscritos reaccionan limpiando la sesion y redirigiendo.
+ */
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (typeof window !== 'undefined') {
       const status = error?.response?.status
       if (status === 401 || status === 403) {
-        sessionStorage.removeItem('user_token')
-        sessionStorage.removeItem('usuario')
-        window.location.href = '/login'
+        sessionEvents.emit('session:expired')
       }
     }
     return Promise.reject(error)

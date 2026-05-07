@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ErrorMessage from "@/components/ErrorMessage";
+import PasswordField from "@/components/PasswordField";
 import { login, getPerfil } from "@/api/authApi";
 import { ROUTES } from "@/lib/routes";
 import { PawPrint, LogIn } from "lucide-react";
@@ -91,25 +92,14 @@ export default function LoginPage() {
             </div>
 
             {/* Campo contrasena */}
-            <div className="form-control">
-              <label className="label" htmlFor="password">
-                <span className="label-text">Contrasena</span>
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                value={form.password}
-                onChange={handleChange}
-                placeholder="••••••••"
-                className={`input input-bordered w-full ${errors.password ? "input-error" : ""}`}
-              />
-              {errors.password && (
-                <label className="label">
-                  <span className="label-text-alt text-error">{errors.password}</span>
-                </label>
-              )}
-            </div>
+            <PasswordField
+              name="password"
+              label="Contrasena"
+              value={form.password}
+              onChange={handleChange}
+              error={errors.password}
+              placeholder="••••••••"
+            />
 
             <button type="submit" disabled={loading} className="btn btn-primary w-full gap-2 mt-2">
               {loading ? <span className="loading loading-spinner loading-sm" /> : <><LogIn size={18} /> Iniciar sesion</>}
