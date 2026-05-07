@@ -209,3 +209,82 @@ export async function actualizarPerfil(
     return { ok: false, error: "El servicio no está disponible. Intenta más tarde." };
   }
 }
+
+// ---------------------------------------------------------------------------
+// Intereses (Persona 3)
+// ---------------------------------------------------------------------------
+
+/** Animal de interés devuelto por GET /api/usuarios/me/intereses */
+export interface AnimalInteresResponse {
+  animalId: string;
+  nombre: string;
+  especie: string;
+  raza: string | null;
+  fechaNacimiento: string;
+  sexo: string;
+  descripcion: string;
+  estatus: string;
+  esterilizado: boolean;
+  fechaInteres: string;
+}
+
+/**
+ * Manifiesta interés del usuario autenticado en un animal.
+ * Endpoint: POST /api/animales/{id}/interes
+ * @param token - Token de autenticación activo
+ * @param animalId - ID del animal
+ */
+export async function manifestarInteres(
+  token: string,
+  animalId: string
+): Promise<ApiResult<void>> {
+  try {
+    const response = await fetch(`${BASE_URL}/api/animales/${animalId}/interes`, {
+      method: "POST",
+      headers: buildHeaders(token),
+    });
+    return handleResponse<void>(response);
+  } catch {
+    return { ok: false, error: "El servicio no está disponible. Intenta más tarde." };
+  }
+}
+
+/**
+ * Elimina el interés del usuario autenticado en un animal.
+ * Endpoint: DELETE /api/animales/{id}/interes
+ * @param token - Token de autenticación activo
+ * @param animalId - ID del animal
+ */
+export async function eliminarInteres(
+  token: string,
+  animalId: string
+): Promise<ApiResult<void>> {
+  try {
+    const response = await fetch(`${BASE_URL}/api/animales/${animalId}/interes`, {
+      method: "DELETE",
+      headers: buildHeaders(token),
+    });
+    return handleResponse<void>(response);
+  } catch {
+    return { ok: false, error: "El servicio no está disponible. Intenta más tarde." };
+  }
+}
+
+/**
+ * Obtiene la lista de animales en los que el usuario autenticado ha manifestado interés.
+ * Endpoint: GET /api/usuarios/me/intereses
+ * @param token - Token de autenticación activo
+ */
+export async function listarIntereses(
+  token: string
+): Promise<ApiResult<AnimalInteresResponse[]>> {
+  try {
+    const response = await fetch(`${BASE_URL}/api/usuarios/me/intereses`, {
+      method: "GET",
+      headers: buildHeaders(token),
+    });
+    return handleResponse<AnimalInteresResponse[]>(response);
+  } catch {
+    return { ok: false, error: "El servicio no está disponible. Intenta más tarde." };
+  }
+}

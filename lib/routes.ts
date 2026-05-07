@@ -6,6 +6,7 @@ export const ROUTES = {
     LOGIN: "/login",
     REGISTRO: "/registro",
     PROFILE: "/profile",
+    FAVORITOS: "/favoritos",
 } as const;
 
 /**
@@ -22,4 +23,5 @@ export const PUBLIC_ROUTES = [
 export const PROTECTED_ROUTES = [
     ROUTES.HOME,
     ROUTES.PROFILE,
+    ROUTES.FAVORITOS,
 ];
