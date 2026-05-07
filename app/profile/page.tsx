@@ -3,49 +3,47 @@
 import { useEffect, useState } from "react";
 import { actualizarPerfil } from "@/lib/apiClient";
 import { getToken } from "@/lib/session";
-import ErrorMessage from "@/components/ErrorMessage";
 import { ROUTES } from "@/lib/routes";
+import { User, Pencil, X, Save } from "lucide-react";
 
+/** Pagina de perfil del usuario autenticado. Ruta protegida: /profile */
 export default function PerfilPage() {
-
   const [usuario, setUsuario] = useState<any>(null);
   const [form, setForm] = useState<any>(null);
   const [editing, setEditing] = useState(false);
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // 🔹 cargar sesión
+  /** Carga el perfil desde el backend al montar el componente. */
   useEffect(() => {
-    const data = sessionStorage.getItem("usuario");
-    if (data) {
-      const parsed = JSON.parse(data);
-      setUsuario(parsed);
-      setForm(parsed);
-    }
+    const token = getToken();
+    if (!token) { window.location.href = ROUTES.LOGIN; return; }
+    import("@/lib/apiClient").then(({ obtenerPerfil }) => {
+      obtenerPerfil(token).then((res) => {
+        if (!res.ok) { sessionStorage.clear(); window.location.href = ROUTES.LOGIN; return; }
+        sessionStorage.setItem("usuario", JSON.stringify(res.data));
+        setUsuario(res.data);
+        setForm(res.data);
+      });
+    });
   }, []);
 
+  /** Actualiza el campo del formulario y limpia mensajes de estado. */
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setForm({ ...form, [e.target.name]: e.target.value });
     setError(null);
     setSuccess(null);
   }
 
+  /** Envia los cambios al backend y actualiza sessionStorage. */
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setSuccess(null);
     setLoading(true);
-
     const token = getToken();
-
-    if (!token) {
-      setError("Sesión expirada");
-      setLoading(false);
-      return;
-    }
-
+    if (!token) { setError("Sesion expirada"); setLoading(false); return; }
     try {
       const res = await actualizarPerfil(token, {
         nombres: form.nombres,
@@ -55,26 +53,17 @@ export default function PerfilPage() {
         codigoPostal: form.codigoPostal,
         fotoPerfil: form.fotoPerfil || null,
       });
-
       if (!res.ok) {
-        if (res.error === "SESSION_EXPIRED") {
-          sessionStorage.clear();
-          window.location.href = ROUTES.LOGIN;
-          return;
-        }
+        if (res.error === "SESSION_EXPIRED") { sessionStorage.clear(); window.location.href = ROUTES.LOGIN; return; }
         setError(res.error);
         return;
       }
-
       sessionStorage.setItem("usuario", JSON.stringify(res.data));
       setUsuario(res.data);
       setForm(res.data);
-
       setSuccess("Perfil actualizado correctamente");
       setEditing(false);
-
       setTimeout(() => setSuccess(null), 3000);
-
     } catch {
       setError("Error inesperado");
     } finally {
@@ -85,158 +74,114 @@ export default function PerfilPage() {
   if (!form) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p>Cargando perfil...</p>
+        <span className="loading loading-spinner loading-lg text-primary" />
       </div>
     );
   }
 
   return (
     <main className="min-h-screen bg-base-200 p-6">
-      <div className="max-w-xl mx-auto bg-base-100 rounded-box shadow-xl p-8">
+      <div className="max-w-xl mx-auto">
+        <div className="card bg-base-100 shadow-xl">
+          <div className="card-body gap-4">
 
-        {/* HEADER */}
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-primary">
-            👤 Mi perfil
-          </h1>
+            {/* Encabezado */}
+            <div className="flex justify-between items-center">
+              <h1 className="card-title text-2xl gap-2">
+                <User size={24} className="text-primary" />
+                Mi perfil
+              </h1>
+              <button
+                onClick={() => { setEditing(!editing); setError(null); setSuccess(null); }}
+                className="btn btn-sm btn-ghost gap-1"
+              >
+                {editing ? <><X size={16} /> Cancelar</> : <><Pencil size={16} /> Editar</>}
+              </button>
+            </div>
 
-          {/* EDIT BUTTON */}
-          <button
-            onClick={() => setEditing(!editing)}
-            className="btn btn-sm btn-outline"
-          >
-            {editing ? "Cancelar" : "Editar"}
-          </button>
-        </div>
-
-        <ErrorMessage message={error} />
-
-        {success && (
-          <div className="alert alert-success mt-2">
-            <span>{success}</span>
-          </div>
-        )}
-
-        {/* FOTO */}
-        <div className="flex flex-col items-center mb-6">
-          <div className="w-32 h-32 rounded-full overflow-hidden bg-base-200 shadow-md">
-            {form.fotoPerfil ? (
-              <img
-                src={form.fotoPerfil}
-                alt="Foto"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full text-4xl">
-                👤
+            {/* Alertas */}
+            {error && (
+              <div role="alert" className="alert alert-error">
+                <span>{error}</span>
               </div>
             )}
+            {success && (
+              <div role="alert" className="alert alert-success">
+                <span>{success}</span>
+              </div>
+            )}
+
+            {/* Avatar */}
+            <div className="flex justify-center">
+              <div className="avatar">
+                <div className="w-24 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
+                  {form.fotoPerfil ? (
+                    <img src={form.fotoPerfil} alt="Foto de perfil" />
+                  ) : (
+                    <div className="bg-base-200 flex items-center justify-center w-full h-full">
+                      <User size={40} className="text-base-content/30" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Formulario */}
+            <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+
+              {editing && (
+                <div className="form-control">
+                  <label className="label"><span className="label-text">Foto (URL)</span></label>
+                  <input name="fotoPerfil" value={form.fotoPerfil || ""} onChange={handleChange} className="input input-bordered w-full" placeholder="https://..." />
+                </div>
+              )}
+
+              {/* Tabla de datos en modo vista */}
+              {!editing ? (
+                <div className="overflow-x-auto">
+                  <table className="table table-zebra">
+                    <tbody>
+                      <tr><th>Nombre(s)</th><td>{usuario.nombres}</td></tr>
+                      <tr><th>Apellido paterno</th><td>{usuario.apellidoPaterno}</td></tr>
+                      <tr><th>Apellido materno</th><td>{usuario.apellidoMaterno}</td></tr>
+                      <tr><th>Correo</th><td>{usuario.email}</td></tr>
+                      <tr><th>Codigo postal</th><td>{usuario.codigoPostal}</td></tr>
+                      <tr><th>Rol</th><td><span className="badge badge-primary">{usuario.rol}</span></td></tr>
+                      <tr><th>Username</th><td>@{usuario.username}</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                /* Campos editables */
+                <>
+                  {[
+                    { label: "Nombre(s)", name: "nombres" },
+                    { label: "Apellido paterno", name: "apellidoPaterno" },
+                    { label: "Apellido materno", name: "apellidoMaterno" },
+                    { label: "Correo", name: "email", type: "email" },
+                    { label: "Codigo postal", name: "codigoPostal" },
+                  ].map(({ label, name, type = "text" }) => (
+                    <div key={name} className="form-control">
+                      <label className="label"><span className="label-text">{label}</span></label>
+                      <input
+                        name={name}
+                        type={type}
+                        value={form[name] || ""}
+                        onChange={handleChange}
+                        className="input input-bordered w-full"
+                      />
+                    </div>
+                  ))}
+                  <button type="submit" disabled={loading} className="btn btn-primary w-full gap-2 mt-2">
+                    {loading
+                      ? <span className="loading loading-spinner loading-sm" />
+                      : <><Save size={18} /> Guardar cambios</>}
+                  </button>
+                </>
+              )}
+            </form>
           </div>
         </div>
-
-        {/* FORM / VIEW */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-
-          {/* FOTO URL (solo en edición) */}
-          {editing && (
-            <div>
-              <label className="label">Foto (URL)</label>
-              <input
-                name="fotoPerfil"
-                value={form.fotoPerfil || ""}
-                onChange={handleChange}
-                className="input w-full"
-              />
-            </div>
-          )}
-
-          {/* NOMBRE */}
-          <div>
-            <label className="label">Nombre(s)</label>
-            {editing ? (
-              <input
-                name="nombres"
-                value={form.nombres}
-                onChange={handleChange}
-                className="input w-full"
-              />
-            ) : (
-              <p className="font-semibold">{usuario.nombres}</p>
-            )}
-          </div>
-
-          {/* APELLIDO P */}
-          <div>
-            <label className="label">Apellido paterno</label>
-            {editing ? (
-              <input
-                name="apellidoPaterno"
-                value={form.apellidoPaterno}
-                onChange={handleChange}
-                className="input w-full"
-              />
-            ) : (
-              <p className="font-semibold">{usuario.apellidoPaterno}</p>
-            )}
-          </div>
-
-          {/* APELLIDO M */}
-          <div>
-            <label className="label">Apellido materno</label>
-            {editing ? (
-              <input
-                name="apellidoMaterno"
-                value={form.apellidoMaterno}
-                onChange={handleChange}
-                className="input w-full"
-              />
-            ) : (
-              <p className="font-semibold">{usuario.apellidoMaterno}</p>
-            )}
-          </div>
-
-          {/* EMAIL */}
-          <div>
-            <label className="label">Correo</label>
-            {editing ? (
-              <input
-                name="email"
-                value={form.email}
-                onChange={handleChange}
-                className="input w-full"
-              />
-            ) : (
-              <p className="font-semibold">{usuario.email}</p>
-            )}
-          </div>
-
-          {/* CP */}
-          <div>
-            <label className="label">Código postal</label>
-            {editing ? (
-              <input
-                name="codigoPostal"
-                value={form.codigoPostal}
-                onChange={handleChange}
-                className="input w-full"
-              />
-            ) : (
-              <p className="font-semibold">{usuario.codigoPostal}</p>
-            )}
-          </div>
-
-          {/* BOTÓN */}
-          {editing && (
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn btn-primary w-full mt-4"
-            >
-              {loading ? "Guardando..." : "Guardar cambios"}
-            </button>
-          )}
-
-        </form>
       </div>
     </main>
   );
