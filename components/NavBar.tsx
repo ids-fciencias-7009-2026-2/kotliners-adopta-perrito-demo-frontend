@@ -54,6 +54,7 @@ useEffect(() => {
     <Link href={ROUTES.HOME} className="link link-hover">Inicio</Link>
     <Link href={ROUTES.HOME + "#mapa"} className="link link-hover">Mapa</Link>
     <Link href={ROUTES.HOME + "#mascotas"} className="link link-hover">Mascotas</Link>
+    <Link href={ROUTES.FAVORITOS} className="link link-hover">❤️ Favoritos</Link>
   </div>
 
   {/* RIGHT */}

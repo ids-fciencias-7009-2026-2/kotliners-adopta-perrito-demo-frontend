@@ -1,4 +1,11 @@
-// components/PetCard.tsx
+"use client";
+
+import BotonInteres from "./BotonInteres";
+
+/**
+ * Tipo que representa un animal del catálogo.
+ * Debe coincidir con la respuesta del backend (GET /api/animales).
+ */
 type Pet = {
   id: string;
   name: string;
@@ -8,6 +15,10 @@ type Pet = {
   image: string;
 };
 
+/**
+ * Tarjeta de animal que muestra su información básica
+ * y el botón "Me interesa" conectado al backend.
+ */
 export default function PetCard({ pet }: { pet: Pet }) {
   return (
     <div className="
@@ -35,9 +46,10 @@ export default function PetCard({ pet }: { pet: Pet }) {
           {pet.type === "dog" ? "Perro" : "Gato"} · {pet.age} años · CP {pet.zip}
         </p>
 
-        <button className="btn btn-primary w-full mt-4 shadow-md">
-          Me interesa 🐾
-        </button>
+        {/* Botón conectado al backend */}
+        <div className="mt-4">
+          <BotonInteres animalId={pet.id} tieneInteres={false} />
+        </div>
       </div>
     </div>
   );
