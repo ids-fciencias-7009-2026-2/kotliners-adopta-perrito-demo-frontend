@@ -1,6 +1,4 @@
-/**
- * Rutas del sistema
- */
+/** Rutas de la aplicacion. */
 export const ROUTES = {
     HOME: "/home",
     LOGIN: "/login",
@@ -9,17 +7,13 @@ export const ROUTES = {
     FAVORITOS: "/favoritos",
 } as const;
 
-/**
- * Rutas públicas.
- */
+/** Rutas publicas accesibles sin autenticacion. */
 export const PUBLIC_ROUTES = [
     ROUTES.LOGIN,
     ROUTES.REGISTRO,
 ];
 
-/**
- * Rutas protegidas que requieren autenticación para acceder. 
- */
+/** Rutas protegidas que requieren autenticacion. */
 export const PROTECTED_ROUTES = [
     ROUTES.HOME,
     ROUTES.PROFILE,

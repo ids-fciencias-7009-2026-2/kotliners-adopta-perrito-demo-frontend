@@ -1,17 +1,16 @@
 /**
- * Módulo de funciones para comunicarse con la API de autenticación y usuarios.
- * Utiliza la instancia de Axios configurada en axios.ts, que agrega automáticamente
- * el token de sesión en el header Authorization cuando existe en sessionStorage.
+ * Funciones para comunicarse con la API de autenticacion y usuarios.
+ * Usa la instancia de Axios de axios.ts, que agrega el token automaticamente.
  */
 import apiClient from './axios'
 
-/** Credenciales necesarias para iniciar sesión. */
+/** Credenciales para iniciar sesion. */
 export interface LoginPayload {
     email: string
     password: string
 }
 
-/** Datos requeridos para registrar un nuevo usuario. */
+/** Datos para registrar un nuevo usuario. */
 export interface RegistroPayload {
     nombres: string
     curp: string
@@ -25,7 +24,7 @@ export interface RegistroPayload {
     fotoPerfil?: string
 }
 
-/** Campos editables del perfil de usuario. No incluye curp, username, rol ni password. */
+/** Campos editables del perfil. No incluye curp, username, rol ni password. */
 export interface ActualizarPerfilPayload {
   nombres: string
   apellidoPaterno: string
@@ -36,9 +35,10 @@ export interface ActualizarPerfilPayload {
 }
 
 /**
- * Autentica al usuario con email y contraseña.
+ * Autentica al usuario con email y contrasena.
  * Endpoint: POST /usuarios/login
- * @returns Token de sesión si las credenciales son correctas.
+ * @param payload - Credenciales del usuario.
+ * @returns Token de sesion si las credenciales son correctas.
  */
 export function login(payload: LoginPayload) {
   return apiClient.post<{ token: string }>('/usuarios/login', payload)
@@ -47,33 +47,35 @@ export function login(payload: LoginPayload) {
 /**
  * Registra un nuevo usuario en el sistema.
  * Endpoint: POST /usuarios/register
+ * @param payload - Datos del nuevo usuario.
  */
 export function register(payload: RegistroPayload) {
   return apiClient.post('/usuarios/register', payload)
 }
 
 /**
- * Obtiene la información del usuario autenticado.
+ * Obtiene la informacion del usuario autenticado.
  * Endpoint: GET /usuarios/me
- * Requiere token en sessionStorage (el interceptor lo agrega automáticamente).
+ * El interceptor agrega el token automaticamente desde sessionStorage.
  */
 export function getPerfil() {
   return apiClient.get('/usuarios/me')
 }
 
 /**
- * Cierra la sesión del usuario autenticado e invalida el token en el backend.
+ * Cierra la sesion del usuario e invalida el token en el backend.
  * Endpoint: POST /usuarios/logout
- * Requiere token en sessionStorage (el interceptor lo agrega automáticamente).
+ * El interceptor agrega el token automaticamente desde sessionStorage.
  */
 export function logout() {
   return apiClient.post('/usuarios/logout')
 }
 
 /**
- * Actualiza la información del perfil del usuario autenticado.
+ * Actualiza la informacion del perfil del usuario autenticado.
  * Endpoint: PUT /usuarios
- * Requiere token en sessionStorage (el interceptor lo agrega automáticamente).
+ * El interceptor agrega el token automaticamente desde sessionStorage.
+ * @param payload - Campos a actualizar.
  */
 export function actualizarPerfil(payload: ActualizarPerfilPayload) {
   return apiClient.put('/usuarios', payload)
