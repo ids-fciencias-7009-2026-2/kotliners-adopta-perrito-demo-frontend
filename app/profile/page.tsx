@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { actualizarPerfil, obtenerPerfil, Usuario } from "@/lib/apiClient";
+import { actualizarPerfil, obtenerPerfil, subirFotoPerfil, Usuario } from "@/lib/apiClient";
 import { getToken } from "@/lib/session";
 import { ROUTES } from "@/lib/routes";
-import { User, Pencil, X, Save } from "lucide-react";
+import { User, Pencil, X, Save, Upload } from "lucide-react";
 
 /** Pagina de perfil del usuario autenticado. Ruta protegida: /profile */
 export default function PerfilPage() {
@@ -12,6 +12,7 @@ export default function PerfilPage() {
   const [form, setForm] = useState<Usuario & { fotoPerfil?: string } | null>(null);
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -32,6 +33,25 @@ export default function PerfilPage() {
     setForm({ ...form, [e.target.name]: e.target.value });
     setError(null);
     setSuccess(null);
+  }
+
+  /** Sube una imagen de perfil al backend y actualiza la URL en el formulario. */
+  async function handleFotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const token = getToken();
+    if (!token) return;
+    setUploadingPhoto(true);
+    setError(null);
+    const res = await subirFotoPerfil(token, file);
+    if (res.ok) {
+      setForm({ ...form, fotoPerfil: res.data.url });
+      setSuccess("Foto actualizada. Guarda los cambios para aplicarla.");
+      setTimeout(() => setSuccess(null), 3000);
+    } else {
+      setError(res.error);
+    }
+    setUploadingPhoto(false);
   }
 
   /** Envia los cambios al backend y actualiza sessionStorage. */
@@ -128,8 +148,22 @@ export default function PerfilPage() {
 
               {editing && (
                 <div className="form-control">
-                  <label className="label"><span className="label-text">Foto (URL)</span></label>
-                  <input name="fotoPerfil" value={form.fotoPerfil || ""} onChange={handleChange} className="input input-bordered w-full" placeholder="https://..." />
+                  <label className="label"><span className="label-text">Foto de perfil</span></label>
+                  <label className="btn btn-outline btn-sm gap-2 cursor-pointer">
+                    {uploadingPhoto
+                      ? <span className="loading loading-spinner loading-xs" />
+                      : <><Upload size={16} /> Subir imagen</>}
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      onChange={handleFotoUpload}
+                      disabled={uploadingPhoto}
+                    />
+                  </label>
+                  <label className="label">
+                    <span className="label-text-alt text-base-content/50">JPG, PNG o WebP, max 5MB</span>
+                  </label>
                 </div>
               )}
 

@@ -266,3 +266,28 @@ export async function listarIntereses(token: string): Promise<ApiResult<AnimalIn
     return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
   }
 }
+
+// ---------------------------------------------------------------------------
+// Subida de imagenes
+// ---------------------------------------------------------------------------
+
+/**
+ * Sube una imagen de perfil al backend y devuelve la URL publica.
+ * Endpoint: POST /uploads/foto-perfil
+ * @param token - Token de autenticacion activo.
+ * @param file - Archivo de imagen a subir.
+ */
+export async function subirFotoPerfil(token: string, file: File): Promise<ApiResult<{ url: string }>> {
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await fetch(`${BASE_URL}/uploads/foto-perfil`, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${token}` },
+      body: formData,
+    });
+    return handleResponse<{ url: string }>(response);
+  } catch {
+    return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
+  }
+}
