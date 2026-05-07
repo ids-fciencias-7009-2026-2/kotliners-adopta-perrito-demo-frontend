@@ -211,7 +211,7 @@ export async function actualizarPerfil(
 }
 
 // ---------------------------------------------------------------------------
-// Intereses (Persona 3)
+// Intereses 
 // ---------------------------------------------------------------------------
 
 /** Animal de interés devuelto por GET /api/usuarios/me/intereses */
