@@ -10,6 +10,53 @@ import { ROUTES } from "@/lib/routes";
 import { PawPrint, UserPlus } from "lucide-react";
 import zxcvbn from "zxcvbn";
 
+// ---------------------------------------------------------------------------
+// Componente Field — definido FUERA del componente padre para evitar
+// que React lo desmonte/remonte en cada render y el input pierda el foco.
+// ---------------------------------------------------------------------------
+
+interface FieldProps {
+  label: string;
+  name: string;
+  type?: string;
+  placeholder?: string;
+  value: string;
+  error?: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}
+
+/**
+ * Campo de formulario reutilizable con label y mensaje de error DaisyUI.
+ * Debe estar definido fuera del componente padre para evitar re-montajes.
+ */
+function Field({ label, name, type = "text", placeholder, value, error, onChange }: FieldProps) {
+  return (
+    <div className="form-control">
+      <label className="label" htmlFor={name}>
+        <span className="label-text">{label} <span className="text-error">*</span></span>
+      </label>
+      <input
+        id={name}
+        name={name}
+        type={type}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        className={`input input-bordered w-full ${error ? "input-error" : ""}`}
+      />
+      {error && (
+        <label className="label">
+          <span className="label-text-alt text-error">{error}</span>
+        </label>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Pagina de registro
+// ---------------------------------------------------------------------------
+
 /** Pagina de registro de nuevos usuarios. Ruta publica: /registro */
 export default function RegistroPage() {
   const router = useRouter();
@@ -63,32 +110,11 @@ export default function RegistroPage() {
     }
   }
 
-  /** Renderiza un campo de formulario con label y mensaje de error DaisyUI. */
-  function Field({ label, name, type = "text", placeholder }: {
-    label: string; name: string; type?: string; placeholder?: string;
-  }) {
-    return (
-      <div className="form-control">
-        <label className="label" htmlFor={name}>
-          <span className="label-text">{label} <span className="text-error">*</span></span>
-        </label>
-        <input
-          id={name}
-          name={name}
-          type={type}
-          value={(form as any)[name]}
-          onChange={handleChange}
-          placeholder={placeholder}
-          className={`input input-bordered w-full ${errors[name] ? "input-error" : ""}`}
-        />
-        {errors[name] && (
-          <label className="label">
-            <span className="label-text-alt text-error">{errors[name]}</span>
-          </label>
-        )}
-      </div>
-    );
-  }
+  // Indicador de fortaleza de contrasena
+  const pwdResult = form.password.length > 0 ? zxcvbn(form.password) : null;
+  const pwdColors = ["progress-error", "progress-error", "progress-warning", "progress-warning", "progress-success"];
+  const pwdLabels = ["Muy debil", "Debil", "Aceptable", "Buena", "Fuerte"];
+  const pwdLabelColors = ["text-error", "text-error", "text-warning", "text-warning", "text-success"];
 
   return (
     <div className="min-h-screen bg-base-200 flex items-center justify-center px-4 py-8">
@@ -105,13 +131,14 @@ export default function RegistroPage() {
           <ErrorMessage message={serverError} />
 
           <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1" noValidate>
-            <Field label="Nombre(s)" name="nombres" />
-            <Field label="Apellido paterno" name="apellidoPaterno" />
-            <Field label="Apellido materno" name="apellidoMaterno" />
-            <Field label="CURP" name="curp" placeholder="18 caracteres" />
-            <Field label="Usuario" name="username" />
-            <Field label="Correo electronico" name="email" type="email" placeholder="tu@correo.com" />
-            <Field label="Codigo postal" name="codigoPostal" placeholder="5 digitos" />
+
+            <Field label="Nombre(s)" name="nombres" value={form.nombres} error={errors.nombres} onChange={handleChange} />
+            <Field label="Apellido paterno" name="apellidoPaterno" value={form.apellidoPaterno} error={errors.apellidoPaterno} onChange={handleChange} />
+            <Field label="Apellido materno" name="apellidoMaterno" value={form.apellidoMaterno} error={errors.apellidoMaterno} onChange={handleChange} />
+            <Field label="CURP" name="curp" value={form.curp} error={errors.curp} onChange={handleChange} placeholder="18 caracteres" />
+            <Field label="Usuario" name="username" value={form.username} error={errors.username} onChange={handleChange} />
+            <Field label="Correo electronico" name="email" type="email" value={form.email} error={errors.email} onChange={handleChange} placeholder="tu@correo.com" />
+            <Field label="Codigo postal" name="codigoPostal" value={form.codigoPostal} error={errors.codigoPostal} onChange={handleChange} placeholder="5 digitos" />
 
             {/* Selector de rol */}
             <div className="form-control">
@@ -139,33 +166,36 @@ export default function RegistroPage() {
               placeholder="Minimo 8 caracteres"
             />
 
-            {/* Indicador de fortaleza de contrasena usando zxcvbn */}
-            {form.password.length > 0 && (() => {
-              const result = zxcvbn(form.password);
-              const score = result.score; // 0-4
-              const hasUpper  = /[A-Z]/.test(form.password);
-              const hasLower  = /[a-z]/.test(form.password);
-              const hasNumber = /[0-9]/.test(form.password);
-              const hasMin8   = form.password.length >= 8;
-              const colors = ["progress-error", "progress-error", "progress-warning", "progress-warning", "progress-success"];
-              const labels = ["Muy debil", "Debil", "Aceptable", "Buena", "Fuerte"];
-              const labelColors = ["text-error", "text-error", "text-warning", "text-warning", "text-success"];
-              return (
-                <div className="sm:col-span-2 flex flex-col gap-2">
-                  <progress className={`progress w-full ${colors[score]}`} value={score + 1} max={5} />
-                  <p className={`text-xs font-semibold ${labelColors[score]}`}>{labels[score]}</p>
-                  <ul className="text-xs text-base-content/60 flex flex-wrap gap-x-4 gap-y-1">
-                    <li className={hasMin8 ? "text-success" : "text-error"}>{hasMin8 ? "✓" : "✗"} Minimo 8 caracteres</li>
-                    <li className={hasUpper ? "text-success" : "text-error"}>{hasUpper ? "✓" : "✗"} Una mayuscula</li>
-                    <li className={hasLower ? "text-success" : "text-error"}>{hasLower ? "✓" : "✗"} Una minuscula</li>
-                    <li className={hasNumber ? "text-success" : "text-error"}>{hasNumber ? "✓" : "✗"} Un numero</li>
-                  </ul>
-                  {result.feedback.warning && (
-                    <p className="text-xs text-warning">{result.feedback.warning}</p>
-                  )}
-                </div>
-              );
-            })()}
+            {/* Indicador de fortaleza de contrasena */}
+            {pwdResult && (
+              <div className="sm:col-span-2 flex flex-col gap-2">
+                <progress
+                  className={`progress w-full ${pwdColors[pwdResult.score]}`}
+                  value={pwdResult.score + 1}
+                  max={5}
+                />
+                <p className={`text-xs font-semibold ${pwdLabelColors[pwdResult.score]}`}>
+                  {pwdLabels[pwdResult.score]}
+                </p>
+                <ul className="text-xs text-base-content/60 flex flex-wrap gap-x-4 gap-y-1">
+                  <li className={form.password.length >= 8 ? "text-success" : "text-error"}>
+                    {form.password.length >= 8 ? "✓" : "✗"} Minimo 8 caracteres
+                  </li>
+                  <li className={/[A-Z]/.test(form.password) ? "text-success" : "text-error"}>
+                    {/[A-Z]/.test(form.password) ? "✓" : "✗"} Una mayuscula
+                  </li>
+                  <li className={/[a-z]/.test(form.password) ? "text-success" : "text-error"}>
+                    {/[a-z]/.test(form.password) ? "✓" : "✗"} Una minuscula
+                  </li>
+                  <li className={/[0-9]/.test(form.password) ? "text-success" : "text-error"}>
+                    {/[0-9]/.test(form.password) ? "✓" : "✗"} Un numero
+                  </li>
+                </ul>
+                {pwdResult.feedback.warning && (
+                  <p className="text-xs text-warning">{pwdResult.feedback.warning}</p>
+                )}
+              </div>
+            )}
 
             <div className="sm:col-span-2 mt-2">
               <button type="submit" disabled={loading} className="btn btn-primary w-full gap-2">
