@@ -19,7 +19,6 @@ interface BotonInteresProps {
  * Redirige al login si la sesion expira.
  */
 export default function BotonInteres({ animalId, tieneInteres: initialInteres }: BotonInteresProps) {
-  const router = useRouter();
   const [tieneInteres, setTieneInteres] = useState(initialInteres);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
