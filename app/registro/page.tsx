@@ -7,6 +7,7 @@ import ErrorMessage from "@/components/ErrorMessage";
 import { register } from "@/api/authApi";
 import { ROUTES } from "@/lib/routes";
 import { PawPrint, UserPlus } from "lucide-react";
+import zxcvbn from "zxcvbn";
 
 /** Pagina de registro de nuevos usuarios. Ruta publica: /registro */
 export default function RegistroPage() {
@@ -129,6 +130,34 @@ export default function RegistroPage() {
             </div>
 
             <Field label="Contrasena" name="password" type="password" placeholder="Minimo 8 caracteres" />
+
+            {/* Indicador de fortaleza de contrasena usando zxcvbn */}
+            {form.password.length > 0 && (() => {
+              const result = zxcvbn(form.password);
+              const score = result.score; // 0-4
+              const hasUpper  = /[A-Z]/.test(form.password);
+              const hasLower  = /[a-z]/.test(form.password);
+              const hasNumber = /[0-9]/.test(form.password);
+              const hasMin8   = form.password.length >= 8;
+              const colors = ["progress-error", "progress-error", "progress-warning", "progress-warning", "progress-success"];
+              const labels = ["Muy debil", "Debil", "Aceptable", "Buena", "Fuerte"];
+              const labelColors = ["text-error", "text-error", "text-warning", "text-warning", "text-success"];
+              return (
+                <div className="sm:col-span-2 flex flex-col gap-2">
+                  <progress className={`progress w-full ${colors[score]}`} value={score + 1} max={5} />
+                  <p className={`text-xs font-semibold ${labelColors[score]}`}>{labels[score]}</p>
+                  <ul className="text-xs text-base-content/60 flex flex-wrap gap-x-4 gap-y-1">
+                    <li className={hasMin8 ? "text-success" : "text-error"}>{hasMin8 ? "✓" : "✗"} Minimo 8 caracteres</li>
+                    <li className={hasUpper ? "text-success" : "text-error"}>{hasUpper ? "✓" : "✗"} Una mayuscula</li>
+                    <li className={hasLower ? "text-success" : "text-error"}>{hasLower ? "✓" : "✗"} Una minuscula</li>
+                    <li className={hasNumber ? "text-success" : "text-error"}>{hasNumber ? "✓" : "✗"} Un numero</li>
+                  </ul>
+                  {result.feedback.warning && (
+                    <p className="text-xs text-warning">{result.feedback.warning}</p>
+                  )}
+                </div>
+              );
+            })()}
 
             <div className="sm:col-span-2 mt-2">
               <button type="submit" disabled={loading} className="btn btn-primary w-full gap-2">

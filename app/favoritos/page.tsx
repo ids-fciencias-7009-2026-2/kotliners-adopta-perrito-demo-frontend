@@ -35,9 +35,13 @@ export default function FavoritosPage() {
     });
   }, [router]);
 
-  async function handleEliminar(animalId: string) {
+  /** Elimina el interes del usuario en un animal tras confirmacion. */
+  async function handleEliminar(animalId: string, nombre: string) {
     const token = getToken();
     if (!token) { router.replace(ROUTES.LOGIN); return; }
+
+    // Confirmacion antes de eliminar
+    if (!window.confirm(`Quitar a ${nombre} de tus favoritos?`)) return;
 
     setRemovingId(animalId);
     const res = await eliminarInteres(token, animalId);
@@ -100,7 +104,7 @@ export default function FavoritosPage() {
                   </p>
                   <div className="card-actions justify-end mt-4">
                     <button
-                      onClick={() => handleEliminar(animal.animalId)}
+                      onClick={() => handleEliminar(animal.animalId, animal.nombre)}
                       disabled={removingId === animal.animalId}
                       className="btn btn-error btn-sm gap-1"
                     >

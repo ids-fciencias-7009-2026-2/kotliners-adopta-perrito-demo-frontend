@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { actualizarPerfil } from "@/lib/apiClient";
+import { actualizarPerfil, obtenerPerfil, Usuario } from "@/lib/apiClient";
 import { getToken } from "@/lib/session";
 import { ROUTES } from "@/lib/routes";
 import { User, Pencil, X, Save } from "lucide-react";
 
 /** Pagina de perfil del usuario autenticado. Ruta protegida: /profile */
 export default function PerfilPage() {
-  const [usuario, setUsuario] = useState<any>(null);
-  const [form, setForm] = useState<any>(null);
+  const [usuario, setUsuario] = useState<Usuario | null>(null);
+  const [form, setForm] = useState<Usuario & { fotoPerfil?: string } | null>(null);
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -19,13 +19,11 @@ export default function PerfilPage() {
   useEffect(() => {
     const token = getToken();
     if (!token) { window.location.href = ROUTES.LOGIN; return; }
-    import("@/lib/apiClient").then(({ obtenerPerfil }) => {
-      obtenerPerfil(token).then((res) => {
-        if (!res.ok) { sessionStorage.clear(); window.location.href = ROUTES.LOGIN; return; }
-        sessionStorage.setItem("usuario", JSON.stringify(res.data));
-        setUsuario(res.data);
-        setForm(res.data);
-      });
+    obtenerPerfil(token).then((res) => {
+      if (!res.ok) { sessionStorage.clear(); window.location.href = ROUTES.LOGIN; return; }
+      sessionStorage.setItem("usuario", JSON.stringify(res.data));
+      setUsuario(res.data);
+      setForm(res.data);
     });
   }, []);
 

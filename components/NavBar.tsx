@@ -16,6 +16,15 @@ export default function NavBar() {
   useEffect(() => {
     const data = sessionStorage.getItem("usuario");
     if (data) setUsuario(JSON.parse(data));
+
+    // Actualizar el navbar si el perfil cambia en otra pestana
+    function onStorage(e: StorageEvent) {
+      if (e.key === "usuario" && e.newValue) {
+        setUsuario(JSON.parse(e.newValue));
+      }
+    }
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   }, []);
 
   /** Llama al endpoint de logout, limpia sessionStorage y redirige al login. */
