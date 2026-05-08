@@ -1,26 +1,30 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pencil, Trash2, CheckCircle, Search, SlidersHorizontal, Plus, PawPrint, X } from "lucide-react";
 import Link from "next/link";
-
-// ---------------------------------------------------------------------------
-// Datos mock — reemplazar con GET /api/animales/me cuando este disponible
-// ---------------------------------------------------------------------------
-const mockMascotas = [
-  { id: "m1", nombre: "Luna", especie: "Gato", raza: "Siames", edad: 2, sexo: "HEMBRA", estatus: "DISPONIBLE", esterilizado: true, image: "🐱" },
-  { id: "m2", nombre: "Max", especie: "Perro", raza: "Labrador", edad: 3, sexo: "MACHO", estatus: "DISPONIBLE", esterilizado: false, image: "🐶" },
-  { id: "m3", nombre: "Mochi", especie: "Gato", raza: "Persa", edad: 1, sexo: "HEMBRA", estatus: "ADOPTADO", esterilizado: true, image: "🐱" },
-  { id: "m4", nombre: "Rocky", especie: "Perro", raza: "Bulldog", edad: 4, sexo: "MACHO", estatus: "DISPONIBLE", esterilizado: false, image: "🐶" },
-];
-
-type Mascota = typeof mockMascotas[0];
+import { listarMisAnimales, type AnimalResponse } from "@/lib/apiClient";
+import { getToken } from "@/lib/session";
 
 type Orden = "nombre-asc" | "nombre-desc" | "edad-asc" | "edad-desc";
 
+function calcularEdad(fechaNacimiento: string): number {
+  const nac = new Date(fechaNacimiento);
+  const hoy = new Date();
+  return hoy.getFullYear() - nac.getFullYear();
+}
+
+function emoji(especie: string) {
+  return especie.toLowerCase().includes("gato") || especie.toLowerCase().includes("cat")
+    ? "🐱" : "🐶";
+}
+
 /** Pagina de gestion de mascotas del cuidador. Ruta protegida: /mis-mascotas */
 export default function MisMascotasPage() {
-  const [mascotas, setMascotas] = useState<Mascota[]>(mockMascotas);
+  const [mascotas, setMascotas] = useState<AnimalResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [busqueda, setBusqueda] = useState("");
   const [filtroEspecie, setFiltroEspecie] = useState("TODOS");
   const [filtroEstatus, setFiltroEstatus] = useState("TODOS");
@@ -29,11 +33,26 @@ export default function MisMascotasPage() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-  // Filtrar
+  useEffect(() => {
+    const token = getToken();
+    if (!token) return;
+    listarMisAnimales(token).then((res) => {
+      if (res.ok) {
+        setMascotas(res.data);
+      } else if (res.error !== "SESSION_EXPIRED") {
+        // Solo mostrar error si no es un problema de sesion
+        // Lista vacia no es un error
+        setError(res.error);
+      }
+      setLoading(false);
+    });
+  }, []);
+
   const filtradas = mascotas
     .filter((m) => {
-      const matchBusqueda = m.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-        m.raza.toLowerCase().includes(busqueda.toLowerCase());
+      const matchBusqueda =
+        m.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+        (m.raza ?? "").toLowerCase().includes(busqueda.toLowerCase());
       const matchEspecie = filtroEspecie === "TODOS" || m.especie.toUpperCase() === filtroEspecie;
       const matchEstatus = filtroEstatus === "TODOS" || m.estatus === filtroEstatus;
       const matchSexo = filtroSexo === "TODOS" || m.sexo === filtroSexo;
@@ -42,29 +61,36 @@ export default function MisMascotasPage() {
     .sort((a, b) => {
       if (orden === "nombre-asc") return a.nombre.localeCompare(b.nombre);
       if (orden === "nombre-desc") return b.nombre.localeCompare(a.nombre);
-      if (orden === "edad-asc") return a.edad - b.edad;
-      if (orden === "edad-desc") return b.edad - a.edad;
+      if (orden === "edad-asc") return calcularEdad(a.fechaNacimiento) - calcularEdad(b.fechaNacimiento);
+      if (orden === "edad-desc") return calcularEdad(b.fechaNacimiento) - calcularEdad(a.fechaNacimiento);
       return 0;
     });
 
-  /** Marca/desmarca una mascota como adoptada (mock — sin backend aun) */
-  function toggleAdoptado(id: string) {
-    setMascotas((prev) =>
-      prev.map((m) => m.id === id
-        ? { ...m, estatus: m.estatus === "ADOPTADO" ? "DISPONIBLE" : "ADOPTADO" }
-        : m
-      )
-    );
-  }
-
-  /** Elimina una mascota de la lista (mock — sin backend aun) */
-  function eliminar(id: string) {
-    setMascotas((prev) => prev.filter((m) => m.id !== id));
+  /** Elimina una mascota llamando al backend */
+  async function eliminar(id: string) {
+    const token = getToken();
+    if (!token) return;
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"}/api/animales`, {
+      method: "DELETE",
+      headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ animalId: id }),
+    });
+    if (res.ok) {
+      setMascotas((prev) => prev.filter((m) => m.id !== id));
+    } else {
+      setError("No se pudo eliminar la mascota.");
+    }
     setConfirmDeleteId(null);
   }
 
   const disponibles = mascotas.filter((m) => m.estatus === "DISPONIBLE").length;
   const adoptados = mascotas.filter((m) => m.estatus === "ADOPTADO").length;
+
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <span className="loading loading-spinner loading-lg text-primary" />
+    </div>
+  );
 
   return (
     <main className="min-h-screen bg-base-200 p-6">
@@ -81,12 +107,13 @@ export default function MisMascotasPage() {
               {disponibles} disponible{disponibles !== 1 ? "s" : ""} · {adoptados} adoptada{adoptados !== 1 ? "s" : ""}
             </p>
           </div>
-          {/* TODO: habilitar cuando este disponible POST /api/animales */}
           <Link href="/publicar" className="btn btn-primary gap-2">
             <Plus size={18} />
             Agregar mascota
           </Link>
         </div>
+
+        {error && <div role="alert" className="alert alert-error mb-4"><span>{error}</span></div>}
 
         {/* Barra de busqueda y filtros */}
         <div className="bg-base-100 rounded-box shadow p-4 mb-6 flex flex-col gap-3">
@@ -161,24 +188,22 @@ export default function MisMascotasPage() {
         {filtradas.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-3 text-base-content/30">
             <PawPrint size={56} />
-            <p>No hay mascotas con esos filtros.</p>
+            <p>{mascotas.length === 0 ? "Aun no tienes mascotas registradas." : "No hay mascotas con esos filtros."}</p>
           </div>
         ) : (
           <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filtradas.map((m) => {
               const esAdoptado = m.estatus === "ADOPTADO";
+              const edad = calcularEdad(m.fechaNacimiento);
               return (
                 <div
                   key={m.id}
                   className={`rounded-box overflow-hidden shadow-xl transition-all duration-300 ${
-                    esAdoptado
-                      ? "bg-base-200 opacity-60 grayscale"
-                      : "bg-base-100 hover:-translate-y-1 hover:shadow-primary/40"
+                    esAdoptado ? "bg-base-200 opacity-70 grayscale" : "bg-base-100 hover:-translate-y-1 hover:shadow-primary/40"
                   }`}
                 >
-                  {/* Imagen */}
                   <div className="h-44 bg-base-300 flex items-center justify-center text-5xl relative">
-                    {m.image}
+                    {emoji(m.especie)}
                     <span className={`absolute top-2 right-2 badge badge-sm ${esAdoptado ? "badge-neutral" : "badge-success"}`}>
                       {esAdoptado ? "Adoptado" : "Disponible"}
                     </span>
@@ -187,30 +212,23 @@ export default function MisMascotasPage() {
                     )}
                   </div>
 
-                  {/* Info */}
                   <div className="p-4">
                     <h3 className="font-bold text-lg">{m.nombre}</h3>
                     <p className="text-sm text-base-content/60 mt-0.5">
-                      {m.especie} · {m.raza} · {m.sexo === "MACHO" ? "Macho" : "Hembra"}
+                      {m.especie}{m.raza ? ` · ${m.raza}` : ""} · {m.sexo === "MACHO" ? "Macho" : "Hembra"}
                     </p>
                     <p className="text-xs text-base-content/40 mt-0.5">
-                      {m.edad} {m.edad === 1 ? "ano" : "anos"}
+                      {edad} {edad === 1 ? "ano" : "anos"}
                     </p>
 
-                    {/* Acciones */}
                     <div className="flex flex-wrap gap-2 mt-4">
-                      {!esAdoptado && (
-                        <button
-                          className="btn btn-sm btn-outline gap-1"
-                          disabled
-                          title="Proximamente"
-                        >
-                          <Pencil size={13} /> Editar
-                        </button>
-                      )}
+                      <button className="btn btn-sm btn-outline gap-1" disabled title="Proximamente">
+                        <Pencil size={13} /> Editar
+                      </button>
                       <button
-                        onClick={() => toggleAdoptado(m.id)}
                         className={`btn btn-sm gap-1 ${esAdoptado ? "btn-outline" : "btn-success"}`}
+                        disabled
+                        title="Proximamente"
                       >
                         <CheckCircle size={13} />
                         {esAdoptado ? "Desmarcar" : "Adoptado"}
@@ -230,7 +248,7 @@ export default function MisMascotasPage() {
         )}
       </div>
 
-      {/* Modal de confirmacion de eliminacion */}
+      {/* Modal de confirmacion */}
       {confirmDeleteId && (
         <div className="modal modal-open">
           <div className="modal-box">
@@ -239,12 +257,8 @@ export default function MisMascotasPage() {
               Esta accion no se puede deshacer. La mascota sera eliminada permanentemente.
             </p>
             <div className="modal-action">
-              <button onClick={() => setConfirmDeleteId(null)} className="btn btn-ghost">
-                Cancelar
-              </button>
-              <button onClick={() => eliminar(confirmDeleteId)} className="btn btn-error">
-                Eliminar
-              </button>
+              <button onClick={() => setConfirmDeleteId(null)} className="btn btn-ghost">Cancelar</button>
+              <button onClick={() => eliminar(confirmDeleteId)} className="btn btn-error">Eliminar</button>
             </div>
           </div>
           <div className="modal-backdrop" onClick={() => setConfirmDeleteId(null)} />

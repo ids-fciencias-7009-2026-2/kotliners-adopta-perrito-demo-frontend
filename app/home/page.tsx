@@ -161,6 +161,7 @@ function HomeCuidador({ nombre }: { nombre: string }) {
 export default function HomePage() {
   const [rol, setRol] = useState<string | null>(null);
   const [nombre, setNombre] = useState("amigo");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     const data = sessionStorage.getItem("usuario");
@@ -169,7 +170,15 @@ export default function HomePage() {
       setRol(usuario.rol ?? null);
       setNombre(usuario.nombres ?? "amigo");
     }
+    setMounted(true);
   }, []);
+
+  // Esperar a leer sessionStorage antes de renderizar
+  if (!mounted) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <span className="loading loading-spinner loading-lg text-primary" />
+    </div>
+  );
 
   if (rol === "CUIDADOR") return <HomeCuidador nombre={nombre} />;
   return <HomeAdoptante nombre={nombre} />;

@@ -1,33 +1,38 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import BotonInteres from "@/components/BotonInteres";
+import { listarAnimales, type AnimalResponse } from "@/lib/apiClient";
+import { getToken } from "@/lib/session";
 import { Search, SlidersHorizontal, MapPin, PawPrint, X } from "lucide-react";
 
-// ---------------------------------------------------------------------------
-// Datos mock — reemplazar con GET /api/animales cuando este disponible
-// ---------------------------------------------------------------------------
-const mockPets = [
-  { id: "a1", name: "Luna", type: "Gato", breed: "Siames", age: 2, zip: "04510", image: "🐱", estatus: "DISPONIBLE", sexo: "HEMBRA" },
-  { id: "a2", name: "Max", type: "Perro", breed: "Labrador", age: 3, zip: "01000", image: "🐶", estatus: "DISPONIBLE", sexo: "MACHO" },
-  { id: "a3", name: "Mochi", type: "Gato", breed: "Persa", age: 1, zip: "06600", image: "🐱", estatus: "DISPONIBLE", sexo: "HEMBRA" },
-  { id: "a4", name: "Rocky", type: "Perro", breed: "Bulldog", age: 4, zip: "03100", image: "🐶", estatus: "ADOPTADO", sexo: "MACHO" },
-  { id: "a5", name: "Nala", type: "Perro", breed: "Golden", age: 2, zip: "04510", image: "🐶", estatus: "DISPONIBLE", sexo: "HEMBRA" },
-  { id: "a6", name: "Kira", type: "Gato", breed: "Angora", age: 3, zip: "11800", image: "🐱", estatus: "DISPONIBLE", sexo: "HEMBRA" },
-];
+// Pins mock posicionados en % del contenedor — se actualizan cuando haya coordenadas reales
+const PIN_POSITIONS: Record<string, { x: number; y: number }> = {};
+let pinCounter = 0;
+function getPinPosition(id: string) {
+  if (!PIN_POSITIONS[id]) {
+    // Distribuir pins de forma pseudo-aleatoria pero estable por ID
+    const hash = id.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+    PIN_POSITIONS[id] = {
+      x: 20 + (hash % 60),
+      y: 20 + ((hash * 7) % 55),
+    };
+  }
+  return PIN_POSITIONS[id];
+}
 
-// Pins mock para el mapa — coordenadas aproximadas de CDMX
-const mockPins = [
-  { id: "a1", x: 38, y: 55, name: "Luna" },
-  { id: "a2", x: 52, y: 42, name: "Max" },
-  { id: "a3", x: 45, y: 60, name: "Mochi" },
-  { id: "a4", x: 60, y: 48, name: "Rocky" },
-  { id: "a5", x: 35, y: 65, name: "Nala" },
-  { id: "a6", x: 55, y: 35, name: "Kira" },
-];
+function calcularEdad(fechaNacimiento: string): number {
+  const nac = new Date(fechaNacimiento);
+  const hoy = new Date();
+  return hoy.getFullYear() - nac.getFullYear();
+}
 
 /** Pagina de exploracion de mascotas. Ruta protegida: /explorar */
 export default function ExplorarPage() {
+  const [animales, setAnimales] = useState<AnimalResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [busqueda, setBusqueda] = useState("");
   const [filtroEspecie, setFiltroEspecie] = useState("TODOS");
   const [filtroSexo, setFiltroSexo] = useState("TODOS");
@@ -40,16 +45,36 @@ export default function ExplorarPage() {
     : {};
   const rolUsuario: string | undefined = stored.rol;
 
-  const filtrados = mockPets.filter((p) => {
-    const matchBusqueda = p.name.toLowerCase().includes(busqueda.toLowerCase()) ||
-      p.breed.toLowerCase().includes(busqueda.toLowerCase());
-    const matchEspecie = filtroEspecie === "TODOS" || p.type.toUpperCase() === filtroEspecie;
-    const matchSexo = filtroSexo === "TODOS" || p.sexo === filtroSexo;
-    const matchEstatus = filtroEstatus === "TODOS" || p.estatus === filtroEstatus;
+  useEffect(() => {
+    async function fetchAnimales() {
+      const token = getToken() ?? undefined;
+      const result = await listarAnimales(token);
+      if (result.ok) {
+        setAnimales(result.data);
+      } else {
+        setError("No se pudieron cargar los animales.");
+      }
+      setLoading(false);
+    }
+    fetchAnimales();
+  }, []);
+
+  const filtrados = animales.filter((a) => {
+    const matchBusqueda =
+      a.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+      (a.raza ?? "").toLowerCase().includes(busqueda.toLowerCase());
+    const matchEspecie = filtroEspecie === "TODOS" ||
+      a.especie.toUpperCase() === filtroEspecie;
+    const matchSexo = filtroSexo === "TODOS" || a.sexo === filtroSexo;
+    const matchEstatus = filtroEstatus === "TODOS" || a.estatus === filtroEstatus;
     return matchBusqueda && matchEspecie && matchSexo && matchEstatus;
   });
 
-  const selected = selectedId ? mockPets.find((p) => p.id === selectedId) : null;
+  const selected = selectedId ? animales.find((a) => a.id === selectedId) : null;
+
+  const emoji = (especie: string) =>
+    especie.toLowerCase().includes("gato") || especie.toLowerCase().includes("cat")
+      ? "🐱" : "🐶";
 
   return (
     <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-base-200">
@@ -83,16 +108,11 @@ export default function ExplorarPage() {
             </button>
           </div>
 
-          {/* Filtros expandibles */}
           {filtersOpen && (
             <div className="grid grid-cols-3 gap-2">
               <div className="form-control">
                 <label className="label py-0"><span className="label-text text-xs">Especie</span></label>
-                <select
-                  className="select select-bordered select-sm"
-                  value={filtroEspecie}
-                  onChange={(e) => setFiltroEspecie(e.target.value)}
-                >
+                <select className="select select-bordered select-sm" value={filtroEspecie} onChange={(e) => setFiltroEspecie(e.target.value)}>
                   <option value="TODOS">Todos</option>
                   <option value="PERRO">Perro</option>
                   <option value="GATO">Gato</option>
@@ -100,11 +120,7 @@ export default function ExplorarPage() {
               </div>
               <div className="form-control">
                 <label className="label py-0"><span className="label-text text-xs">Sexo</span></label>
-                <select
-                  className="select select-bordered select-sm"
-                  value={filtroSexo}
-                  onChange={(e) => setFiltroSexo(e.target.value)}
-                >
+                <select className="select select-bordered select-sm" value={filtroSexo} onChange={(e) => setFiltroSexo(e.target.value)}>
                   <option value="TODOS">Todos</option>
                   <option value="MACHO">Macho</option>
                   <option value="HEMBRA">Hembra</option>
@@ -112,11 +128,7 @@ export default function ExplorarPage() {
               </div>
               <div className="form-control">
                 <label className="label py-0"><span className="label-text text-xs">Estatus</span></label>
-                <select
-                  className="select select-bordered select-sm"
-                  value={filtroEstatus}
-                  onChange={(e) => setFiltroEstatus(e.target.value)}
-                >
+                <select className="select select-bordered select-sm" value={filtroEstatus} onChange={(e) => setFiltroEstatus(e.target.value)}>
                   <option value="TODOS">Todos</option>
                   <option value="DISPONIBLE">Disponible</option>
                   <option value="ADOPTADO">Adoptado</option>
@@ -126,44 +138,47 @@ export default function ExplorarPage() {
           )}
 
           <p className="text-xs text-base-content/50">
-            {filtrados.length} mascota{filtrados.length !== 1 ? "s" : ""} encontrada{filtrados.length !== 1 ? "s" : ""}
+            {loading ? "Cargando..." : `${filtrados.length} mascota${filtrados.length !== 1 ? "s" : ""} encontrada${filtrados.length !== 1 ? "s" : ""}`}
           </p>
         </div>
 
         {/* Lista scrolleable */}
         <div className="overflow-y-auto flex-1">
-          {filtrados.length === 0 ? (
+          {loading ? (
+            <div className="flex justify-center py-16">
+              <span className="loading loading-spinner loading-lg text-primary" />
+            </div>
+          ) : error ? (
+            <p className="text-center text-error py-8 px-4">{error}</p>
+          ) : filtrados.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full gap-3 text-base-content/40 p-8">
               <PawPrint size={48} />
               <p className="text-center">No se encontraron mascotas con esos filtros.</p>
             </div>
           ) : (
-            filtrados.map((pet) => (
+            filtrados.map((animal) => (
               <button
-                key={pet.id}
-                onClick={() => setSelectedId(pet.id === selectedId ? null : pet.id)}
+                key={animal.id}
+                onClick={() => setSelectedId(animal.id === selectedId ? null : animal.id)}
                 className={`w-full text-left flex gap-4 p-4 border-b border-base-200 transition hover:bg-base-200 ${
-                  selectedId === pet.id ? "bg-primary/10 border-l-4 border-l-primary" : ""
+                  selectedId === animal.id ? "bg-primary/10 border-l-4 border-l-primary" : ""
                 }`}
               >
-                {/* Imagen */}
                 <div className="w-16 h-16 rounded-box bg-base-300 flex items-center justify-center text-3xl shrink-0">
-                  {pet.image}
+                  {emoji(animal.especie)}
                 </div>
-
-                {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold truncate">{pet.name}</span>
-                    {pet.estatus === "ADOPTADO" && (
+                    <span className="font-semibold truncate">{animal.nombre}</span>
+                    {animal.estatus === "ADOPTADO" && (
                       <span className="badge badge-neutral badge-sm">Adoptado</span>
                     )}
                   </div>
                   <p className="text-sm text-base-content/60 truncate">
-                    {pet.type} · {pet.breed} · {pet.sexo === "MACHO" ? "Macho" : "Hembra"}
+                    {animal.especie}{animal.raza ? ` · ${animal.raza}` : ""} · {animal.sexo === "MACHO" ? "Macho" : "Hembra"}
                   </p>
-                  <p className="text-xs text-base-content/40 flex items-center gap-1 mt-1">
-                    <MapPin size={11} /> CP {pet.zip}
+                  <p className="text-xs text-base-content/40 mt-1">
+                    {calcularEdad(animal.fechaNacimiento)} {calcularEdad(animal.fechaNacimiento) === 1 ? "ano" : "anos"}
                   </p>
                 </div>
               </button>
@@ -176,13 +191,11 @@ export default function ExplorarPage() {
           <div className="border-t border-base-200 p-4 bg-base-100 shadow-inner">
             <div className="flex justify-between items-start mb-3">
               <div>
-                <h3 className="font-bold text-lg">{selected.name}</h3>
+                <h3 className="font-bold text-lg">{selected.nombre}</h3>
                 <p className="text-sm text-base-content/60">
-                  {selected.type} · {selected.breed} · {selected.age} {selected.age === 1 ? "ano" : "anos"}
+                  {selected.especie}{selected.raza ? ` · ${selected.raza}` : ""} · {calcularEdad(selected.fechaNacimiento)} anos
                 </p>
-                <p className="text-xs text-base-content/40 flex items-center gap-1 mt-1">
-                  <MapPin size={11} /> CP {selected.zip}
-                </p>
+                <p className="text-xs text-base-content/50 mt-1 line-clamp-2">{selected.descripcion}</p>
               </div>
               <button onClick={() => setSelectedId(null)} className="btn btn-ghost btn-xs btn-square">
                 <X size={14} />
@@ -200,35 +213,31 @@ export default function ExplorarPage() {
 
       {/* MAPA — placeholder */}
       <div className="hidden lg:flex flex-1 relative bg-primary/5 items-center justify-center">
-
-        {/* Fondo tipo mapa */}
         <div className="absolute inset-0 opacity-10"
           style={{
             backgroundImage: "repeating-linear-gradient(0deg, #888 0, #888 1px, transparent 1px, transparent 40px), repeating-linear-gradient(90deg, #888 0, #888 1px, transparent 1px, transparent 40px)",
           }}
         />
 
-        {/* Pins mock */}
-        {mockPins.map((pin) => {
-          const pet = mockPets.find((p) => p.id === pin.id);
-          const isSelected = selectedId === pin.id;
-          const isAdoptado = pet?.estatus === "ADOPTADO";
+        {/* Pins de animales reales */}
+        {filtrados.map((animal) => {
+          const pos = getPinPosition(animal.id);
+          const isSelected = selectedId === animal.id;
+          const isAdoptado = animal.estatus === "ADOPTADO";
           return (
             <button
-              key={pin.id}
-              onClick={() => setSelectedId(pin.id === selectedId ? null : pin.id)}
+              key={animal.id}
+              onClick={() => setSelectedId(animal.id === selectedId ? null : animal.id)}
               className="absolute transition-transform hover:scale-110"
-              style={{ left: `${pin.x}%`, top: `${pin.y}%`, transform: "translate(-50%, -100%)" }}
+              style={{ left: `${pos.x}%`, top: `${pos.y}%`, transform: "translate(-50%, -100%)" }}
             >
-              <div className={`flex flex-col items-center gap-0.5`}>
+              <div className="flex flex-col items-center gap-0.5">
                 <div className={`px-2 py-1 rounded-full text-xs font-semibold shadow-lg whitespace-nowrap ${
-                  isSelected
-                    ? "bg-primary text-primary-content scale-110"
-                    : isAdoptado
-                    ? "bg-neutral text-neutral-content"
-                    : "bg-base-100 text-base-content border border-base-300"
+                  isSelected ? "bg-primary text-primary-content scale-110"
+                  : isAdoptado ? "bg-neutral text-neutral-content"
+                  : "bg-base-100 text-base-content border border-base-300"
                 }`}>
-                  {pin.name}
+                  {animal.nombre}
                 </div>
                 <div className={`w-2 h-2 rounded-full ${isSelected ? "bg-primary" : isAdoptado ? "bg-neutral" : "bg-base-content/40"}`} />
               </div>
@@ -236,7 +245,6 @@ export default function ExplorarPage() {
           );
         })}
 
-        {/* Label placeholder */}
         <div className="text-center text-base-content/30 select-none pointer-events-none">
           <MapPin size={48} className="mx-auto mb-2" />
           <p className="text-sm">Mapa interactivo proximamente</p>

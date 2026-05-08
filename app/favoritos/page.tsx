@@ -80,7 +80,7 @@ export default function FavoritosPage() {
             <PawPrint size={64} className="mx-auto mb-4 opacity-40" />
             <p className="mt-4 text-lg">Aun no tienes animales favoritos.</p>
             <button
-              onClick={() => router.push(ROUTES.HOME)}
+              onClick={() => router.push(ROUTES.EXPLORAR)}
               className="btn btn-primary mt-6"
             >
               Explorar animales

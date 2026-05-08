@@ -72,9 +72,14 @@ export default function PetList() {
   }
 
   if (animals.length === 0) {
+    const rol = typeof window !== "undefined"
+      ? JSON.parse(sessionStorage.getItem("usuario") || "{}").rol
+      : null;
     return (
       <p className="text-center text-base-content/60 py-8">
-        Aún no hay animales registrados. ¡Sé el primero en publicar uno!
+        {rol === "CUIDADOR"
+          ? "Aun no tienes mascotas registradas. Agrega una!"
+          : "Vuelve pronto, pronto habra mascotas disponibles para adoptar."}
       </p>
     );
   }

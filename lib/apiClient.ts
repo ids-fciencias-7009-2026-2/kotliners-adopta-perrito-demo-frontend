@@ -323,16 +323,37 @@ export interface CreateAnimalPayload {
 }
 
 /**
+ * Obtiene los animales del cuidador autenticado.
+ * Endpoint: GET /api/animales/me
+ * @param token - Token de autenticacion activo.
+ */
+export async function listarMisAnimales(token: string): Promise<ApiResult<AnimalResponse[]>> {
+  try {
+    const response = await fetch(`${BASE_URL}/api/animales/me`, {
+      method: "GET",
+      headers: buildHeaders(token),
+    });
+    return handleResponse<AnimalResponse[]>(response);
+  } catch {
+    return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
+  }
+}
+
+/**
  * Obtiene la lista de todos los animales disponibles.
  * Endpoint: GET /api/animales
  * @param token - Token de autenticación (opcional).
  */
 export async function listarAnimales(token?: string): Promise<ApiResult<AnimalResponse[]>> {
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
     const response = await fetch(`${BASE_URL}/api/animales`, {
       method: "GET",
       headers: buildHeaders(token),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
     return handleResponse<AnimalResponse[]>(response);
   } catch {
     return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
