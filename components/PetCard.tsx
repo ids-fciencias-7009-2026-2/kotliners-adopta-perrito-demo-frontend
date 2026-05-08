@@ -1,5 +1,7 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import { ROUTES } from "@/lib/routes";
 import BotonInteres from "./BotonInteres";
 import { Pencil, Trash2, Home } from "lucide-react";
 
@@ -36,6 +38,7 @@ export default function PetCard({ pet, onDelete, onEdit, onMarcarAdoptado }: {
     ? JSON.parse(sessionStorage.getItem("usuario") || "{}")
     : {};
   const rolUsuario: string | undefined = stored.rol;
+  const router = useRouter();
   const userId: string | undefined = stored.id;
   const esDueno = rolUsuario === "CUIDADOR" && pet.ownerId === userId;
   const esAdoptado = pet.estatus === "ADOPTADO";
@@ -55,7 +58,10 @@ export default function PetCard({ pet, onDelete, onEdit, onMarcarAdoptado }: {
 
       {/* Contenido */}
       <div className="p-5">
-        <h3 className={`text-xl font-bold ${esAdoptado ? "text-base-content/50" : ""}`}>
+        <h3
+          className={`text-xl font-bold cursor-pointer hover:text-primary transition-colors ${esAdoptado ? "text-base-content/50" : ""}`}
+          onClick={() => router.push(`${ROUTES.ANIMAL}/${pet.id}`)}
+        >
           {pet.name}
         </h3>
         <p className="text-base-content/60 text-sm mt-1">
