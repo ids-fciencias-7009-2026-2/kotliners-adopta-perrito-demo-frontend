@@ -2,20 +2,24 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { logoutUsuario } from "@/lib/apiClient";
 import { getToken, removeToken } from "@/lib/session";
 import { ROUTES } from "@/lib/routes";
-import { PawPrint, Heart, LogOut, User, Menu } from "lucide-react";
+import { PawPrint, Heart, LogOut, User, Menu, Search, Dog, Plus } from "lucide-react";
 
 /** Barra de navegacion principal. Solo visible en rutas protegidas. */
 export default function NavBar() {
   const router = useRouter();
+  const pathname = usePathname();
   const [usuario, setUsuario] = useState<any>(null);
+  const [mounted, setMounted] = useState(false);
+  const rol: string | undefined = usuario?.rol;
 
   useEffect(() => {
     const data = sessionStorage.getItem("usuario");
     if (data) setUsuario(JSON.parse(data));
+    setMounted(true);
 
     // Actualizar el navbar si el perfil cambia en otra pestana
     function onStorage(e: StorageEvent) {
@@ -41,6 +45,11 @@ export default function NavBar() {
     }
   }
 
+  /** Devuelve clases extra si la ruta coincide con el pathname actual */
+  function activeClass(href: string) {
+    return pathname === href ? "active font-semibold" : "";
+  }
+
   return (
     <div className="navbar bg-base-100 shadow-md px-4">
 
@@ -55,28 +64,61 @@ export default function NavBar() {
       {/* Menu central — solo desktop */}
       <div className="navbar-center hidden lg:flex">
         <ul className="menu menu-horizontal px-1 gap-1">
-          <li><Link href={ROUTES.HOME}>Inicio</Link></li>
-          <li><Link href={ROUTES.HOME + "#mapa"}>Mapa</Link></li>
-          <li><Link href={ROUTES.HOME + "#mascotas"}>Mascotas</Link></li>
-          <li>
-            <Link href={ROUTES.FAVORITOS} className="gap-1">
-              <Heart size={16} />
-              Favoritos
-            </Link>
-          </li>
+          <li><Link href={ROUTES.HOME} className={activeClass(ROUTES.HOME)}>Inicio</Link></li>
+          {mounted && rol === "CUIDADOR" ? (
+            <>
+              <li>
+                <Link href={ROUTES.MIS_MASCOTAS} className={`gap-1 ${activeClass(ROUTES.MIS_MASCOTAS)}`}>
+                  <Dog size={16} />
+                  Mis mascotas
+                </Link>
+              </li>
+              <li>
+                <Link href={ROUTES.PUBLICAR} className={`gap-1 ${activeClass(ROUTES.PUBLICAR)}`}>
+                  <Plus size={16} />
+                  Publicar
+                </Link>
+              </li>
+            </>
+          ) : (
+            <>
+              <li>
+                <Link href={ROUTES.EXPLORAR} className={`gap-1 ${activeClass(ROUTES.EXPLORAR)}`}>
+                  <Search size={16} />
+                  Explorar
+                </Link>
+              </li>
+              <li>
+                <Link href={ROUTES.FAVORITOS} className={`gap-1 ${activeClass(ROUTES.FAVORITOS)}`}>
+                  <Heart size={16} />
+                  Favoritos
+                </Link>
+              </li>
+            </>
+          )}
         </ul>
       </div>
 
       {/* Acciones derecha */}
       <div className="navbar-end gap-2">
-        {usuario && (
+        {usuario?.username && (
           <span className="hidden sm:block text-sm text-base-content/60">
             @{usuario.username}
           </span>
         )}
 
-        <Link href={ROUTES.PROFILE} className="btn btn-ghost btn-sm gap-1">
-          <User size={16} />
+        <Link href={ROUTES.PROFILE} className="btn btn-ghost btn-sm gap-1 px-2">
+          <div className="avatar">
+            <div className="w-7 rounded-full ring ring-primary ring-offset-base-100 ring-offset-1">
+              {usuario?.fotoPerfil ? (
+                <img src={usuario.fotoPerfil} alt="Foto de perfil" />
+              ) : (
+                <div className="bg-base-200 flex items-center justify-center w-full h-full">
+                  <User size={16} className="text-base-content/50" />
+                </div>
+              )}
+            </div>
+          </div>
           <span className="hidden sm:inline">Perfil</span>
         </Link>
 
@@ -91,10 +133,18 @@ export default function NavBar() {
             <Menu size={20} />
           </label>
           <ul tabIndex={0} className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
-            <li><Link href={ROUTES.HOME}>Inicio</Link></li>
-            <li><Link href={ROUTES.HOME + "#mapa"}>Mapa</Link></li>
-            <li><Link href={ROUTES.HOME + "#mascotas"}>Mascotas</Link></li>
-            <li><Link href={ROUTES.FAVORITOS}>Favoritos</Link></li>
+            <li><Link href={ROUTES.HOME} className={activeClass(ROUTES.HOME)}>Inicio</Link></li>
+            {mounted && rol === "CUIDADOR" ? (
+              <>
+                <li><Link href={ROUTES.MIS_MASCOTAS} className={activeClass(ROUTES.MIS_MASCOTAS)}>Mis mascotas</Link></li>
+                <li><Link href={ROUTES.PUBLICAR} className={activeClass(ROUTES.PUBLICAR)}>Publicar</Link></li>
+              </>
+            ) : (
+              <>
+                <li><Link href={ROUTES.EXPLORAR} className={activeClass(ROUTES.EXPLORAR)}>Explorar</Link></li>
+                <li><Link href={ROUTES.FAVORITOS} className={activeClass(ROUTES.FAVORITOS)}>Favoritos</Link></li>
+              </>
+            )}
           </ul>
         </div>
       </div>

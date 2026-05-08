@@ -35,15 +35,8 @@ export default function Carousel() {
             className="object-cover"
           />
 
-          {/* Overlay (esto sí se queda oscuro por UX) */}
-          <div className="absolute inset-0 bg-gradient-to-t from-neutral/60 to-transparent" />
-
-          {/* Texto */}
-          <div className="absolute bottom-4 left-4">
-            <p className="text-lg font-semibold">
-              Encuentra a tu compañero 🐾
-            </p>
-          </div>
+          {/* Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-neutral/30 to-transparent" />
         </div>
       ))}
     </div>

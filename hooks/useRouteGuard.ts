@@ -58,13 +58,21 @@ export function useRouteGuard(): boolean {
                 setChecking(false);
                 return;
             }
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 4000);
             obtenerPerfil(token).then((res) => {
+                clearTimeout(timeoutId);
                 if (!res.ok) {
                     handleSessionExpired();
                 } else {
                     lastValidatedPath.current = pathname;
                     setChecking(false);
                 }
+            }).catch(() => {
+                clearTimeout(timeoutId);
+                // Si el backend no responde, dejar pasar — no cerrar sesion
+                lastValidatedPath.current = pathname;
+                setChecking(false);
             });
             return;
         }

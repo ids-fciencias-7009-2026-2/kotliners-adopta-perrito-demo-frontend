@@ -21,7 +21,7 @@ export type Rol = "ADOPTANTE" | "CUIDADOR";
 
 /** Datos del usuario devueltos por GET /usuarios/me */
 export interface Usuario {
-  id: number | null;
+  id: string | null;
   curp: string;
   username: string;
   rol: Rol;
@@ -89,13 +89,16 @@ export function buildHeaders(token?: string): Record<string, string> {
  */
 async function handleResponse<T>(response: Response): Promise<ApiResult<T>> {
   if (response.ok) {
-    // Algunos endpoints no devuelven cuerpo JSON
     const text = await response.text();
-    const data = text ? (JSON.parse(text) as T) : ({} as T);
-    return { ok: true, data };
+    if (!text) return { ok: true, data: {} as T };
+    try {
+      return { ok: true, data: JSON.parse(text) as T };
+    } catch {
+      // Respuesta es texto plano (ej: "Interes eliminado correctamente")
+      return { ok: true, data: text as unknown as T };
+    }
   }
   if (response.status === 401 || response.status === 403) {
-    // Emitir evento para que todos los observadores reaccionen
     if (typeof window !== "undefined") sessionEvents.emit("session:expired");
     return { ok: false, error: "SESSION_EXPIRED" };
   }
@@ -214,19 +217,28 @@ export interface AnimalInteresResponse {
   fechaInteres: string;
 }
 
+/** Respuesta del backend al manifestar interes en un animal */
+export interface InteresResponse {
+  usuarioId: string;
+  animalId: string;
+  fecha: string;
+  /** Presente si el correo de notificacion no se pudo enviar */
+  advertencia: string | null;
+}
+
 /**
  * Registra el interes del usuario autenticado en un animal.
  * Endpoint: POST /api/animales/{id}/interes
  * @param token - Token de autenticacion activo.
  * @param animalId - ID del animal.
  */
-export async function manifestarInteres(token: string, animalId: string): Promise<ApiResult<void>> {
+export async function manifestarInteres(token: string, animalId: string): Promise<ApiResult<InteresResponse>> {
   try {
     const response = await fetch(`${BASE_URL}/api/animales/${animalId}/interes`, {
       method: "POST",
       headers: buildHeaders(token),
     });
-    return handleResponse<void>(response);
+    return handleResponse<InteresResponse>(response);
   } catch {
     return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
   }
@@ -311,6 +323,13 @@ export interface AnimalResponse {
   fechaRegistro: string;
 }
 
+/** Datos detallados de un animal devueltos por GET /api/animales/{id} */
+export interface AnimalDetalleResponse extends AnimalResponse {
+  fotos: string[];
+  vacunas: string[];
+  padecimientos: string[];
+}
+
 /** Payload para POST /api/animales */
 export interface CreateAnimalPayload {
   nombre: string;
@@ -323,16 +342,37 @@ export interface CreateAnimalPayload {
 }
 
 /**
+ * Obtiene los animales del cuidador autenticado.
+ * Endpoint: GET /api/animales/me
+ * @param token - Token de autenticacion activo.
+ */
+export async function listarMisAnimales(token: string): Promise<ApiResult<AnimalResponse[]>> {
+  try {
+    const response = await fetch(`${BASE_URL}/api/animales/me`, {
+      method: "GET",
+      headers: buildHeaders(token),
+    });
+    return handleResponse<AnimalResponse[]>(response);
+  } catch {
+    return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
+  }
+}
+
+/**
  * Obtiene la lista de todos los animales disponibles.
  * Endpoint: GET /api/animales
  * @param token - Token de autenticación (opcional).
  */
 export async function listarAnimales(token?: string): Promise<ApiResult<AnimalResponse[]>> {
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
     const response = await fetch(`${BASE_URL}/api/animales`, {
       method: "GET",
       headers: buildHeaders(token),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
     return handleResponse<AnimalResponse[]>(response);
   } catch {
     return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
@@ -365,13 +405,13 @@ export async function publicarAnimal(token: string, body: CreateAnimalPayload): 
 export async function obtenerAnimal(
   id: string,
   token?: string
-): Promise<ApiResult<AnimalResponse>> {
+): Promise<ApiResult<AnimalDetalleResponse>> {
   try {
     const response = await fetch(`${BASE_URL}/api/animales/${id}`, {
       method: "GET",
       headers: buildHeaders(token),
     });
-    return handleResponse<AnimalResponse>(response);
+    return handleResponse<AnimalDetalleResponse>(response);
   } catch {
     return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
   }

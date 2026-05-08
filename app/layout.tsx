@@ -19,6 +19,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
     title: "Colitas Felices",
     description: "Adopta una mascota y encuentra tu nuevo mejor amigo en Colitas Felices.",
+    icons: {
+        icon: "/favicon.ico",
+    },
 };
 
 export default function RootLayout({
