@@ -68,6 +68,10 @@ function HomeAdoptante({ nombre }: { nombre: string }) {
           Cuando encuentres una que te guste, presiona <strong>Me interesa</strong> para
           que el cuidador se ponga en contacto contigo.
         </p>
+        <p className="text-base-content/50 max-w-xl mx-auto text-sm mt-3">
+          Al dar <strong>Me interesa</strong> le enviamos un correo al cuidador con tu informacion de contacto
+          para que pueda comunicarse contigo. Si cambias de opinion y retiras tu interes, el cuidador tambien sera notificado.
+        </p>
       </section>
 
       {/* BENEFICIOS */}

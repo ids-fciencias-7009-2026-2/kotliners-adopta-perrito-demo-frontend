@@ -2,68 +2,54 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { listarIntereses, eliminarInteres, AnimalInteresResponse } from "@/lib/apiClient";
+import { listarIntereses, eliminarInteres, type AnimalInteresResponse } from "@/lib/apiClient";
 import { getToken } from "@/lib/session";
 import { ROUTES } from "@/lib/routes";
 import ErrorMessage from "@/components/ErrorMessage";
-import { Heart, PawPrint, Trash2 } from "lucide-react";
+import AnimalCard from "@/components/AnimalCard";
+import { Heart, PawPrint, Trash2, Expand } from "lucide-react";
 
-/**
- * Vista "Mis favoritos" — muestra los animales en los que el usuario autenticado
- * ha manifestado interes. Permite eliminar el interes desde esta vista.
- * Ruta: /favoritos (protegida)
- */
 export default function FavoritosPage() {
   const router = useRouter();
   const [animales, setAnimales] = useState<AnimalInteresResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [modalId, setModalId] = useState<string | null>(null);
+
+  const rolUsuario = typeof window !== "undefined"
+    ? JSON.parse(sessionStorage.getItem("usuario") || "{}").rol as string | undefined
+    : undefined;
 
   useEffect(() => {
     const token = getToken();
     if (!token) { router.replace(ROUTES.LOGIN); return; }
-
     listarIntereses(token).then((res) => {
-      if (!res.ok) {
-        setError(res.error);
-      } else {
-        setAnimales(res.data);
-      }
+      if (!res.ok) setError(res.error);
+      else setAnimales(res.data);
       setLoading(false);
     });
   }, [router]);
 
-  /** Elimina el interes del usuario en un animal tras confirmacion. */
   async function handleEliminar(animalId: string, nombre: string) {
     const token = getToken();
     if (!token) { router.replace(ROUTES.LOGIN); return; }
-
     if (!window.confirm(`Quitar a ${nombre} de tus favoritos?`)) return;
-
     setRemovingId(animalId);
     const res = await eliminarInteres(token, animalId);
-    if (res.ok) {
+    if (res.ok || res.error.toLowerCase().includes("no encontrado")) {
       setAnimales((prev) => prev.filter((a) => a.animalId !== animalId));
     } else {
-      const errorLower = res.error.toLowerCase();
-      if (errorLower.includes("animal no encontrado") || errorLower.includes("not found")) {
-        // El animal ya no existe — quitarlo de la lista local
-        setAnimales((prev) => prev.filter((a) => a.animalId !== animalId));
-      } else {
-        setError(res.error);
-      }
+      setError(res.error);
     }
     setRemovingId(null);
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <span className="loading loading-spinner loading-lg text-primary" />
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <span className="loading loading-spinner loading-lg text-primary" />
+    </div>
+  );
 
   return (
     <main className="min-h-screen bg-base-200 p-6">
@@ -79,10 +65,7 @@ export default function FavoritosPage() {
           <div className="text-center py-16 text-base-content/60">
             <PawPrint size={64} className="mx-auto mb-4 opacity-40" />
             <p className="mt-4 text-lg">Aun no tienes animales favoritos.</p>
-            <button
-              onClick={() => router.push(ROUTES.EXPLORAR)}
-              className="btn btn-primary mt-6"
-            >
+            <button onClick={() => router.push(ROUTES.EXPLORAR)} className="btn btn-primary mt-6">
               Explorar animales
             </button>
           </div>
@@ -91,11 +74,21 @@ export default function FavoritosPage() {
             {animales.map((animal) => (
               <div key={animal.animalId} className="card card-compact bg-base-100 shadow-xl">
                 <div className="card-body">
-                  <h2 className="card-title">{animal.nombre}</h2>
+                  <div className="flex justify-between items-start">
+                    <h2 className="card-title">{animal.nombre}</h2>
+                    {/* Boton expandir */}
+                    <button
+                      onClick={() => setModalId(animal.animalId)}
+                      className="btn btn-ghost btn-xs btn-square"
+                      title="Ver detalle completo"
+                    >
+                      <Expand size={14} />
+                    </button>
+                  </div>
                   <p className="text-sm text-base-content/70">
                     {animal.especie}{animal.raza ? ` · ${animal.raza}` : ""}
                   </p>
-                  <p className="text-sm">{animal.descripcion}</p>
+                  <p className="text-sm line-clamp-2">{animal.descripcion}</p>
                   <div className="flex flex-wrap gap-2 mt-2">
                     <span className="badge badge-outline">{animal.sexo}</span>
                     <span className={`badge ${animal.estatus === "DISPONIBLE" ? "badge-success" : "badge-warning"}`}>
@@ -106,7 +99,7 @@ export default function FavoritosPage() {
                   <p className="text-xs text-base-content/50 mt-2">
                     Interes registrado: {new Date(animal.fechaInteres).toLocaleDateString("es-MX")}
                   </p>
-                  <div className="card-actions justify-end mt-4">
+                  <div className="card-actions justify-end mt-2">
                     <button
                       onClick={() => handleEliminar(animal.animalId, animal.nombre)}
                       disabled={removingId === animal.animalId}
@@ -123,6 +116,15 @@ export default function FavoritosPage() {
           </div>
         )}
       </div>
+
+      {/* Modal de detalle */}
+      {modalId && (
+        <AnimalCard.DetailModal
+          animalId={modalId}
+          rolUsuario={rolUsuario}
+          onClose={() => setModalId(null)}
+        />
+      )}
     </main>
   );
 }

@@ -9,9 +9,13 @@ import { getToken } from "@/lib/session";
 type Orden = "nombre-asc" | "nombre-desc" | "edad-asc" | "edad-desc";
 
 function calcularEdad(fechaNacimiento: string): number {
-  const nac = new Date(fechaNacimiento);
+  // Parsear manualmente para evitar problemas de timezone con new Date("YYYY-MM-DD")
+  const [y, m, d] = fechaNacimiento.split("-").map(Number);
+  if (!y || !m || !d) return 0;
   const hoy = new Date();
-  return hoy.getFullYear() - nac.getFullYear();
+  let edad = hoy.getFullYear() - y;
+  if (hoy.getMonth() + 1 < m || (hoy.getMonth() + 1 === m && hoy.getDate() < d)) edad--;
+  return edad;
 }
 
 function emoji(especie: string) {
@@ -122,7 +126,7 @@ export default function MisMascotasPage() {
               <Search size={16} className="text-base-content/40" />
               <input
                 type="text"
-                placeholder="Buscar por nombre o raza..."
+                placeholder="Buscar por nombre"
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
                 className="grow"
@@ -218,7 +222,7 @@ export default function MisMascotasPage() {
                       {m.especie}{m.raza ? ` · ${m.raza}` : ""} · {m.sexo === "MACHO" ? "Macho" : "Hembra"}
                     </p>
                     <p className="text-xs text-base-content/40 mt-0.5">
-                      {edad} {edad === 1 ? "ano" : "anos"}
+                      {edad} {edad === 1 ? "año" : "años"}
                     </p>
 
                     <div className="flex flex-wrap gap-2 mt-4">

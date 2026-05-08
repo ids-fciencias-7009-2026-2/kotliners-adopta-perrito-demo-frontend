@@ -71,16 +71,44 @@ export default function RegistroPage() {
 
   /** Actualiza el campo del formulario y limpia su error. */
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-    setErrors((prev) => ({ ...prev, [e.target.name]: "" }));
+    const { name, value } = e.target;
+    // CURP siempre en mayusculas
+    const finalValue = name === "curp" ? value.toUpperCase() : value;
+    setForm((prev) => ({ ...prev, [name]: finalValue }));
+    setErrors((prev) => ({ ...prev, [name]: "" }));
   }
 
   /** Valida todos los campos del formulario. Retorna true si son validos. */
   function validate(): boolean {
     const newErrors: Record<string, string> = {};
     if (!form.nombres.trim()) newErrors.nombres = "Obligatorio.";
-    if (!form.curp.trim()) newErrors.curp = "Obligatorio.";
-    else if (!form.curp.match(/^[A-Z0-9]{18}$/)) newErrors.curp = "CURP no valida (18 caracteres).";
+
+    // Validacion CURP — formato oficial mexicano
+    const curpRegex = /^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/;
+    if (!form.curp.trim()) {
+      newErrors.curp = "Obligatorio.";
+    } else if (!curpRegex.test(form.curp)) {
+      newErrors.curp = "CURP no valida. Formato: 4 letras, 6 digitos de fecha, H/M, 5 letras, 1 alfanumerico, 1 digito.";
+    } else {
+      // Extraer fecha de nacimiento del CURP (posiciones 4-9: AAMMDD)
+      const anio = parseInt(form.curp.substring(4, 6), 10);
+      const mes = parseInt(form.curp.substring(6, 8), 10);
+      const dia = parseInt(form.curp.substring(8, 10), 10);
+      // Determinar siglo: si anio <= anio actual (2 digitos) asumimos 2000s, sino 1900s
+      const anioActual2d = new Date().getFullYear() % 100;
+      const anioCompleto = anio <= anioActual2d ? 2000 + anio : 1900 + anio;
+      const fechaNac = new Date(anioCompleto, mes - 1, dia);
+      const hoy = new Date();
+      let edad = hoy.getFullYear() - fechaNac.getFullYear();
+      if (hoy.getMonth() < fechaNac.getMonth() ||
+          (hoy.getMonth() === fechaNac.getMonth() && hoy.getDate() < fechaNac.getDate())) {
+        edad--;
+      }
+      if (edad < 18) {
+        newErrors.curp = "Debes ser mayor de 18 anos para registrarte.";
+      }
+    }
+
     if (!form.username.trim()) newErrors.username = "Obligatorio.";
     if (!form.apellidoPaterno.trim()) newErrors.apellidoPaterno = "Obligatorio.";
     if (!form.apellidoMaterno.trim()) newErrors.apellidoMaterno = "Obligatorio.";

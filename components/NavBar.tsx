@@ -101,7 +101,7 @@ export default function NavBar() {
 
       {/* Acciones derecha */}
       <div className="navbar-end gap-2">
-        {usuario && (
+        {usuario?.username && (
           <span className="hidden sm:block text-sm text-base-content/60">
             @{usuario.username}
           </span>

@@ -6,6 +6,7 @@ import { publicarAnimal, type CreateAnimalPayload } from "@/lib/apiClient";
 import { getToken } from "@/lib/session";
 import { ROUTES } from "@/lib/routes";
 import ErrorMessage from "@/components/ErrorMessage";
+import DatePicker from "@/components/DatePicker";
 import { PawPrint, Send } from "lucide-react";
 
 /** Pagina para que un cuidador publique un nuevo animal. Ruta protegida: /publicar */
@@ -133,16 +134,18 @@ export default function PublicarPage() {
             </div>
 
             {/* Fecha de nacimiento */}
-            <div className="form-control">
-              <label className="label" htmlFor="fechaNacimiento">
-                <span className="label-text">Fecha de nacimiento <span className="text-error">*</span></span>
-              </label>
-              <input
-                id="fechaNacimiento" name="fechaNacimiento" type="date"
-                value={form.fechaNacimiento} onChange={handleChange}
-                className={`input input-bordered w-full ${errors.fechaNacimiento ? "input-error" : ""}`}
+            <div className="sm:col-span-2 relative">
+              <DatePicker
+                label="Fecha de nacimiento"
+                value={form.fechaNacimiento}
+                onChange={(v) => {
+                  setForm((prev) => ({ ...prev, fechaNacimiento: v }));
+                  setErrors((prev) => ({ ...prev, fechaNacimiento: "" }));
+                }}
+                max={new Date().toISOString().split("T")[0]}
+                error={errors.fechaNacimiento}
+                required
               />
-              {errors.fechaNacimiento && <span className="label-text-alt text-error mt-1">{errors.fechaNacimiento}</span>}
             </div>
 
             {/* Sexo */}
@@ -168,7 +171,7 @@ export default function PublicarPage() {
               <textarea
                 id="descripcion" name="descripcion"
                 value={form.descripcion} onChange={handleChange}
-                placeholder="Cuentanos sobre la mascota: su personalidad, cuidados especiales, etc."
+                placeholder="Cuent sobre la mascota: su personalidad, cuidados especiales, etc."
                 rows={3}
                 className={`textarea textarea-bordered w-full ${errors.descripcion ? "textarea-error" : ""}`}
               />

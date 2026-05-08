@@ -1,80 +1,55 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import BotonInteres from "@/components/BotonInteres";
-import { listarAnimales, type AnimalResponse } from "@/lib/apiClient";
-import { getToken } from "@/lib/session";
-import { Search, SlidersHorizontal, MapPin, PawPrint, X } from "lucide-react";
+import { useState } from "react";
+import AnimalCard from "@/components/AnimalCard";
+import { useAnimalList } from "@/hooks/useAnimalData";
+import { Search, SlidersHorizontal, MapPin, PawPrint, X, Expand } from "lucide-react";
 
-// Pins mock posicionados en % del contenedor — se actualizan cuando haya coordenadas reales
 const PIN_POSITIONS: Record<string, { x: number; y: number }> = {};
-let pinCounter = 0;
 function getPinPosition(id: string) {
   if (!PIN_POSITIONS[id]) {
-    // Distribuir pins de forma pseudo-aleatoria pero estable por ID
     const hash = id.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
-    PIN_POSITIONS[id] = {
-      x: 20 + (hash % 60),
-      y: 20 + ((hash * 7) % 55),
-    };
+    PIN_POSITIONS[id] = { x: 20 + (hash % 60), y: 20 + ((hash * 7) % 55) };
   }
   return PIN_POSITIONS[id];
 }
 
-function calcularEdad(fechaNacimiento: string): number {
-  const nac = new Date(fechaNacimiento);
+function calcularEdad(fechaNacimiento: string) {
+  const [y, m, d] = fechaNacimiento.split("-").map(Number);
+  if (!y || !m || !d) return 0;
   const hoy = new Date();
-  return hoy.getFullYear() - nac.getFullYear();
+  let edad = hoy.getFullYear() - y;
+  if (hoy.getMonth() + 1 < m || (hoy.getMonth() + 1 === m && hoy.getDate() < d)) edad--;
+  return edad;
+}
+
+function emojiEspecie(especie: string) {
+  return especie.toLowerCase().includes("gato") || especie.toLowerCase().includes("cat") ? "🐱" : "🐶";
 }
 
 /** Pagina de exploracion de mascotas. Ruta protegida: /explorar */
 export default function ExplorarPage() {
-  const [animales, setAnimales] = useState<AnimalResponse[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { animals: animales, interes, loading, error, rol: rolUsuario } = useAnimalList();
 
   const [busqueda, setBusqueda] = useState("");
   const [filtroEspecie, setFiltroEspecie] = useState("TODOS");
   const [filtroSexo, setFiltroSexo] = useState("TODOS");
   const [filtroEstatus, setFiltroEstatus] = useState("DISPONIBLE");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [modalId, setModalId] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
-
-  const stored = typeof window !== "undefined"
-    ? JSON.parse(sessionStorage.getItem("usuario") || "{}")
-    : {};
-  const rolUsuario: string | undefined = stored.rol;
-
-  useEffect(() => {
-    async function fetchAnimales() {
-      const token = getToken() ?? undefined;
-      const result = await listarAnimales(token);
-      if (result.ok) {
-        setAnimales(result.data);
-      } else {
-        setError("No se pudieron cargar los animales.");
-      }
-      setLoading(false);
-    }
-    fetchAnimales();
-  }, []);
 
   const filtrados = animales.filter((a) => {
     const matchBusqueda =
       a.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
       (a.raza ?? "").toLowerCase().includes(busqueda.toLowerCase());
-    const matchEspecie = filtroEspecie === "TODOS" ||
-      a.especie.toUpperCase() === filtroEspecie;
+    const matchEspecie = filtroEspecie === "TODOS" || a.especie.toUpperCase() === filtroEspecie;
     const matchSexo = filtroSexo === "TODOS" || a.sexo === filtroSexo;
     const matchEstatus = filtroEstatus === "TODOS" || a.estatus === filtroEstatus;
     return matchBusqueda && matchEspecie && matchSexo && matchEstatus;
   });
 
   const selected = selectedId ? animales.find((a) => a.id === selectedId) : null;
-
-  const emoji = (especie: string) =>
-    especie.toLowerCase().includes("gato") || especie.toLowerCase().includes("cat")
-      ? "🐱" : "🐶";
 
   return (
     <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-base-200">
@@ -157,15 +132,15 @@ export default function ExplorarPage() {
             </div>
           ) : (
             filtrados.map((animal) => (
-              <button
+              <div
                 key={animal.id}
-                onClick={() => setSelectedId(animal.id === selectedId ? null : animal.id)}
-                className={`w-full text-left flex gap-4 p-4 border-b border-base-200 transition hover:bg-base-200 ${
+                className={`flex gap-4 p-4 border-b border-base-200 transition hover:bg-base-200 cursor-pointer ${
                   selectedId === animal.id ? "bg-primary/10 border-l-4 border-l-primary" : ""
                 }`}
+                onClick={() => setSelectedId(animal.id === selectedId ? null : animal.id)}
               >
                 <div className="w-16 h-16 rounded-box bg-base-300 flex items-center justify-center text-3xl shrink-0">
-                  {emoji(animal.especie)}
+                  {emojiEspecie(animal.especie)}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
@@ -181,32 +156,43 @@ export default function ExplorarPage() {
                     {calcularEdad(animal.fechaNacimiento)} {calcularEdad(animal.fechaNacimiento) === 1 ? "ano" : "anos"}
                   </p>
                 </div>
-              </button>
+                {/* Boton expandir */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); setModalId(animal.id); }}
+                  className="btn btn-ghost btn-xs btn-square self-center shrink-0"
+                  title="Ver detalle completo"
+                >
+                  <Expand size={14} />
+                </button>
+              </div>
             ))
           )}
         </div>
 
-        {/* Detalle de mascota seleccionada */}
+        {/* Preview de mascota seleccionada — click en expandir abre modal */}
         {selected && (
           <div className="border-t border-base-200 p-4 bg-base-100 shadow-inner">
             <div className="flex justify-between items-start mb-3">
-              <div>
+              <div className="flex-1 min-w-0">
                 <h3 className="font-bold text-lg">{selected.nombre}</h3>
                 <p className="text-sm text-base-content/60">
                   {selected.especie}{selected.raza ? ` · ${selected.raza}` : ""} · {calcularEdad(selected.fechaNacimiento)} anos
                 </p>
                 <p className="text-xs text-base-content/50 mt-1 line-clamp-2">{selected.descripcion}</p>
               </div>
-              <button onClick={() => setSelectedId(null)} className="btn btn-ghost btn-xs btn-square">
-                <X size={14} />
-              </button>
+              <div className="flex gap-1 shrink-0 ml-2">
+                <button
+                  onClick={() => setModalId(selected.id)}
+                  className="btn btn-ghost btn-xs gap-1"
+                  title="Ver detalle completo"
+                >
+                  <Expand size={14} /> Ver mas
+                </button>
+                <button onClick={() => setSelectedId(null)} className="btn btn-ghost btn-xs btn-square">
+                  <X size={14} />
+                </button>
+              </div>
             </div>
-            <BotonInteres
-              animalId={selected.id}
-              tieneInteres={false}
-              estatus={selected.estatus}
-              rolUsuario={rolUsuario}
-            />
           </div>
         )}
       </div>
@@ -218,8 +204,6 @@ export default function ExplorarPage() {
             backgroundImage: "repeating-linear-gradient(0deg, #888 0, #888 1px, transparent 1px, transparent 40px), repeating-linear-gradient(90deg, #888 0, #888 1px, transparent 1px, transparent 40px)",
           }}
         />
-
-        {/* Pins de animales reales */}
         {filtrados.map((animal) => {
           const pos = getPinPosition(animal.id);
           const isSelected = selectedId === animal.id;
@@ -244,13 +228,20 @@ export default function ExplorarPage() {
             </button>
           );
         })}
-
         <div className="text-center text-base-content/30 select-none pointer-events-none">
           <MapPin size={48} className="mx-auto mb-2" />
           <p className="text-sm">Mapa interactivo proximamente</p>
         </div>
       </div>
 
+      {/* Modal de detalle */}
+      {modalId && (
+        <AnimalCard.DetailModal
+          animalId={modalId}
+          rolUsuario={rolUsuario}
+          onClose={() => setModalId(null)}
+        />
+      )}
     </div>
   );
 }
