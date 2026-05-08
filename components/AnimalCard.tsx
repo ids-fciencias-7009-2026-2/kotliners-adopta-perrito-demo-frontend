@@ -5,6 +5,8 @@ import { Pencil, Trash2, CheckCircle, Syringe, AlertTriangle, ChevronLeft, Chevr
 import { useState } from "react";
 import type { AnimalResponse, AnimalDetalleResponse } from "@/lib/apiClient";
 import { useAnimalDetalle } from "@/hooks/useAnimalData";
+import { AdvancedImage } from "@cloudinary/react";
+import { getOptimizedImage } from "@/lib/cloudinary";
 
 // ---------------------------------------------------------------------------
 // Tipos compartidos
@@ -145,6 +147,10 @@ function Compact({ animal, rolUsuario, userId, tieneInteres = false, actions, on
 // AnimalCard.Detail — vista expandida con galeria, vacunas, padecimientos
 // ---------------------------------------------------------------------------
 
+function isCloudinaryUrl(url: string) {
+  return url.includes("cloudinary.com");
+}
+
 function GaleriaFotos({ fotos, nombre, especie }: { fotos: string[]; nombre: string; especie: string }) {
   const [idx, setIdx] = useState(0);
 
@@ -156,9 +162,19 @@ function GaleriaFotos({ fotos, nombre, especie }: { fotos: string[]; nombre: str
     );
   }
 
+  const fotoActual = fotos[idx];
+
   return (
     <div className="relative h-72 bg-base-300 rounded-t-box overflow-hidden">
-      <img src={fotos[idx]} alt={`${nombre} foto ${idx + 1}`} className="w-full h-full object-cover" />
+      {isCloudinaryUrl(fotoActual) ? (
+        <AdvancedImage
+          cldImg={getOptimizedImage(fotoActual, 600, 288)}
+          className="w-full h-full object-cover"
+          alt={`${nombre} foto ${idx + 1}`}
+        />
+      ) : (
+        <img src={fotoActual} alt={`${nombre} foto ${idx + 1}`} className="w-full h-full object-cover" />
+      )}
       {fotos.length > 1 && (
         <>
           <button
