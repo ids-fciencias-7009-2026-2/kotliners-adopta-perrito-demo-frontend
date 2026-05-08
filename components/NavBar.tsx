@@ -7,6 +7,8 @@ import { logoutUsuario } from "@/lib/apiClient";
 import { getToken, removeToken } from "@/lib/session";
 import { ROUTES } from "@/lib/routes";
 import { PawPrint, Heart, LogOut, User, Menu, Search, Dog, Plus } from "lucide-react";
+import { AdvancedImage } from "@cloudinary/react";
+import { getOptimizedImage } from "@/lib/cloudinary";
 
 /** Barra de navegacion principal. Solo visible en rutas protegidas. */
 export default function NavBar() {
@@ -111,7 +113,15 @@ export default function NavBar() {
           <div className="avatar">
             <div className="w-7 rounded-full ring ring-primary ring-offset-base-100 ring-offset-1">
               {usuario?.fotoPerfil ? (
-                <img src={usuario.fotoPerfil} alt="Foto de perfil" />
+                usuario.fotoPerfil.includes("cloudinary.com") ? (
+                  <AdvancedImage
+                    cldImg={getOptimizedImage(usuario.fotoPerfil, 28, 28)}
+                    alt="Foto de perfil"
+                    className="w-full h-full object-cover rounded-full"
+                  />
+                ) : (
+                  <img src={usuario.fotoPerfil} alt="Foto de perfil" />
+                )
               ) : (
                 <div className="bg-base-200 flex items-center justify-center w-full h-full">
                   <User size={16} className="text-base-content/50" />

@@ -1,106 +1,52 @@
-## Adopta perrito - Frontend
+# Colitas Felices — Frontend
 
-Este es un proyecto frontend desarrollado con [Next.js](https://nextjs.org), inicializado usando [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app). Forma parte de una arquitectura separada donde el frontend consume una API REST del backend.
+Frontend de la plataforma de adopcion de mascotas. Construido con Next.js 16, Tailwind CSS v3 y daisyUI 4.
 
-## Tecnología utilizada
+## Requisitos
 
-- Next.js 
-- React
-- TypeScript
-- Tailwind CSS + DaisyUI
-- Axios (comunicación con el backend)
-- Node (Para ejecutar el proyecto y manejar dependencias)
-- Next/font (de vercel y maneja fuentes de forma optimizada)
+- Node.js 20+
+- npm 10+
 
-## Requisitos previos
-- Node.js >= 18
-- npm, yarn, pnpm o bun
-- PostgreSQL
-
-## Instalación de dependencias y ejecución 
-
-1. Clonar el repositorio:
-   ```bash
-    git clone git@github.com:ids-fciencias-7009-2026-2/kotliners-adopta-perrito-demo-frontend.git
-    cd kotliners-adopta-perrito-demo-frontend
-    ```
-2. Instalar dependencias:
-   Con npm
-    ```bash
-    npm install
-    ```
-    Con yarn
-   ```bash
-    yarn install
-   ```
-    Con pnpm
-   ```bash
-    pnpm install
-   ```
-    Con bun
-   ```bash
-    bun install
-    ```
-
-    Instalación de PostgreSQL:
-   Para Linux:
-   ```bash
-   sudo apt update
-   sudo apt install postgresql postgresql-contrib
-   ```
-   Para MacOs:
-   ```bash
-    brew install postgresql
-    brew services start postgresql
-   ```
-   Para Windows:
-   1) Descargar instalador en: [PostgreSQL](https://www.postgresql.org/download/windows/)
-   2) Descargar el instalador de EnterpriseDB
-   3) Ejecutar instalación
-
-3. Ejecutar el servidor de desarrollo:
+## Instalacion
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-4. Abrir en el navegador: 
-
-```bash
-http://localhost:3000
-```
-
-Se puede editar la aplicación modificando el archivo `app/page.tsx`, la página se actualizará automáticamente conforme se hagan cambios.
-
-Para ejecutar el script de SQL: 
-
-```bash
-psql -U <usuario> -d postgres -f database/schema.sql
+npm install
 ```
 
 ## Variables de entorno
 
-Crea un archivo `.env.local` en la raíz del proyecto:
+Crea un archivo `.env.local` en la raiz del proyecto:
 
-```
+```env
 NEXT_PUBLIC_API_URL=http://localhost:8080
 ```
 
-## Vistas disponibles
+## Desarrollo
 
-| Ruta | Descripción |
-|------|-------------|
-| `/login` | Inicio de sesión |
-| `/registro` | Registro de nuevo usuario |
-| `/home` | Pantalla principal (requiere autenticación) |
-| `/perfil` | Información y edición del usuario autenticado (requiere autenticación) |
+```bash
+npm run dev
+```
 
-## Autenticación
+La app estara disponible en `http://localhost:3000`.
 
-El token de sesión se almacena en `sessionStorage`. Las vistas protegidas redirigen a `/login` si no hay token válido.
+## Dependencias principales
+
+| Paquete | Version | Uso |
+|---------|---------|-----|
+| next | 16.2.1 | Framework |
+| react | 19.2.4 | UI |
+| tailwindcss | ^3.4.4 | Estilos |
+| daisyui | 4.12.24 | Componentes UI |
+| lucide-react | ^1.7.0 | Iconos |
+| cally | 0.9.2 | Calendario (web component) |
+| react-day-picker | 8.10.2 | Calendario alternativo |
+| @cloudinary/react | 1.14.4 | Imagenes optimizadas |
+| @cloudinary/url-gen | 1.22.0 | Transformaciones Cloudinary |
+| axios | ^1.15.0 | HTTP client |
+| zxcvbn | 4.4.2 | Validacion de contrasenas |
+
+## Notas importantes
+
+- **Tailwind v3** — usa `postcss.config.js` con `tailwindcss: {}`. NO usar `@tailwindcss/postcss` (eso es v4).
+- **daisyUI 4** — compatible con Tailwind v3. NO usar daisyUI 5 (requiere Tailwind v4).
+- El tema activo es `cupcake` — configurado en `tailwind.config.js` y `app/layout.tsx`.
