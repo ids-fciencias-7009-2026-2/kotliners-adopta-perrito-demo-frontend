@@ -39,7 +39,6 @@ export default function FavoritosPage() {
     const token = getToken();
     if (!token) { router.replace(ROUTES.LOGIN); return; }
 
-    // Confirmacion antes de eliminar
     if (!window.confirm(`Quitar a ${nombre} de tus favoritos?`)) return;
 
     setRemovingId(animalId);
@@ -47,7 +46,13 @@ export default function FavoritosPage() {
     if (res.ok) {
       setAnimales((prev) => prev.filter((a) => a.animalId !== animalId));
     } else {
-      setError(res.error);
+      const errorLower = res.error.toLowerCase();
+      if (errorLower.includes("animal no encontrado") || errorLower.includes("not found")) {
+        // El animal ya no existe — quitarlo de la lista local
+        setAnimales((prev) => prev.filter((a) => a.animalId !== animalId));
+      } else {
+        setError(res.error);
+      }
     }
     setRemovingId(null);
   }
