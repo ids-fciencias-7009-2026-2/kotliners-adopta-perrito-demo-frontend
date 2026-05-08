@@ -341,6 +341,24 @@ export interface CreateAnimalPayload {
   esterilizado: boolean;
 }
 
+/** Payload para PUT /api/animales/{id} */
+export interface UpdateAnimalPayload {
+  nombre: string;
+  especie: string;
+  raza?: string;
+  fechaNacimiento: string;
+  sexo: "MACHO" | "HEMBRA";
+  descripcion: string;
+  estatus: "DISPONIBLE" | "ADOPTADO";
+  inapropiado: boolean;
+  esterilizado: boolean;
+}
+
+/** Payload para DELETE /api/animales */
+export interface DeleteAnimalPayload {
+  animalId: string;
+}
+
 /**
  * Obtiene los animales del cuidador autenticado.
  * Endpoint: GET /api/animales/me
@@ -412,6 +430,47 @@ export async function obtenerAnimal(
       headers: buildHeaders(token),
     });
     return handleResponse<AnimalDetalleResponse>(response);
+  } catch {
+    return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
+  }
+}
+
+/**
+ * Actualiza un animal existente.
+ * Endpoint: PUT /api/animales/{id}
+ */
+export async function actualizarAnimal(
+  token: string,
+  id: string,
+  body: UpdateAnimalPayload
+): Promise<ApiResult<AnimalResponse>> {
+  try {
+    const response = await fetch(`${BASE_URL}/api/animales/${id}`, {
+      method: "PUT",
+      headers: buildHeaders(token),
+      body: JSON.stringify(body),
+    });
+    return handleResponse<AnimalResponse>(response);
+  } catch {
+    return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
+  }
+}
+
+/**
+ * Elimina un animal por ID.
+ * Endpoint: DELETE /api/animales
+ */
+export async function eliminarAnimal(
+  token: string,
+  body: DeleteAnimalPayload
+): Promise<ApiResult<string>> {
+  try {
+    const response = await fetch(`${BASE_URL}/api/animales`, {
+      method: "DELETE",
+      headers: buildHeaders(token),
+      body: JSON.stringify(body),
+    });
+    return handleResponse<string>(response);
   } catch {
     return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
   }

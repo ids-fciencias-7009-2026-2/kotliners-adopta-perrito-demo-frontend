@@ -1,10 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Pencil, Trash2, CheckCircle, Search, SlidersHorizontal, Plus, PawPrint, X } from "lucide-react";
+import { Search, SlidersHorizontal, Plus, PawPrint, X } from "lucide-react";
 import Link from "next/link";
-import { listarMisAnimales, type AnimalResponse } from "@/lib/apiClient";
+import AnimalCard from "@/components/AnimalCard";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import { eliminarAnimal, listarMisAnimales, type AnimalResponse } from "@/lib/apiClient";
 import { getToken } from "@/lib/session";
+import { useRouter } from "next/navigation";
+import { ROUTES } from "@/lib/routes";
 
 type Orden = "nombre-asc" | "nombre-desc" | "edad-asc" | "edad-desc";
 
@@ -18,13 +22,9 @@ function calcularEdad(fechaNacimiento: string): number {
   return edad;
 }
 
-function emoji(especie: string) {
-  return especie.toLowerCase().includes("gato") || especie.toLowerCase().includes("cat")
-    ? "🐱" : "🐶";
-}
-
 /** Pagina de gestion de mascotas del cuidador. Ruta protegida: /mis-mascotas */
 export default function MisMascotasPage() {
+  const router = useRouter();
   const [mascotas, setMascotas] = useState<AnimalResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +35,15 @@ export default function MisMascotasPage() {
   const [filtroSexo, setFiltroSexo] = useState("TODOS");
   const [orden, setOrden] = useState<Orden>("nombre-asc");
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const rol = typeof window !== "undefined"
+    ? JSON.parse(sessionStorage.getItem("usuario") || "{}").rol as string | undefined
+    : undefined;
+  const userId: string | undefined = typeof window !== "undefined"
+    ? JSON.parse(sessionStorage.getItem("usuario") || "{}").id as string | undefined
+    : undefined;
 
   useEffect(() => {
     const token = getToken();
@@ -51,6 +59,42 @@ export default function MisMascotasPage() {
       setLoading(false);
     });
   }, []);
+
+  function removeMascotaFromList(id: string) {
+    setMascotas((prev) => prev.filter((m) => m.id !== id));
+  }
+
+  function updateMascotaInList(updatedAnimal: AnimalResponse) {
+    setMascotas((prev) => prev.map((m) => (m.id === updatedAnimal.id ? updatedAnimal : m)));
+  }
+
+  function handleDeleteAnimal(id: string) {
+    setPendingDeleteId(id);
+  }
+
+  async function confirmDeleteAnimal() {
+    if (!pendingDeleteId) return;
+    const token = getToken();
+    if (!token) {
+      setPendingDeleteId(null);
+      return;
+    }
+
+    setDeleting(true);
+    const result = await eliminarAnimal(token, { animalId: pendingDeleteId });
+    setDeleting(false);
+
+    if (result.ok) {
+      removeMascotaFromList(pendingDeleteId);
+      setPendingDeleteId(null);
+    } else {
+      setError("No se pudo eliminar la mascota.");
+    }
+  }
+
+  function handleEditAnimal(id: string) {
+    router.push(`${ROUTES.PUBLICAR}?edit=${id}`);
+  }
 
   const filtradas = mascotas
     .filter((m) => {
@@ -69,23 +113,6 @@ export default function MisMascotasPage() {
       if (orden === "edad-desc") return calcularEdad(b.fechaNacimiento) - calcularEdad(a.fechaNacimiento);
       return 0;
     });
-
-  /** Elimina una mascota llamando al backend */
-  async function eliminar(id: string) {
-    const token = getToken();
-    if (!token) return;
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"}/api/animales`, {
-      method: "DELETE",
-      headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ animalId: id }),
-    });
-    if (res.ok) {
-      setMascotas((prev) => prev.filter((m) => m.id !== id));
-    } else {
-      setError("No se pudo eliminar la mascota.");
-    }
-    setConfirmDeleteId(null);
-  }
 
   const disponibles = mascotas.filter((m) => m.estatus === "DISPONIBLE").length;
   const adoptados = mascotas.filter((m) => m.estatus === "ADOPTADO").length;
@@ -197,77 +224,35 @@ export default function MisMascotasPage() {
         ) : (
           <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filtradas.map((m) => {
-              const esAdoptado = m.estatus === "ADOPTADO";
-              const edad = calcularEdad(m.fechaNacimiento);
               return (
-                <div
+                <AnimalCard.Compact
                   key={m.id}
-                  className={`rounded-box overflow-hidden shadow-xl transition-all duration-300 ${
-                    esAdoptado ? "bg-base-200 opacity-70 grayscale" : "bg-base-100 hover:-translate-y-1 hover:shadow-primary/40"
-                  }`}
-                >
-                  <div className="h-44 bg-base-300 flex items-center justify-center text-5xl relative">
-                    {emoji(m.especie)}
-                    <span className={`absolute top-2 right-2 badge badge-sm ${esAdoptado ? "badge-neutral" : "badge-success"}`}>
-                      {esAdoptado ? "Adoptado" : "Disponible"}
-                    </span>
-                    {m.esterilizado && (
-                      <span className="absolute top-2 left-2 badge badge-sm badge-info">Esterilizado</span>
-                    )}
-                  </div>
-
-                  <div className="p-4">
-                    <h3 className="font-bold text-lg">{m.nombre}</h3>
-                    <p className="text-sm text-base-content/60 mt-0.5">
-                      {m.especie}{m.raza ? ` · ${m.raza}` : ""} · {m.sexo === "MACHO" ? "Macho" : "Hembra"}
-                    </p>
-                    <p className="text-xs text-base-content/40 mt-0.5">
-                      {edad} {edad === 1 ? "año" : "años"}
-                    </p>
-
-                    <div className="flex flex-wrap gap-2 mt-4">
-                      <button className="btn btn-sm btn-outline gap-1" disabled title="Proximamente">
-                        <Pencil size={13} /> Editar
-                      </button>
-                      <button
-                        className={`btn btn-sm gap-1 ${esAdoptado ? "btn-outline" : "btn-success"}`}
-                        disabled
-                        title="Proximamente"
-                      >
-                        <CheckCircle size={13} />
-                        {esAdoptado ? "Desmarcar" : "Adoptado"}
-                      </button>
-                      <button
-                        onClick={() => setConfirmDeleteId(m.id)}
-                        className="btn btn-sm btn-error btn-outline gap-1"
-                      >
-                        <Trash2 size={13} /> Eliminar
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                  animal={m}
+                  rolUsuario={rol}
+                  userId={userId}
+                  onDeleted={(id) => removeMascotaFromList(id)}
+                  onUpdated={updateMascotaInList}
+                  actions={{
+                    //onEdit: handleEditAnimal,
+                    onDelete: handleDeleteAnimal,
+                  }}
+                />
               );
             })}
           </div>
         )}
       </div>
 
-      {/* Modal de confirmacion */}
-      {confirmDeleteId && (
-        <div className="modal modal-open">
-          <div className="modal-box">
-            <h3 className="font-bold text-lg">Confirmar eliminacion</h3>
-            <p className="py-4 text-base-content/70">
-              Esta accion no se puede deshacer. La mascota sera eliminada permanentemente.
-            </p>
-            <div className="modal-action">
-              <button onClick={() => setConfirmDeleteId(null)} className="btn btn-ghost">Cancelar</button>
-              <button onClick={() => eliminar(confirmDeleteId)} className="btn btn-error">Eliminar</button>
-            </div>
-          </div>
-          <div className="modal-backdrop" onClick={() => setConfirmDeleteId(null)} />
-        </div>
-      )}
+      <ConfirmDialog
+        open={pendingDeleteId !== null}
+        title="Eliminar mascota"
+        message="Eliminar esta mascota permanentemente?"
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        loading={deleting}
+        onCancel={() => setPendingDeleteId(null)}
+        onConfirm={confirmDeleteAnimal}
+      />
     </main>
   );
 }
