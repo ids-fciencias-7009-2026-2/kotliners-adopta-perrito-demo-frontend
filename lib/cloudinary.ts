@@ -1,6 +1,7 @@
 import { Cloudinary } from "@cloudinary/url-gen";
-import { auto } from "@cloudinary/url-gen/actions/resize";
-import { autoGravity } from "@cloudinary/url-gen/qualifiers/gravity";
+import { fill } from "@cloudinary/url-gen/actions/resize";
+import { focusOn } from "@cloudinary/url-gen/qualifiers/gravity";
+import { face } from "@cloudinary/url-gen/qualifiers/focusOn";
 
 /** Instancia de Cloudinary configurada con el cloud name del proyecto. */
 export const cld = new Cloudinary({
@@ -9,14 +10,13 @@ export const cld = new Cloudinary({
 
 /**
  * Genera una imagen optimizada de Cloudinary a partir de una URL completa.
- * Extrae el public_id de la URL y aplica auto-format, auto-quality y resize.
+ * Usa fill + face gravity para fotos de perfil — centra en la cara sin cortes raros.
  *
- * @param url URL completa de Cloudinary (ej: https://res.cloudinary.com/dhrsbftoc/image/upload/v123/colitas/perfiles/abc.jpg)
+ * @param url URL completa de Cloudinary
  * @param width Ancho deseado (default 400)
  * @param height Alto deseado (default 400)
  */
 export function getOptimizedImage(url: string, width = 400, height = 400) {
-  // Extraer el public_id de la URL de Cloudinary
   const match = url.match(/\/upload\/(?:v\d+\/)?(.+)$/);
   const publicId = match ? match[1].replace(/\.[^/.]+$/, "") : url;
 
@@ -24,5 +24,5 @@ export function getOptimizedImage(url: string, width = 400, height = 400) {
     .image(publicId)
     .format("auto")
     .quality("auto")
-    .resize(auto().gravity(autoGravity()).width(width).height(height));
+    .resize(fill().width(width).height(height).gravity(focusOn(face())));
 }

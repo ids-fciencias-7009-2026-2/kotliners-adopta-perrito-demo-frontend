@@ -5,8 +5,7 @@ import { actualizarPerfil, obtenerPerfil, subirFotoPerfil, Usuario } from "@/lib
 import { getToken } from "@/lib/session";
 import { ROUTES } from "@/lib/routes";
 import { User, Pencil, X, Save, Upload } from "lucide-react";
-import { AdvancedImage } from "@cloudinary/react";
-import { getOptimizedImage } from "@/lib/cloudinary";
+import AvatarCircle from "@/components/AvatarCircle";
 
 /** Tipo del formulario de perfil — fotoPerfil puede ser string o null. */
 type FormPerfil = Omit<Usuario, "fotoPerfil"> & { fotoPerfil: string | null };
@@ -126,25 +125,7 @@ export default function PerfilPage() {
 
             {/* Avatar */}
             <div className="flex justify-center">
-              <div className="avatar">
-                <div className="w-24 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
-                  {form.fotoPerfil ? (
-                    form.fotoPerfil.includes("cloudinary.com") ? (
-                      <AdvancedImage
-                        cldImg={getOptimizedImage(form.fotoPerfil, 96, 96)}
-                        alt="Foto de perfil"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <img src={form.fotoPerfil} alt="Foto de perfil" />
-                    )
-                  ) : (
-                    <div className="bg-base-200 flex items-center justify-center w-full h-full">
-                      <User size={40} className="text-base-content/30" />
-                    </div>
-                  )}
-                </div>
-              </div>
+              <AvatarCircle fotoPerfil={form.fotoPerfil} nombre={form.nombres} size={24} />
             </div>
 
             {/* Formulario */}

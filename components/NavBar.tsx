@@ -9,6 +9,7 @@ import { ROUTES } from "@/lib/routes";
 import { PawPrint, Heart, LogOut, User, Menu, Search, Dog, Plus } from "lucide-react";
 import { AdvancedImage } from "@cloudinary/react";
 import { getOptimizedImage } from "@/lib/cloudinary";
+import AvatarCircle from "@/components/AvatarCircle";
 
 /** Barra de navegacion principal. Solo visible en rutas protegidas. */
 export default function NavBar() {
@@ -110,25 +111,11 @@ export default function NavBar() {
         )}
 
         <Link href={ROUTES.PROFILE} className="btn btn-ghost btn-sm gap-1 px-2">
-          <div className="avatar">
-            <div className="w-7 rounded-full ring ring-primary ring-offset-base-100 ring-offset-1">
-              {usuario?.fotoPerfil ? (
-                usuario.fotoPerfil.includes("cloudinary.com") ? (
-                  <AdvancedImage
-                    cldImg={getOptimizedImage(usuario.fotoPerfil, 28, 28)}
-                    alt="Foto de perfil"
-                    className="w-full h-full object-cover rounded-full"
-                  />
-                ) : (
-                  <img src={usuario.fotoPerfil} alt="Foto de perfil" />
-                )
-              ) : (
-                <div className="bg-base-200 flex items-center justify-center w-full h-full">
-                  <User size={16} className="text-base-content/50" />
-                </div>
-              )}
-            </div>
-          </div>
+          <AvatarCircle
+            fotoPerfil={usuario?.fotoPerfil}
+            nombre={usuario?.nombres}
+            size={7}
+          />
           <span className="hidden sm:inline">Perfil</span>
         </Link>
 
