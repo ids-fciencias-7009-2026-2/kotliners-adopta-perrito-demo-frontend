@@ -1,17 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { actualizarPerfil, obtenerPerfil, Usuario } from "@/lib/apiClient";
+import { actualizarPerfil, obtenerPerfil, subirFotoPerfil, Usuario } from "@/lib/apiClient";
 import { getToken } from "@/lib/session";
 import { ROUTES } from "@/lib/routes";
-import { User, Pencil, X, Save } from "lucide-react";
+import { User, Pencil, X, Save, Upload } from "lucide-react";
+
+/** Tipo del formulario de perfil — fotoPerfil puede ser string o null. */
+type FormPerfil = Omit<Usuario, "fotoPerfil"> & { fotoPerfil: string | null };
 
 /** Pagina de perfil del usuario autenticado. Ruta protegida: /profile */
 export default function PerfilPage() {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
-  const [form, setForm] = useState<Usuario & { fotoPerfil?: string } | null>(null);
+  const [form, setForm] = useState<FormPerfil | null>(null);
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -20,23 +24,44 @@ export default function PerfilPage() {
     const token = getToken();
     if (!token) { window.location.href = ROUTES.LOGIN; return; }
     obtenerPerfil(token).then((res) => {
-      if (!res.ok) return; // El evento session:expired se encarga de redirigir
+      if (!res.ok) return;
       sessionStorage.setItem("usuario", JSON.stringify(res.data));
       setUsuario(res.data);
-      setForm(res.data);
+      setForm({ ...res.data, fotoPerfil: res.data.fotoPerfil ?? null });
     });
   }, []);
 
   /** Actualiza el campo del formulario y limpia mensajes de estado. */
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (!form) return;
     setForm({ ...form, [e.target.name]: e.target.value });
     setError(null);
     setSuccess(null);
   }
 
+  /** Sube una imagen de perfil al backend y actualiza la URL en el formulario. */
+  async function handleFotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !form) return;
+    const token = getToken();
+    if (!token) return;
+    setUploadingPhoto(true);
+    setError(null);
+    const res = await subirFotoPerfil(token, file);
+    if (res.ok) {
+      setForm({ ...form, fotoPerfil: res.data.url });
+      setSuccess("Foto lista. Guarda los cambios para aplicarla.");
+      setTimeout(() => setSuccess(null), 3000);
+    } else {
+      setError(res.error);
+    }
+    setUploadingPhoto(false);
+  }
+
   /** Envia los cambios al backend y actualiza sessionStorage. */
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!form) return;
     setError(null);
     setSuccess(null);
     setLoading(true);
@@ -49,15 +74,12 @@ export default function PerfilPage() {
         apellidoMaterno: form.apellidoMaterno,
         email: form.email,
         codigoPostal: form.codigoPostal,
-        fotoPerfil: form.fotoPerfil || null,
+        fotoPerfil: form.fotoPerfil ?? undefined,
       });
-      if (!res.ok) {
-        setError(res.error);
-        return;
-      }
+      if (!res.ok) { setError(res.error); return; }
       sessionStorage.setItem("usuario", JSON.stringify(res.data));
       setUsuario(res.data);
-      setForm(res.data);
+      setForm({ ...res.data, fotoPerfil: res.data.fotoPerfil ?? null });
       setSuccess("Perfil actualizado correctamente");
       setEditing(false);
       setTimeout(() => setSuccess(null), 3000);
@@ -68,7 +90,7 @@ export default function PerfilPage() {
     }
   }
 
-  if (!form) {
+  if (!form || !usuario) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <span className="loading loading-spinner loading-lg text-primary" />
@@ -97,16 +119,8 @@ export default function PerfilPage() {
             </div>
 
             {/* Alertas */}
-            {error && (
-              <div role="alert" className="alert alert-error">
-                <span>{error}</span>
-              </div>
-            )}
-            {success && (
-              <div role="alert" className="alert alert-success">
-                <span>{success}</span>
-              </div>
-            )}
+            {error && <div role="alert" className="alert alert-error"><span>{error}</span></div>}
+            {success && <div role="alert" className="alert alert-success"><span>{success}</span></div>}
 
             {/* Avatar */}
             <div className="flex justify-center">
@@ -128,12 +142,25 @@ export default function PerfilPage() {
 
               {editing && (
                 <div className="form-control">
-                  <label className="label"><span className="label-text">Foto (URL)</span></label>
-                  <input name="fotoPerfil" value={form.fotoPerfil || ""} onChange={handleChange} className="input input-bordered w-full" placeholder="https://..." />
+                  <label className="label"><span className="label-text">Foto de perfil</span></label>
+                  <label className="btn btn-outline btn-sm gap-2 cursor-pointer w-fit">
+                    {uploadingPhoto
+                      ? <span className="loading loading-spinner loading-xs" />
+                      : <><Upload size={16} /> Subir imagen</>}
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      onChange={handleFotoUpload}
+                      disabled={uploadingPhoto}
+                    />
+                  </label>
+                  <label className="label">
+                    <span className="label-text-alt text-base-content/50">JPG, PNG o WebP, max 5MB</span>
+                  </label>
                 </div>
               )}
 
-              {/* Tabla de datos en modo vista */}
               {!editing ? (
                 <div className="overflow-x-auto">
                   <table className="table table-zebra">
@@ -149,21 +176,14 @@ export default function PerfilPage() {
                   </table>
                 </div>
               ) : (
-                /* Campos editables */
                 <>
-                  {[
-                    { label: "Nombre(s)", name: "nombres" },
-                    { label: "Apellido paterno", name: "apellidoPaterno" },
-                    { label: "Apellido materno", name: "apellidoMaterno" },
-                    { label: "Correo", name: "email", type: "email" },
-                    { label: "Codigo postal", name: "codigoPostal" },
-                  ].map(({ label, name, type = "text" }) => (
+                  {(["nombres", "apellidoPaterno", "apellidoMaterno", "email", "codigoPostal"] as const).map((name) => (
                     <div key={name} className="form-control">
-                      <label className="label"><span className="label-text">{label}</span></label>
+                      <label className="label"><span className="label-text">{name}</span></label>
                       <input
                         name={name}
-                        type={type}
-                        value={form[name] || ""}
+                        type={name === "email" ? "email" : "text"}
+                        value={form[name] ?? ""}
                         onChange={handleChange}
                         className="input input-bordered w-full"
                       />
