@@ -233,7 +233,7 @@ export default function MisMascotasPage() {
                   onDeleted={(id) => removeMascotaFromList(id)}
                   onUpdated={updateMascotaInList}
                   actions={{
-                    onEdit: handleEditAnimal,
+                    //onEdit: handleEditAnimal,
                     onDelete: handleDeleteAnimal,
                   }}
                 />
