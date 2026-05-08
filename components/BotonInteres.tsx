@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { manifestarInteres, eliminarInteres } from "@/lib/apiClient";
 import { getToken } from "@/lib/session";
-import { Heart } from "lucide-react";
+import { Heart, AlertCircle } from "lucide-react";
 
 /** Props del componente BotonInteres. */
 interface BotonInteresProps {
@@ -11,26 +11,51 @@ interface BotonInteresProps {
   animalId: string;
   /** Indica si el usuario ya tiene interes registrado en este animal. */
   tieneInteres: boolean;
+  /** Estatus actual del animal. Si es ADOPTADO, el boton se deshabilita. */
+  estatus?: string;
+  /** Rol del usuario autenticado. Si es CUIDADOR, el boton no se muestra. */
+  rolUsuario?: string;
 }
 
 /**
  * Boton de interes para un animal.
- * Alterna entre "Me interesa" y "En favoritos" llamando al backend.
- * Redirige al login si la sesion expira.
+ * - Solo visible para usuarios con rol ADOPTANTE.
+ * - Deshabilitado si el animal esta ADOPTADO o ya no existe.
+ * - Alterna entre "Me interesa" y "En favoritos" llamando al backend.
  */
-export default function BotonInteres({ animalId, tieneInteres: initialInteres }: BotonInteresProps) {
-  const router = useRouter();
+export default function BotonInteres({
+  animalId,
+  tieneInteres: initialInteres,
+  estatus,
+  rolUsuario,
+}: BotonInteresProps) {
   const [tieneInteres, setTieneInteres] = useState(initialInteres);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [animalNoDisponible, setAnimalNoDisponible] = useState(
+    estatus === "ADOPTADO"
+  );
+
+  // Los cuidadores no pueden dar like
+  if (rolUsuario === "CUIDADOR") return null;
+
+  // Animal adoptado o eliminado — mostrar estado informativo
+  if (animalNoDisponible) {
+    return (
+      <div className="flex items-center gap-2 text-base-content/50 text-sm">
+        <AlertCircle size={16} className="text-warning" />
+        <span>Animal no disponible</span>
+      </div>
+    );
+  }
 
   /**
    * Registra o elimina el interes del usuario en el animal.
-   * Si el token expira, el evento session:expired se encarga de redirigir.
+   * Detecta cuando el animal fue adoptado o eliminado y actualiza el estado.
    */
   async function handleClick() {
     const token = getToken();
-    if (!token) return; // El evento session:expired redirige si no hay token
+    if (!token) return;
 
     setLoading(true);
     setError(null);
@@ -42,7 +67,18 @@ export default function BotonInteres({ animalId, tieneInteres: initialInteres }:
     if (res.ok) {
       setTieneInteres(!tieneInteres);
     } else {
-      setError(res.error);
+      const msg = res.error.toLowerCase();
+      if (msg.includes("animal no encontrado") || msg.includes("not found") ||
+          msg.includes("adoptado") || msg.includes("no esta disponible")) {
+        // Animal eliminado o adoptado — deshabilitar el boton
+        setAnimalNoDisponible(true);
+      } else if (msg.includes("ya manifestaste")) {
+        // Sincronizar estado si el backend dice que ya existe el interes
+        setTieneInteres(true);
+        setError(null);
+      } else {
+        setError(res.error);
+      }
     }
     setLoading(false);
   }
@@ -64,7 +100,12 @@ export default function BotonInteres({ animalId, tieneInteres: initialInteres }:
           </>
         )}
       </button>
-      {error && <p className="text-error text-xs">{error}</p>}
+      {error && (
+        <div className="flex items-center gap-1 text-error text-xs">
+          <AlertCircle size={12} />
+          <span>{error}</span>
+        </div>
+      )}
     </div>
   );
 }
