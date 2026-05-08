@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Pencil, Trash2, CheckCircle, Search, SlidersHorizontal, Plus, PawPrint, X } from "lucide-react";
+import Link from "next/link";
 
 // ---------------------------------------------------------------------------
 // Datos mock — reemplazar con GET /api/animales/me cuando este disponible
@@ -81,10 +82,10 @@ export default function MisMascotasPage() {
             </p>
           </div>
           {/* TODO: habilitar cuando este disponible POST /api/animales */}
-          <button className="btn btn-primary gap-2" disabled title="Proximamente">
+          <Link href="/publicar" className="btn btn-primary gap-2">
             <Plus size={18} />
             Agregar mascota
-          </button>
+          </Link>
         </div>
 
         {/* Barra de busqueda y filtros */}

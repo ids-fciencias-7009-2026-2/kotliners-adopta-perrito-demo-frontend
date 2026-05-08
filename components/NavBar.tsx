@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { logoutUsuario } from "@/lib/apiClient";
 import { getToken, removeToken } from "@/lib/session";
 import { ROUTES } from "@/lib/routes";
-import { PawPrint, Heart, LogOut, User, Menu, Search, Dog } from "lucide-react";
+import { PawPrint, Heart, LogOut, User, Menu, Search, Dog, Plus } from "lucide-react";
 
 /** Barra de navegacion principal. Solo visible en rutas protegidas. */
 export default function NavBar() {
@@ -58,12 +58,20 @@ export default function NavBar() {
         <ul className="menu menu-horizontal px-1 gap-1">
           <li><Link href={ROUTES.HOME}>Inicio</Link></li>
           {rol === "CUIDADOR" ? (
-            <li>
-              <Link href={ROUTES.MIS_MASCOTAS} className="gap-1">
-                <Dog size={16} />
-                Mis mascotas
-              </Link>
-            </li>
+            <>
+              <li>
+                <Link href={ROUTES.MIS_MASCOTAS} className="gap-1">
+                  <Dog size={16} />
+                  Mis mascotas
+                </Link>
+              </li>
+              <li>
+                <Link href={ROUTES.PUBLICAR} className="gap-1">
+                  <Plus size={16} />
+                  Publicar
+                </Link>
+              </li>
+            </>
           ) : (
             <>
               <li>
@@ -119,7 +127,10 @@ export default function NavBar() {
           <ul tabIndex={0} className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
             <li><Link href={ROUTES.HOME}>Inicio</Link></li>
             {rol === "CUIDADOR" ? (
-              <li><Link href={ROUTES.MIS_MASCOTAS}>Mis mascotas</Link></li>
+              <>
+                <li><Link href={ROUTES.MIS_MASCOTAS}>Mis mascotas</Link></li>
+                <li><Link href={ROUTES.PUBLICAR}>Publicar</Link></li>
+              </>
             ) : (
               <>
                 <li><Link href={ROUTES.EXPLORAR}>Explorar</Link></li>

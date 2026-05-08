@@ -7,6 +7,7 @@ export const ROUTES = {
     FAVORITOS: "/favoritos",
     EXPLORAR: "/explorar",
     MIS_MASCOTAS: "/mis-mascotas",
+    PUBLICAR: "/publicar",
 } as const;
 
 /** Rutas publicas accesibles sin autenticacion. */
@@ -22,4 +23,5 @@ export const PROTECTED_ROUTES = [
     ROUTES.FAVORITOS,
     ROUTES.EXPLORAR,
     ROUTES.MIS_MASCOTAS,
+    ROUTES.PUBLICAR,
 ];

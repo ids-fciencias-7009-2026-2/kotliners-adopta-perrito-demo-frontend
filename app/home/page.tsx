@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import PetList from "@/components/PetList";
 import MapView from "@/components/MapView";
-import { PawPrint, MapPin, Zap, Heart, Plus, Dog, ClipboardList, Bell, Star } from "lucide-react";
+import { PawPrint, MapPin, Zap, Heart, Dog, ClipboardList, Bell, Star } from "lucide-react";
+import Link from "next/link";
 
 const beneficiosAdoptante = [
   {
@@ -148,8 +149,7 @@ function HomeCuidador({ nombre }: { nombre: string }) {
           </h2>
           <a href="/mis-mascotas" className="btn btn-outline btn-primary btn-sm gap-2">
             Ver todas
-          </a>
-        </div>
+          </a>        </div>
         <PetList />
       </section>
 
