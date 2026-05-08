@@ -63,6 +63,30 @@ export interface ActualizarPerfilPayload {
   fotoPerfil?: string;
 }
 
+/** Datos normalizados de un animal usado por las vistas del frontend. */
+export interface Animal {
+  id: string;
+  nombre: string;
+  especie: string;
+  raza: string | null;
+  fechaNacimiento: string | null;
+  sexo: string | null;
+  descripcion: string | null;
+  estatus: string | null;
+  esterilizado: boolean;
+  codigoPostal: string | null;
+  imagenUrl: string | null;
+  duenoId: string | null;
+  duenoNombre: string | null;
+  tieneInteres: boolean;
+  fechaRegistro: string | null;
+  updatedAt: string | null;
+  inapropiado: boolean;
+  esDueno: boolean;
+  puedeEditar: boolean;
+  puedeEliminar: boolean;
+}
+
 // ---------------------------------------------------------------------------
 // Utilidades internas
 // ---------------------------------------------------------------------------
@@ -79,6 +103,84 @@ export function buildHeaders(token?: string): Record<string, string> {
     headers["Authorization"] = `Bearer ${token}`;
   }
   return headers;
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function firstValue(source: Record<string, unknown>, keys: string[]): unknown {
+  for (const key of keys) {
+    if (source[key] !== undefined && source[key] !== null) return source[key];
+  }
+  return null;
+}
+
+function stringOrNull(value: unknown): string | null {
+  if (value === undefined || value === null) return null;
+  const text = String(value).trim();
+  return text.length > 0 ? text : null;
+}
+
+function booleanValue(value: unknown): boolean {
+  return value === true || value === "true";
+}
+
+function animalPayload(value: unknown): unknown {
+  const record = asRecord(value);
+  return firstValue(record, ["animal", "data", "detalle"]) ?? value;
+}
+
+function animalArrayPayload(value: unknown): unknown[] {
+  if (Array.isArray(value)) return value;
+  const record = asRecord(value);
+  const nested = firstValue(record, ["animals", "animales", "content", "data"]);
+  return nested && nested !== value ? animalArrayPayload(nested) : [];
+}
+
+/** Compara IDs aunque el backend los envie como number o string. */
+export function sameId(left: unknown, right: unknown): boolean {
+  const normalizedLeft = stringOrNull(left);
+  const normalizedRight = stringOrNull(right);
+  return !!normalizedLeft && !!normalizedRight && normalizedLeft === normalizedRight;
+}
+
+/** Convierte respuestas del backend a una forma estable para la UI. */
+export function normalizarAnimal(raw: unknown): Animal {
+  const source = asRecord(animalPayload(raw));
+  const dueno = asRecord(firstValue(source, ["dueno", "owner", "cuidador"]));
+  const duenoId = stringOrNull(firstValue(source, ["duenoId", "ownerId", "cuidadorId", "usuarioId"]))
+    ?? stringOrNull(firstValue(dueno, ["id", "usuarioId"]));
+  const duenoNombre = stringOrNull(firstValue(source, ["duenoNombre", "ownerName", "cuidadorNombre"]))
+    ?? stringOrNull(firstValue(dueno, ["username", "nombre", "nombres", "email"]));
+  const esDueno = booleanValue(firstValue(source, ["esDueno", "isOwner"]));
+  const puedeEditar = firstValue(source, ["puedeEditar", "canEdit"]);
+  const puedeEliminar = firstValue(source, ["puedeEliminar", "canDelete"]);
+
+  return {
+    id: stringOrNull(firstValue(source, ["id", "animalId"])) ?? "",
+    nombre: stringOrNull(firstValue(source, ["nombre", "name"])) ?? "Animal sin nombre",
+    especie: stringOrNull(firstValue(source, ["especie", "species", "tipo", "type"])) ?? "Animal",
+    raza: stringOrNull(firstValue(source, ["raza", "breed"])),
+    fechaNacimiento: stringOrNull(firstValue(source, ["fechaNacimiento", "birthDate", "dateOfBirth"])),
+    sexo: stringOrNull(firstValue(source, ["sexo", "sex", "genero", "gender"])),
+    descripcion: stringOrNull(firstValue(source, ["descripcion", "description"])),
+    estatus: stringOrNull(firstValue(source, ["estatus", "status"])),
+    esterilizado: booleanValue(firstValue(source, ["esterilizado", "sterilized"])),
+    codigoPostal: stringOrNull(firstValue(source, ["codigoPostal", "zip", "zipCode", "postalCode"])),
+    imagenUrl: stringOrNull(firstValue(source, ["imagenUrl", "imageUrl", "fotoUrl", "photoUrl", "imagen", "image"])),
+    duenoId,
+    duenoNombre,
+    tieneInteres: booleanValue(firstValue(source, ["tieneInteres", "hasInterest", "interesado"])),
+    fechaRegistro: stringOrNull(firstValue(source, ["fechaRegistro", "createdAt", "created_at"])),
+    updatedAt: stringOrNull(firstValue(source, ["updatedAt", "updated_at", "fechaActualizacion"])),
+    inapropiado: booleanValue(firstValue(source, ["inapropiado", "inappropriate"])),
+    esDueno,
+    puedeEditar: puedeEditar === null ? esDueno : booleanValue(puedeEditar),
+    puedeEliminar: puedeEliminar === null ? esDueno : booleanValue(puedeEliminar),
+  };
 }
 
 /**
@@ -191,6 +293,54 @@ export async function actualizarPerfil(token: string, body: ActualizarPerfilPayl
       body: JSON.stringify(body),
     });
     return handleResponse<Usuario>(response);
+  } catch {
+    return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Endpoints de animales
+// ---------------------------------------------------------------------------
+
+/**
+ * Obtiene la lista de animales desde el backend.
+ * Endpoint: GET /animals
+ * @param token - Token de autenticacion activo.
+ */
+export async function listarAnimales(token: string): Promise<ApiResult<Animal[]>> {
+  try {
+    const response = await fetch(`${BASE_URL}/animals`, {
+      method: "GET",
+      headers: buildHeaders(token),
+    });
+    const result = await handleResponse<unknown>(response);
+    if (!result.ok) return result;
+    return {
+      ok: true,
+      data: animalArrayPayload(result.data)
+        .map(normalizarAnimal)
+        .filter((animal) => animal.id.length > 0),
+    };
+  } catch {
+    return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
+  }
+}
+
+/**
+ * Obtiene el detalle de un animal.
+ * Endpoint: GET /animals/{id}
+ * @param token - Token de autenticacion activo.
+ * @param animalId - ID del animal a consultar.
+ */
+export async function obtenerAnimalPorId(token: string, animalId: string): Promise<ApiResult<Animal>> {
+  try {
+    const response = await fetch(`${BASE_URL}/animals/${encodeURIComponent(animalId)}`, {
+      method: "GET",
+      headers: buildHeaders(token),
+    });
+    const result = await handleResponse<unknown>(response);
+    if (!result.ok) return result;
+    return { ok: true, data: normalizarAnimal(result.data) };
   } catch {
     return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
   }

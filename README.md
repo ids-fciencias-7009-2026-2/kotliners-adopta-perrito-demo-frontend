@@ -99,8 +99,16 @@ NEXT_PUBLIC_API_URL=http://localhost:8080
 | `/login` | Inicio de sesión |
 | `/registro` | Registro de nuevo usuario |
 | `/home` | Pantalla principal (requiere autenticación) |
-| `/perfil` | Información y edición del usuario autenticado (requiere autenticación) |
+| `/profile` | Información y edición del usuario autenticado (requiere autenticación) |
+| `/animals/[id]` | Detalle de un animal consultado desde el backend con token (requiere autenticación) |
 
 ## Autenticación
 
 El token de sesión se almacena en `sessionStorage`. Las vistas protegidas redirigen a `/login` si no hay token válido.
+
+## Iteración 3
+
+- Se agrego el cliente HTTP autenticado para `GET /animals/{id}`.
+- Se agrego la vista protegida `/animals/[id]` para consultar el detalle de un animal.
+- La lista de mascotas ya no usa datos mock; consume `GET /animals` con `Authorization`.
+- El caso de uso esta documentado en [`docs/cu-ver-detalle-animal.md`](docs/cu-ver-detalle-animal.md).

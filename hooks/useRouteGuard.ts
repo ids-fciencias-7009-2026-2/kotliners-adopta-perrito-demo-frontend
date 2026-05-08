@@ -62,6 +62,7 @@ export function useRouteGuard(): boolean {
                 if (!res.ok) {
                     handleSessionExpired();
                 } else {
+                    sessionStorage.setItem("usuario", JSON.stringify(res.data));
                     lastValidatedPath.current = pathname;
                     setChecking(false);
                 }

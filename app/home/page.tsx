@@ -50,7 +50,7 @@ export default function HomePage() {
       </section>
 
       {/* MAPA */}
-      <section className="max-w-screen-2xl mx-auto px-6 py-16">
+      <section id="mapa" className="max-w-screen-2xl mx-auto px-6 py-16">
         <h2 className="text-3xl font-semibold mb-6 text-center text-primary">
           Mascotas cerca de ti 📍
         </h2>
@@ -60,7 +60,7 @@ export default function HomePage() {
       </section>
 
       {/* LISTA */}
-      <section className="max-w-screen-2xl mx-auto px-6 pb-16">
+      <section id="mascotas" className="max-w-screen-2xl mx-auto px-6 pb-16">
         <h2 className="text-3xl font-semibold mb-10 text-center text-primary">
           Explorar mascotas 🐶🐱
         </h2>

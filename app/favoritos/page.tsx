@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { listarIntereses, eliminarInteres, AnimalInteresResponse } from "@/lib/apiClient";
 import { getToken } from "@/lib/session";
 import { ROUTES } from "@/lib/routes";
 import ErrorMessage from "@/components/ErrorMessage";
-import { Heart, PawPrint, Trash2 } from "lucide-react";
+import { Eye, Heart, PawPrint, Trash2 } from "lucide-react";
 
 /**
  * Vista "Mis favoritos" — muestra los animales en los que el usuario autenticado
@@ -107,6 +108,12 @@ export default function FavoritosPage() {
                     Interes registrado: {new Date(animal.fechaInteres).toLocaleDateString("es-MX")}
                   </p>
                   <div className="card-actions justify-end mt-4">
+                    <Link
+                      href={ROUTES.ANIMAL_DETAIL(animal.animalId)}
+                      className="btn btn-primary btn-sm gap-1"
+                    >
+                      <Eye size={16} /> Detalle
+                    </Link>
                     <button
                       onClick={() => handleEliminar(animal.animalId, animal.nombre)}
                       disabled={removingId === animal.animalId}
