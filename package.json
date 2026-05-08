@@ -10,8 +10,8 @@
     "test": "jest --runInBand"
   },
   "dependencies": {
-    "@cloudinary/react": "1.14.4",
-    "@cloudinary/url-gen": "1.22.0",
+    "@cloudinary/react": "^1.14.4",
+    "@cloudinary/url-gen": "^1.22.0",
     "@radix-ui/react-slot": "^1.2.4",
     "@types/zxcvbn": "4.4.5",
     "axios": "^1.15.0",
