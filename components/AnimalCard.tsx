@@ -1,12 +1,20 @@
 "use client";
 
 import BotonInteres from "./BotonInteres";
+import ConfirmDialog from "./ConfirmDialog";
 import { Pencil, Trash2, CheckCircle, Syringe, AlertTriangle, ChevronLeft, ChevronRight, X, Expand } from "lucide-react";
 import { useState } from "react";
-import type { AnimalResponse, AnimalDetalleResponse } from "@/lib/apiClient";
+import { 
+  eliminarAnimal,
+    actualizarAnimal, 
+    type AnimalResponse, 
+    type AnimalDetalleResponse, 
+    type UpdateAnimalPayload 
+} from "@/lib/apiClient";
 import { useAnimalDetalle } from "@/hooks/useAnimalData";
 import { AdvancedImage } from "@cloudinary/react";
 import { getOptimizedImage } from "@/lib/cloudinary";
+import { getToken } from "@/lib/session";
 
 // ---------------------------------------------------------------------------
 // Tipos compartidos
@@ -25,6 +33,8 @@ interface BaseProps {
   actions?: AnimalCardActions;
   /** Callback llamado cuando el animal es eliminado exitosamente. */
   onDeleted?: (id: string) => void;
+  /** Callback llamado cuando el animal cambia y la tarjeta debe refrescarse. */
+  onUpdated?: (animal: AnimalResponse) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -34,6 +44,12 @@ interface BaseProps {
 function emojiEspecie(especie: string) {
   return especie.toLowerCase().includes("gato") || especie.toLowerCase().includes("cat")
     ? "🐱" : "🐶";
+}
+
+function normalizarEspecie(especie: string) {
+  const valor = especie.toLowerCase();
+  if (valor.includes("gato") || valor.includes("cat")) return "Gato";
+  return "Perro";
 }
 
 function calcularEdad(fechaNacimiento: string) {
@@ -49,10 +65,11 @@ function calcularEdad(fechaNacimiento: string) {
 // AnimalCard.Compact — tarjeta de listado, enlaza al detalle
 // ---------------------------------------------------------------------------
 
-function Compact({ animal, rolUsuario, userId, tieneInteres = false, actions, onDeleted }: BaseProps & { animal: AnimalResponse }) {
-  const esDueno = rolUsuario === "CUIDADOR" && animal.usuarioId === userId;
-  const esAdoptado = animal.estatus === "ADOPTADO";
-  const edad = calcularEdad(animal.fechaNacimiento);
+function Compact({ animal, rolUsuario, userId, tieneInteres = false, actions, onDeleted, onUpdated }: BaseProps & { animal: AnimalResponse }) {
+  const [animalLocal, setAnimalLocal] = useState(animal);
+  const esDueno = rolUsuario === "CUIDADOR" && animalLocal.usuarioId === userId;
+  const esAdoptado = animalLocal.estatus === "ADOPTADO";
+  const edad = calcularEdad(animalLocal.fechaNacimiento);
   const [modalOpen, setModalOpen] = useState(false);
   const [deleted, setDeleted] = useState(false);
 
@@ -68,7 +85,7 @@ function Compact({ animal, rolUsuario, userId, tieneInteres = false, actions, on
       {/* Imagen — click abre modal */}
       <button onClick={() => setModalOpen(true)} className="w-full">
         <div className="h-48 bg-base-300 flex items-center justify-center text-5xl relative">
-          {emojiEspecie(animal.especie)}
+          {emojiEspecie(animalLocal.especie)}
           {esAdoptado && (
             <span className="absolute top-2 right-2 badge badge-neutral">Adoptado</span>
           )}
@@ -79,7 +96,7 @@ function Compact({ animal, rolUsuario, userId, tieneInteres = false, actions, on
         <div className="flex items-start justify-between gap-2">
           <button onClick={() => setModalOpen(true)}>
             <h3 className={`text-xl font-bold hover:text-primary transition-colors text-left ${esAdoptado ? "text-base-content/50" : ""}`}>
-              {animal.nombre}
+              {animalLocal.nombre}
             </h3>
           </button>
           <button
@@ -91,20 +108,20 @@ function Compact({ animal, rolUsuario, userId, tieneInteres = false, actions, on
           </button>
         </div>
         <p className="text-base-content/60 text-sm mt-1">
-          {animal.especie}{animal.raza ? ` · ${animal.raza}` : ""} · {edad} {edad === 1 ? "ano" : "anos"}
+          {animalLocal.especie}{animalLocal.raza ? ` · ${animalLocal.raza}` : ""} · {edad} {edad === 1 ? "ano" : "anos"}
         </p>
 
         <div className="mt-4">
           {esDueno ? (
             <div className="flex flex-wrap gap-2">
               {actions?.onEdit && !esAdoptado && (
-                <button onClick={() => actions.onEdit!(animal.id)} className="btn btn-sm btn-outline gap-1">
+                <button onClick={() => actions.onEdit!(animalLocal.id)} className="btn btn-sm btn-outline gap-1">
                   <Pencil size={14} /> Editar
                 </button>
               )}
               {actions?.onToggleAdoptado && (
                 <button
-                  onClick={() => actions.onToggleAdoptado!(animal.id)}
+                  onClick={() => actions.onToggleAdoptado!(animalLocal.id)}
                   className={`btn btn-sm gap-1 ${esAdoptado ? "btn-outline" : "btn-success"}`}
                 >
                   <CheckCircle size={14} />
@@ -112,17 +129,17 @@ function Compact({ animal, rolUsuario, userId, tieneInteres = false, actions, on
                 </button>
               )}
               {actions?.onDelete && (
-                <button onClick={() => actions.onDelete!(animal.id)} className="btn btn-sm btn-error btn-outline gap-1">
+                <button onClick={() => actions.onDelete!(animalLocal.id)} className="btn btn-sm btn-error btn-outline gap-1">
                   <Trash2 size={14} /> Eliminar
                 </button>
               )}
             </div>
           ) : (
             <BotonInteres
-              animalId={animal.id}
-              nombreAnimal={animal.nombre}
+              animalId={animalLocal.id}
+              nombreAnimal={animalLocal.nombre}
               tieneInteres={tieneInteres}
-              estatus={animal.estatus}
+              estatus={animalLocal.estatus}
               rolUsuario={rolUsuario}
             />
           )}
@@ -132,11 +149,15 @@ function Compact({ animal, rolUsuario, userId, tieneInteres = false, actions, on
 
     {modalOpen && (
       <DetailModal
-        animalId={animal.id}
+        animalId={animalLocal.id}
         rolUsuario={rolUsuario}
         userId={userId}
         onClose={() => setModalOpen(false)}
         onDeleted={(id) => { setDeleted(true); onDeleted?.(id); }}
+        onUpdated={(updatedAnimal) => {
+          setAnimalLocal(updatedAnimal);
+          onUpdated?.(updatedAnimal);
+        }}
       />
     )}
     </>
@@ -202,9 +223,8 @@ function GaleriaFotos({ fotos, nombre, especie }: { fotos: string[]; nombre: str
   );
 }
 
-function Detail({ animal, rolUsuario, userId, tieneInteres = false, actions, onClose }: BaseProps & {
+function Detail({ animal, rolUsuario, userId, tieneInteres = false, actions }: BaseProps & {
   animal: AnimalDetalleResponse;
-  onClose?: () => void;
 }) {
   const esDueno = rolUsuario === "CUIDADOR" && animal.usuarioId === userId;
   const esAdoptado = animal.estatus === "ADOPTADO";
@@ -296,7 +316,7 @@ function Detail({ animal, rolUsuario, userId, tieneInteres = false, actions, onC
             )}
             {actions?.onDelete && (
               <button
-                onClick={() => { actions.onDelete!(animal.id); onClose?.(); }}
+                onClick={() => actions.onDelete!(animal.id)}
                 className="btn btn-error gap-2"
               >
                 <Trash2 size={16} /> Eliminar
@@ -321,42 +341,168 @@ function Detail({ animal, rolUsuario, userId, tieneInteres = false, actions, onC
 // AnimalCard.DetailModal — modal que carga el detalle completo bajo demanda
 // ---------------------------------------------------------------------------
 
-function DetailModal({ animalId, rolUsuario, userId: userIdProp, onClose, onDeleted }: {
+function DetailModal({ animalId, rolUsuario, userId: userIdProp, onClose, onDeleted, onUpdated }: {
   animalId: string;
   rolUsuario?: string;
   userId?: string;
   onClose: () => void;
   onDeleted?: (id: string) => void;
+  onUpdated?: (animal: AnimalResponse) => void;
 }) {
   const { animal, tieneInteres, loading, error } = useAnimalDetalle(animalId);
+  const [animalLocal, setAnimalLocal] = useState<AnimalDetalleResponse | null>(null);
+  const [editMode, setEditMode] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<UpdateAnimalPayload | null>(null);
+  const animalData = animalLocal ?? animal;
 
   const userId = userIdProp ?? (typeof window !== "undefined"
     ? JSON.parse(sessionStorage.getItem("usuario") || "{}").id as string | undefined
     : undefined);
 
-  // Acciones del cuidador — llaman al backend directamente desde el modal
-  const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
-
-  async function handleDelete(id: string) {
-    const token = typeof window !== "undefined" ? sessionStorage.getItem("user_token") : null;
-    if (!token || !window.confirm("Eliminar esta mascota permanentemente?")) return;
-    const res = await fetch(`${BASE_URL}/api/animales`, {
-      method: "DELETE",
-      headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ animalId: id }),
+  function syncFromResponse(updatedAnimal: AnimalResponse) {
+    setAnimalLocal((prev) => {
+      const current = prev ?? animal;
+      if (!current) return prev;
+      return {
+        ...current,
+        nombre: updatedAnimal.nombre,
+        especie: updatedAnimal.especie,
+        raza: updatedAnimal.raza,
+        fechaNacimiento: updatedAnimal.fechaNacimiento,
+        sexo: updatedAnimal.sexo,
+        descripcion: updatedAnimal.descripcion,
+        estatus: updatedAnimal.estatus,
+        esterilizado: updatedAnimal.esterilizado,
+        usuarioId: updatedAnimal.usuarioId,
+        fechaRegistro: updatedAnimal.fechaRegistro,
+      };
     });
-    if (res.ok) onClose();
+    setEditForm((prev) => prev ? {
+      ...prev,
+      nombre: updatedAnimal.nombre,
+      especie: normalizarEspecie(updatedAnimal.especie),
+      raza: updatedAnimal.raza ?? "",
+      fechaNacimiento: updatedAnimal.fechaNacimiento,
+      sexo: updatedAnimal.sexo === "HEMBRA" ? "HEMBRA" : "MACHO",
+      descripcion: updatedAnimal.descripcion,
+      estatus: updatedAnimal.estatus === "ADOPTADO" ? "ADOPTADO" : "DISPONIBLE",
+      esterilizado: updatedAnimal.esterilizado,
+    } : prev);
+  }
+
+  // Acciones del cuidador — llaman al backend a traves de apiClient
+
+  async function confirmDeleteAnimal() {
+    if (!pendingDeleteId) return;
+    const token = getToken();
+    if (!token) {
+      setPendingDeleteId(null);
+      return;
+    }
+    setDeleting(true);
+    const result = await eliminarAnimal(token, { animalId: pendingDeleteId });
+    setDeleting(false);
+    if (result.ok) {
+      onDeleted?.(pendingDeleteId);
+      setPendingDeleteId(null);
+      onClose();
+    } else {
+      setSaveError(result.error);
+    }
+  }
+
+  function handleDelete(id: string) {
+    setPendingDeleteId(id);
+  }
+
+  async function handleSaveEdit() {
+    if (!editForm) return;
+    const token = getToken();
+    if (!token) {
+      setSaveError("Token requerido");
+      return;
+    }
+    if (!editForm.nombre.trim() || !editForm.especie.trim() || !editForm.descripcion.trim()) {
+      setSaveError("Nombre, especie y descripcion son obligatorios.");
+      return;
+    }
+
+    setSaving(true);
+    setSaveError(null);
+    const payload: UpdateAnimalPayload = {
+      ...editForm,
+      raza: editForm.raza?.trim() || undefined,
+    };
+    const result = await actualizarAnimal(token, animalId, payload);
+    setSaving(false);
+
+    if (!result.ok) {
+      setSaveError(result.error);
+      return;
+    }
+
+    onUpdated?.(result.data);
+    syncFromResponse(result.data);
+    setEditMode(false);
   }
 
   async function handleToggleAdoptado(id: string) {
-    // TODO: conectar con endpoint de cambio de estatus cuando este disponible
-    // Por ahora solo cierra el modal
-    onClose();
+    if (!animalData) return;
+    const token = getToken();
+    if (!token) {
+      setSaveError("Token requerido");
+      return;
+    }
+
+    const nextStatus = animalData.estatus === "ADOPTADO" ? "DISPONIBLE" : "ADOPTADO";
+    const payload: UpdateAnimalPayload = {
+      nombre: animalData.nombre,
+      especie: animalData.especie,
+      raza: animalData.raza ?? undefined,
+      fechaNacimiento: animalData.fechaNacimiento,
+      sexo: animalData.sexo === "HEMBRA" ? "HEMBRA" : "MACHO",
+      descripcion: animalData.descripcion,
+      estatus: nextStatus,
+      inapropiado: false,
+      esterilizado: animalData.esterilizado,
+    };
+
+    setSaving(true);
+    setSaveError(null);
+    const result = await actualizarAnimal(token, id, payload);
+    setSaving(false);
+
+    if (!result.ok) {
+      setSaveError(result.error);
+      return;
+    }
+
+    onUpdated?.(result.data);
+    syncFromResponse(result.data);
   }
 
   const actions: AnimalCardActions = {
     onDelete: handleDelete,
-    onEdit: () => onClose(), // TODO: abrir form de edicion
+    onEdit: () => {
+      if (!animalData) return;
+      setEditForm({
+        nombre: animalData.nombre,
+        especie: normalizarEspecie(animalData.especie),
+        raza: animalData.raza ?? "",
+        fechaNacimiento: animalData.fechaNacimiento,
+        sexo: animalData.sexo === "HEMBRA" ? "HEMBRA" : "MACHO",
+        descripcion: animalData.descripcion,
+        estatus: animalData.estatus === "ADOPTADO" ? "ADOPTADO" : "DISPONIBLE",
+        inapropiado: false,
+        esterilizado: animalData.esterilizado,
+      });
+      setSaveError(null);
+      setEditMode(true);
+    },
     onToggleAdoptado: handleToggleAdoptado,
   };
 
@@ -367,17 +513,113 @@ function DetailModal({ animalId, rolUsuario, userId: userIdProp, onClose, onDele
           <div className="flex justify-center items-center h-64">
             <span className="loading loading-spinner loading-lg text-primary" />
           </div>
-        ) : error || !animal ? (
+        ) : error || !animalData ? (
           <div className="p-8 text-center text-error">{error ?? "No se pudo cargar."}</div>
+        ) : editMode && editForm ? (
+          <div className="p-6 space-y-4">
+            <h3 className="text-xl font-bold">Editar mascota</h3>
+            {saveError && (
+              <div role="alert" className="alert alert-error">
+                <span>{saveError}</span>
+              </div>
+            )}
+            <label className="form-control w-full">
+              <span className="label-text">Nombre</span>
+              <input
+                className="input input-bordered w-full"
+                value={editForm.nombre}
+                onChange={(e) => setEditForm((prev) => prev ? { ...prev, nombre: e.target.value } : prev)}
+              />
+            </label>
+            <label className="form-control w-full">
+              <span className="label-text">Especie</span>
+              <select
+                className="select select-bordered w-full"
+                value={editForm.especie}
+                onChange={(e) => setEditForm((prev) => prev ? { ...prev, especie: e.target.value } : prev)}
+              >
+                <option value="Perro">Perro</option>
+                <option value="Gato">Gato</option>
+              </select>
+            </label>
+            <label className="form-control w-full">
+              <span className="label-text">Raza</span>
+              <input
+                className="input input-bordered w-full"
+                value={editForm.raza ?? ""}
+                onChange={(e) => setEditForm((prev) => prev ? { ...prev, raza: e.target.value } : prev)}
+              />
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label className="form-control w-full">
+                <span className="label-text">Fecha de nacimiento</span>
+                <input
+                  type="date"
+                  className="input input-bordered w-full"
+                  value={editForm.fechaNacimiento}
+                  onChange={(e) => setEditForm((prev) => prev ? { ...prev, fechaNacimiento: e.target.value } : prev)}
+                />
+              </label>
+              <label className="form-control w-full">
+                <span className="label-text">Sexo</span>
+                <select
+                  className="select select-bordered w-full"
+                  value={editForm.sexo}
+                  onChange={(e) => setEditForm((prev) => prev ? { ...prev, sexo: e.target.value as "MACHO" | "HEMBRA" } : prev)}
+                >
+                  <option value="MACHO">Macho</option>
+                  <option value="HEMBRA">Hembra</option>
+                </select>
+              </label>
+            </div>
+            <label className="form-control w-full">
+              <span className="label-text">Descripcion</span>
+              <textarea
+                className="textarea textarea-bordered w-full"
+                rows={4}
+                value={editForm.descripcion}
+                onChange={(e) => setEditForm((prev) => prev ? { ...prev, descripcion: e.target.value } : prev)}
+              />
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label className="form-control w-full">
+                <span className="label-text">Estatus</span>
+                <select
+                  className="select select-bordered w-full"
+                  value={editForm.estatus}
+                  onChange={(e) => setEditForm((prev) => prev ? { ...prev, estatus: e.target.value as "DISPONIBLE" | "ADOPTADO" } : prev)}
+                >
+                  <option value="DISPONIBLE">Disponible</option>
+                  <option value="ADOPTADO">Adoptado</option>
+                </select>
+              </label>
+              <label className="label cursor-pointer justify-start gap-3 mt-6">
+                <input
+                  type="checkbox"
+                  className="checkbox"
+                  checked={editForm.esterilizado}
+                  onChange={(e) => setEditForm((prev) => prev ? { ...prev, esterilizado: e.target.checked } : prev)}
+                />
+                <span className="label-text">Esterilizado</span>
+              </label>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button className="btn btn-ghost" onClick={() => setEditMode(false)} disabled={saving}>
+                Cancelar
+              </button>
+              <button className={`btn btn-primary ${saving ? "loading" : ""}`} onClick={handleSaveEdit} disabled={saving}>
+                {saving ? "Guardando" : "Guardar cambios"}
+              </button>
+            </div>
+          </div>
         ) : (
           <div className="overflow-y-auto max-h-[85vh]">
             <Detail
-              animal={animal}
+              animal={animalData}
               rolUsuario={rolUsuario}
               userId={userId}
               tieneInteres={tieneInteres}
               actions={actions}
-              onClose={onClose}
             />
           </div>
         )}
@@ -387,6 +629,16 @@ function DetailModal({ animalId, rolUsuario, userId: userIdProp, onClose, onDele
           </button>
         </div>
       </div>
+      <ConfirmDialog
+        open={pendingDeleteId !== null}
+        title="Eliminar mascota"
+        message="Eliminar esta mascota permanentemente?"
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        loading={deleting}
+        onCancel={() => setPendingDeleteId(null)}
+        onConfirm={confirmDeleteAnimal}
+      />
       <div className="modal-backdrop" onClick={onClose} />
     </div>
   );
@@ -398,4 +650,3 @@ function DetailModal({ animalId, rolUsuario, userId: userIdProp, onClose, onDele
 
 const AnimalCard = { Compact, Detail, DetailModal };
 export default AnimalCard;
-export type { AnimalCardActions };
