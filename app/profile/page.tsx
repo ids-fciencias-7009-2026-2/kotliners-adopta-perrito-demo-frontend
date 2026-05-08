@@ -177,18 +177,27 @@ export default function PerfilPage() {
                 </div>
               ) : (
                 <>
-                  {(["nombres", "apellidoPaterno", "apellidoMaterno", "email", "codigoPostal"] as const).map((name) => (
-                    <div key={name} className="form-control">
-                      <label className="label"><span className="label-text">{name}</span></label>
-                      <input
-                        name={name}
-                        type={name === "email" ? "email" : "text"}
-                        value={form[name] ?? ""}
-                        onChange={handleChange}
-                        className="input input-bordered w-full"
-                      />
-                    </div>
-                  ))}
+                  {(["nombres", "apellidoPaterno", "apellidoMaterno", "email", "codigoPostal"] as const).map((name) => {
+                    const labels: Record<string, string> = {
+                      nombres: "Nombre(s)",
+                      apellidoPaterno: "Apellido paterno",
+                      apellidoMaterno: "Apellido materno",
+                      email: "Correo electronico",
+                      codigoPostal: "Codigo postal",
+                    };
+                    return (
+                      <div key={name} className="form-control">
+                        <label className="label"><span className="label-text">{labels[name]}</span></label>
+                        <input
+                          name={name}
+                          type={name === "email" ? "email" : "text"}
+                          value={form[name] ?? ""}
+                          onChange={handleChange}
+                          className="input input-bordered w-full"
+                        />
+                      </div>
+                    );
+                  })}
                   <button type="submit" disabled={loading} className="btn btn-primary w-full gap-2 mt-2">
                     {loading
                       ? <span className="loading loading-spinner loading-sm" />

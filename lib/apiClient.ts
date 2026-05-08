@@ -21,7 +21,7 @@ export type Rol = "ADOPTANTE" | "CUIDADOR";
 
 /** Datos del usuario devueltos por GET /usuarios/me */
 export interface Usuario {
-  id: number | null;
+  id: string | null;
   curp: string;
   username: string;
   rol: Rol;
