@@ -12,17 +12,28 @@ import { ROUTES } from "@/lib/routes";
 
 type Orden = "nombre-asc" | "nombre-desc" | "edad-asc" | "edad-desc";
 
-function calcularEdad(fechaNacimiento: string): number {
-  // Parsear manualmente para evitar problemas de timezone con new Date("YYYY-MM-DD")
+function calcularEdad(fechaNacimiento: string): string {
+  const [y, m, d] = fechaNacimiento.split("-").map(Number);
+  if (!y || !m || !d) return "Edad desconocida";
+  const hoy = new Date();
+  const nacimiento = new Date(y, m - 1, d);
+  let anos = hoy.getFullYear() - nacimiento.getFullYear();
+  let meses = hoy.getMonth() - nacimiento.getMonth();
+  if (hoy.getDate() < nacimiento.getDate()) meses--;
+  if (meses < 0) { anos--; meses += 12; }
+  if (anos < 0) return "Recien nacido";
+  if (anos === 0 && meses <= 0) return "Recien nacido";
+  if (anos === 0) return meses === 1 ? "1 mes" : `${meses} meses`;
+  if (meses === 0) return anos === 1 ? "1 ano" : `${anos} años`;
+  return `${anos} ${anos === 1 ? "año" : "años"} y ${meses} ${meses === 1 ? "mes" : "meses"}`;
+}
+
+function calcularEdadMeses(fechaNacimiento: string): number {
   const [y, m, d] = fechaNacimiento.split("-").map(Number);
   if (!y || !m || !d) return 0;
   const hoy = new Date();
-  let edad = hoy.getFullYear() - y;
-  if (hoy.getMonth() + 1 < m || (hoy.getMonth() + 1 === m && hoy.getDate() < d)) edad--;
-  return edad;
+  return (hoy.getFullYear() - y) * 12 + (hoy.getMonth() + 1 - m);
 }
-
-/** Pagina de gestion de mascotas del cuidador. Ruta protegida: /mis-mascotas */
 export default function MisMascotasPage() {
   const router = useRouter();
   const [mascotas, setMascotas] = useState<AnimalResponse[]>([]);
@@ -109,8 +120,8 @@ export default function MisMascotasPage() {
     .sort((a, b) => {
       if (orden === "nombre-asc") return a.nombre.localeCompare(b.nombre);
       if (orden === "nombre-desc") return b.nombre.localeCompare(a.nombre);
-      if (orden === "edad-asc") return calcularEdad(a.fechaNacimiento) - calcularEdad(b.fechaNacimiento);
-      if (orden === "edad-desc") return calcularEdad(b.fechaNacimiento) - calcularEdad(a.fechaNacimiento);
+      if (orden === "edad-asc") return calcularEdadMeses(a.fechaNacimiento) - calcularEdadMeses(b.fechaNacimiento);
+      if (orden === "edad-desc") return calcularEdadMeses(b.fechaNacimiento) - calcularEdadMeses(a.fechaNacimiento);
       return 0;
     });
 

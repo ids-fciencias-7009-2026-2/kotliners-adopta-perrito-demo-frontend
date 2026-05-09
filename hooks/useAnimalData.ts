@@ -4,17 +4,12 @@ import { useEffect, useState } from "react";
 import { listarAnimales, listarIntereses, obtenerAnimal, type AnimalResponse, type AnimalDetalleResponse } from "@/lib/apiClient";
 import { getToken } from "@/lib/session";
 
-/** Estado compartido de intereses del usuario actual. */
 export interface InteresState {
-  /** IDs de animales en los que el usuario ya manifesto interes. */
   ids: Set<string>;
-  /** Agrega un ID al set local (optimistic update). */
   add: (id: string) => void;
-  /** Elimina un ID del set local (optimistic update). */
   remove: (id: string) => void;
 }
 
-/** Hook para cargar la lista de animales + intereses del usuario en paralelo. */
 export function useAnimalList() {
   const [animals, setAnimals] = useState<AnimalResponse[]>([]);
   const [interesIds, setInteresIds] = useState<Set<string>>(new Set());
@@ -35,9 +30,7 @@ export function useAnimalList() {
     ]).then(([animalesRes, interesesRes]) => {
       if (animalesRes.ok) setAnimals(animalesRes.data);
       else setError("No se pudieron cargar los animales.");
-      if (interesesRes.ok) {
-        setInteresIds(new Set(interesesRes.data.map((i) => i.animalId)));
-      }
+      if (interesesRes.ok) setInteresIds(new Set(interesesRes.data.map((i) => i.animalId)));
       setLoading(false);
     });
   }, []);
@@ -48,7 +41,6 @@ export function useAnimalList() {
     remove: (id) => setInteresIds((prev) => { const s = new Set(prev); s.delete(id); return s; }),
   };
 
-  /** Elimina un animal de la lista local sin recargar desde el backend. */
   function removeAnimal(id: string) {
     setAnimals((prev) => prev.filter((a) => a.id !== id));
   }
@@ -56,7 +48,6 @@ export function useAnimalList() {
   return { animals, interes, removeAnimal, loading, error, rol };
 }
 
-/** Hook para cargar el detalle de un animal + si el usuario ya tiene interes. */
 export function useAnimalDetalle(id: string) {
   const [animal, setAnimal] = useState<AnimalDetalleResponse | null>(null);
   const [tieneInteres, setTieneInteres] = useState(false);
@@ -78,16 +69,123 @@ export function useAnimalDetalle(id: string) {
     ]).then(([animalRes, interesesRes]) => {
       if (animalRes.ok) setAnimal(animalRes.data);
       else setError("No se pudo cargar la informacion del animal.");
-      if (interesesRes.ok) {
-        setTieneInteres(interesesRes.data.some((i) => i.animalId === id));
-      }
+      if (interesesRes.ok) setTieneInteres(interesesRes.data.some((i) => i.animalId === id));
       setLoading(false);
     });
   }, [id]);
 
-  function onInteresChange(tiene: boolean) {
-    setTieneInteres(tiene);
+  return { animal, tieneInteres, loading, error, rol };
+}
+
+/** Hook que encapsula las acciones del cuidador sobre un animal. */
+export function useAnimalActions(
+  animalId: string,
+  animalData: AnimalDetalleResponse | null,
+  callbacks: {
+    onDeleted?: (id: string) => void;
+    onUpdated?: (animal: AnimalResponse, fullData?: AnimalDetalleResponse) => void;
+  }
+) {
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  async function confirmDelete() {
+    if (!pendingDeleteId) return;
+    const token = getToken();
+    if (!token) { setPendingDeleteId(null); return; }
+    setDeleting(true);
+    const { eliminarAnimal } = await import("@/lib/apiClient");
+    const result = await eliminarAnimal(token, { animalId: pendingDeleteId });
+    setDeleting(false);
+    if (result.ok) {
+      callbacks.onDeleted?.(pendingDeleteId);
+      setPendingDeleteId(null);
+    } else {
+      setSaveError(result.error);
+    }
   }
 
-  return { animal, tieneInteres, onInteresChange, loading, error, rol };
+  async function handleToggleAdoptado(id: string) {
+    if (!animalData) return;
+    const token = getToken();
+    if (!token) { setSaveError("Token requerido"); return; }
+    const nextStatus = animalData.estatus === "ADOPTADO" ? "DISPONIBLE" : "ADOPTADO";
+    const { actualizarAnimal } = await import("@/lib/apiClient");
+    setSaving(true);
+    setSaveError(null);
+    const result = await actualizarAnimal(token, id, {
+      nombre: animalData.nombre,
+      especie: animalData.especie,
+      raza: animalData.raza ?? undefined,
+      fechaNacimiento: animalData.fechaNacimiento,
+      sexo: animalData.sexo === "HEMBRA" ? "HEMBRA" : "MACHO",
+      descripcion: animalData.descripcion,
+      estatus: nextStatus,
+      inapropiado: false,
+      esterilizado: animalData.esterilizado,
+    });
+    setSaving(false);
+    if (result.ok) {
+      // Preservar numInteresados del estado actual — actualizar el animal no cambia el conteo
+      const updatedWithCount = { ...result.data, numInteresados: (animalData as any).numInteresados ?? 0 };
+      const fullData: AnimalDetalleResponse = {
+        ...updatedWithCount,
+        vacunas: animalData.vacunas ?? [],
+        padecimientos: animalData.padecimientos ?? [],
+        fotos: animalData.fotos ?? [],
+      };
+      callbacks.onUpdated?.(updatedWithCount, fullData);
+    } else {
+      setSaveError(result.error);
+    }
+  }
+
+  async function handleSaveEdit(formData: Partial<AnimalDetalleResponse>) {
+    const token = getToken();
+    if (!token) { setSaveError("Token requerido"); return; }
+    if (!formData.nombre?.trim() || !formData.especie?.trim() || !formData.descripcion?.trim()) {
+      setSaveError("Nombre, especie y descripcion son obligatorios.");
+      return;
+    }
+    const { actualizarAnimal, actualizarVacunasAnimal, actualizarPadecimientosAnimal } = await import("@/lib/apiClient");
+    setSaving(true);
+    setSaveError(null);
+    const result = await actualizarAnimal(token, animalId, {
+      nombre: formData.nombre!,
+      especie: formData.especie!,
+      raza: (formData.raza as string)?.trim() || undefined,
+      fechaNacimiento: formData.fechaNacimiento!,
+      sexo: (formData.sexo as "MACHO" | "HEMBRA") ?? "MACHO",
+      descripcion: formData.descripcion!,
+      estatus: (formData.estatus as "DISPONIBLE" | "ADOPTADO") ?? "DISPONIBLE",
+      inapropiado: false,
+      esterilizado: formData.esterilizado ?? false,
+    });
+    if (!result.ok) { setSaving(false); setSaveError(result.error); return; }
+
+    const vacunas = (formData as any).vacunas as string[] | undefined;
+    const padecimientos = (formData as any).padecimientos as string[] | undefined;
+    await Promise.all([
+      vacunas !== undefined ? actualizarVacunasAnimal(token, animalId, vacunas) : Promise.resolve(),
+      padecimientos !== undefined ? actualizarPadecimientosAnimal(token, animalId, padecimientos) : Promise.resolve(),
+    ]);
+
+    setSaving(false);
+    const updatedWithCount = { ...result.data, numInteresados: (animalData as any)?.numInteresados ?? 0 };
+    const fullData: AnimalDetalleResponse = {
+      ...updatedWithCount,
+      vacunas: vacunas ?? animalData?.vacunas ?? [],
+      padecimientos: padecimientos ?? animalData?.padecimientos ?? [],
+      fotos: (formData as any).fotos ?? animalData?.fotos ?? [],
+    };
+    callbacks.onUpdated?.(updatedWithCount, fullData);
+  }
+
+  return {
+    saving, saveError, pendingDeleteId, deleting,
+    handleDelete: (id: string) => setPendingDeleteId(id),
+    confirmDelete, handleToggleAdoptado, handleSaveEdit, setPendingDeleteId,
+  };
 }

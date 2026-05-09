@@ -1,13 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { publicarAnimal, type CreateAnimalPayload } from "@/lib/apiClient";
+import {
+  publicarAnimal, actualizarVacunasAnimal, actualizarPadecimientosAnimal,
+  listarVacunas, listarPadecimientos, type CreateAnimalPayload
+} from "@/lib/apiClient";
 import { getToken } from "@/lib/session";
 import { ROUTES } from "@/lib/routes";
 import ErrorMessage from "@/components/ErrorMessage";
 import DatePicker from "@/components/DatePicker";
-import { PawPrint, Send } from "lucide-react";
+import MultiSelect from "@/components/MultiSelect";
+import GaleriaUpload from "@/components/GaleriaUpload";
+import { PawPrint, Send, CheckCircle } from "lucide-react";
 
 /** Pagina para que un cuidador publique un nuevo animal. Ruta protegida: /publicar */
 export default function PublicarPage() {
@@ -15,25 +20,30 @@ export default function PublicarPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [animalPublicadoId, setAnimalPublicadoId] = useState<string | null>(null);
+  const [fotosAnimal, setFotosAnimal] = useState<string[]>([]);
 
   const [form, setForm] = useState<CreateAnimalPayload>({
-    nombre: "",
-    especie: "",
-    raza: "",
-    fechaNacimiento: "",
-    sexo: "MACHO",
-    descripcion: "",
-    esterilizado: false,
+    nombre: "", especie: "", raza: "", fechaNacimiento: "",
+    sexo: "MACHO", descripcion: "", esterilizado: false,
   });
+  const [vacunas, setVacunas] = useState<string[]>([]);
+  const [padecimientos, setPadecimientos] = useState<string[]>([]);
+  const [catVacunas, setCatVacunas] = useState<string[]>([]);
+  const [catPadecimientos, setCatPadecimientos] = useState<string[]>([]);
 
-  function handleChange(
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
-  ) {
+  useEffect(() => {
+    const token = getToken();
+    if (!token) return;
+    Promise.all([listarVacunas(token), listarPadecimientos(token)]).then(([v, p]) => {
+      if (v.ok) setCatVacunas(v.data.map((x) => x.nombre));
+      if (p.ok) setCatPadecimientos(p.data.map((x) => x.nombre));
+    });
+  }, []);
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
     const { name, value, type } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
-    }));
+    setForm((prev) => ({ ...prev, [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value }));
     setErrors((prev) => ({ ...prev, [name]: "" }));
   }
 
@@ -52,24 +62,54 @@ export default function PublicarPage() {
     setError(null);
     if (!validate()) return;
     setLoading(true);
-
     const token = getToken();
     if (!token) { router.push(ROUTES.LOGIN); return; }
 
-    // Limpiar raza vacia para no enviar string vacio
-    const payload: CreateAnimalPayload = {
-      ...form,
-      raza: form.raza?.trim() || undefined,
-    };
-
+    const payload: CreateAnimalPayload = { ...form, raza: form.raza?.trim() || undefined };
     const result = await publicarAnimal(token, payload);
-    setLoading(false);
 
     if (result.ok) {
-      router.push(ROUTES.MIS_MASCOTAS);
+      await Promise.all([
+        vacunas.length > 0 ? actualizarVacunasAnimal(token, result.data.id, vacunas) : Promise.resolve(),
+        padecimientos.length > 0 ? actualizarPadecimientosAnimal(token, result.data.id, padecimientos) : Promise.resolve(),
+      ]);
+      setLoading(false);
+      // Mostrar galeria de fotos antes de redirigir
+      setAnimalPublicadoId(result.data.id);
     } else {
+      setLoading(false);
       setError(result.error);
     }
+  }
+
+  // Paso 2: subir fotos despues de publicar
+  if (animalPublicadoId) {
+    return (
+      <main className="min-h-screen bg-base-200 flex items-center justify-center px-4 py-12">
+        <div className="card w-full max-w-lg bg-base-100 shadow-xl">
+          <div className="card-body gap-4">
+            <div className="flex flex-col items-center gap-2">
+              <CheckCircle size={48} className="text-success" />
+              <h1 className="card-title text-2xl">Mascota publicada</h1>
+              <p className="text-base-content/60 text-sm text-center">
+                Ahora puedes agregar fotos para que los adoptantes la conozcan mejor.
+              </p>
+            </div>
+            <GaleriaUpload
+              animalId={animalPublicadoId}
+              fotos={fotosAnimal}
+              onFotosChange={setFotosAnimal}
+            />
+            <button
+              onClick={() => router.push(ROUTES.MIS_MASCOTAS)}
+              className="btn btn-primary w-full gap-2"
+            >
+              {fotosAnimal.length > 0 ? "Listo, ver mis mascotas" : "Omitir por ahora"}
+            </button>
+          </div>
+        </div>
+      </main>
+    );
   }
 
   return (
@@ -89,30 +129,17 @@ export default function PublicarPage() {
 
           <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1" noValidate>
 
-            {/* Nombre */}
             <div className="form-control sm:col-span-2">
-              <label className="label" htmlFor="nombre">
-                <span className="label-text">Nombre <span className="text-error">*</span></span>
-              </label>
-              <input
-                id="nombre" name="nombre" type="text"
-                value={form.nombre} onChange={handleChange}
-                placeholder="Ej: Luna"
-                className={`input input-bordered w-full ${errors.nombre ? "input-error" : ""}`}
-              />
+              <label className="label" htmlFor="nombre"><span className="label-text">Nombre <span className="text-error">*</span></span></label>
+              <input id="nombre" name="nombre" type="text" value={form.nombre} onChange={handleChange} placeholder="Ej: Luna"
+                className={`input input-bordered w-full ${errors.nombre ? "input-error" : ""}`} />
               {errors.nombre && <span className="label-text-alt text-error mt-1">{errors.nombre}</span>}
             </div>
 
-            {/* Especie */}
             <div className="form-control">
-              <label className="label" htmlFor="especie">
-                <span className="label-text">Especie <span className="text-error">*</span></span>
-              </label>
-              <select
-                id="especie" name="especie"
-                value={form.especie} onChange={handleChange}
-                className={`select select-bordered w-full ${errors.especie ? "select-error" : ""}`}
-              >
+              <label className="label" htmlFor="especie"><span className="label-text">Especie <span className="text-error">*</span></span></label>
+              <select id="especie" name="especie" value={form.especie} onChange={handleChange}
+                className={`select select-bordered w-full ${errors.especie ? "select-error" : ""}`}>
                 <option value="">Selecciona</option>
                 <option value="Perro">Perro</option>
                 <option value="Gato">Gato</option>
@@ -120,82 +147,52 @@ export default function PublicarPage() {
               {errors.especie && <span className="label-text-alt text-error mt-1">{errors.especie}</span>}
             </div>
 
-            {/* Raza */}
             <div className="form-control">
-              <label className="label" htmlFor="raza">
-                <span className="label-text">Raza <span className="text-base-content/40 text-xs">(opcional)</span></span>
-              </label>
-              <input
-                id="raza" name="raza" type="text"
-                value={form.raza ?? ""} onChange={handleChange}
-                placeholder="Ej: Labrador"
-                className="input input-bordered w-full"
-              />
+              <label className="label" htmlFor="raza"><span className="label-text">Raza <span className="text-base-content/40 text-xs">(opcional)</span></span></label>
+              <input id="raza" name="raza" type="text" value={form.raza ?? ""} onChange={handleChange}
+                placeholder="Ej: Labrador" className="input input-bordered w-full" />
             </div>
 
-            {/* Fecha de nacimiento */}
             <div className="sm:col-span-2 relative">
-              <DatePicker
-                label="Fecha de nacimiento"
-                value={form.fechaNacimiento}
-                onChange={(v) => {
-                  setForm((prev) => ({ ...prev, fechaNacimiento: v }));
-                  setErrors((prev) => ({ ...prev, fechaNacimiento: "" }));
-                }}
-                max={new Date().toISOString().split("T")[0]}
-                error={errors.fechaNacimiento}
-                required
-              />
+              <DatePicker label="Fecha de nacimiento" value={form.fechaNacimiento}
+                onChange={(v) => { setForm((p) => ({ ...p, fechaNacimiento: v })); setErrors((p) => ({ ...p, fechaNacimiento: "" })); }}
+                max={new Date().toISOString().split("T")[0]} error={errors.fechaNacimiento} required />
             </div>
 
-            {/* Sexo */}
             <div className="form-control">
-              <label className="label" htmlFor="sexo">
-                <span className="label-text">Sexo <span className="text-error">*</span></span>
-              </label>
-              <select
-                id="sexo" name="sexo"
-                value={form.sexo} onChange={handleChange}
-                className="select select-bordered w-full"
-              >
+              <label className="label" htmlFor="sexo"><span className="label-text">Sexo <span className="text-error">*</span></span></label>
+              <select id="sexo" name="sexo" value={form.sexo} onChange={handleChange} className="select select-bordered w-full">
                 <option value="MACHO">Macho</option>
                 <option value="HEMBRA">Hembra</option>
               </select>
             </div>
 
-            {/* Descripcion */}
             <div className="form-control sm:col-span-2">
-              <label className="label" htmlFor="descripcion">
-                <span className="label-text">Descripcion <span className="text-error">*</span></span>
-              </label>
-              <textarea
-                id="descripcion" name="descripcion"
-                value={form.descripcion} onChange={handleChange}
-                placeholder="Cuent sobre la mascota: su personalidad, cuidados especiales, etc."
-                rows={3}
-                className={`textarea textarea-bordered w-full ${errors.descripcion ? "textarea-error" : ""}`}
-              />
+              <label className="label" htmlFor="descripcion"><span className="label-text">Descripcion <span className="text-error">*</span></span></label>
+              <textarea id="descripcion" name="descripcion" value={form.descripcion} onChange={handleChange}
+                placeholder="Cuentanos sobre la mascota..." rows={3}
+                className={`textarea textarea-bordered w-full ${errors.descripcion ? "textarea-error" : ""}`} />
               {errors.descripcion && <span className="label-text-alt text-error mt-1">{errors.descripcion}</span>}
             </div>
 
-            {/* Esterilizado */}
             <div className="form-control sm:col-span-2">
               <label className="label cursor-pointer justify-start gap-3">
-                <input
-                  type="checkbox" name="esterilizado"
-                  checked={form.esterilizado}
-                  onChange={handleChange}
-                  className="checkbox checkbox-primary"
-                />
+                <input type="checkbox" name="esterilizado" checked={form.esterilizado} onChange={handleChange} className="checkbox checkbox-primary" />
                 <span className="label-text">Esta esterilizado/a</span>
               </label>
             </div>
 
+            <div className="sm:col-span-2 relative">
+              <MultiSelect label="Vacunas (opcional)" opciones={catVacunas} values={vacunas} onChange={setVacunas} placeholder="Buscar vacuna o agregar nueva..." />
+            </div>
+
+            <div className="sm:col-span-2 relative">
+              <MultiSelect label="Condiciones medicas (opcional)" opciones={catPadecimientos} values={padecimientos} onChange={setPadecimientos} placeholder="Buscar condicion o agregar nueva..." />
+            </div>
+
             <div className="sm:col-span-2 mt-2">
               <button type="submit" disabled={loading} className="btn btn-primary w-full gap-2">
-                {loading
-                  ? <span className="loading loading-spinner loading-sm" />
-                  : <><Send size={18} /> Publicar mascota</>}
+                {loading ? <span className="loading loading-spinner loading-sm" /> : <><Send size={18} /> Publicar mascota</>}
               </button>
             </div>
           </form>

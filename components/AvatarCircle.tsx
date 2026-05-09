@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AdvancedImage } from "@cloudinary/react";
-import { getOptimizedImage } from "@/lib/cloudinary";
+import { getProfileImage } from "@/lib/cloudinary";
 
 interface AvatarCircleProps {
   fotoPerfil?: string | null;
@@ -33,7 +33,7 @@ export default function AvatarCircle({ fotoPerfil, nombre, size = 10 }: AvatarCi
         {showFoto ? (
           isCloudinary ? (
             <AdvancedImage
-              cldImg={getOptimizedImage(fotoPerfil!, size * 4, size * 4)}
+              cldImg={getProfileImage(fotoPerfil!, size * 4)}
               alt="Foto de perfil"
               className="w-full h-full object-cover"
               onError={() => setImgError(true)}
