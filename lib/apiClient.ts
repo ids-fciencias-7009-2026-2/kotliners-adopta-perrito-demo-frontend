@@ -1,25 +1,51 @@
-/** URL base del backend, configurada en .env.local */
+/**
+ * Cliente HTTP centralizado usando Axios.
+ * Todas las peticiones al backend pasan por este módulo.
+ * El interceptor de api/axios.ts agrega el token automáticamente
+ * y maneja errores 401/403 emitiendo el evento session:expired.
+ */
+import axios from "axios";
+import sessionEvents from "@/lib/sessionEvents";
+
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
-import sessionEvents from "@/lib/sessionEvents";
+/** Instancia Axios configurada con baseURL e interceptores */
+const http = axios.create({
+  baseURL: BASE_URL,
+  headers: { "Content-Type": "application/json" },
+});
+
+/** Interceptor de request: agrega el token desde sessionStorage */
+http.interceptors.request.use((config) => {
+  if (typeof window !== "undefined") {
+    const token = sessionStorage.getItem("user_token");
+    if (token) config.headers["Authorization"] = `Bearer ${token}`;
+  }
+  return config;
+});
+
+/** Interceptor de response: emite session:expired en 401/403 */
+http.interceptors.response.use(
+  (res) => res,
+  (error) => {
+    const status = error?.response?.status;
+    if ((status === 401 || status === 403) && typeof window !== "undefined") {
+      sessionEvents.emit("session:expired");
+    }
+    return Promise.reject(error);
+  }
+);
 
 // ---------------------------------------------------------------------------
 // Tipos
 // ---------------------------------------------------------------------------
 
-/**
- * Resultado generico de una llamada al API.
- * - ok: true  — la peticion fue exitosa y data contiene la respuesta.
- * - ok: false — ocurrio un error y error contiene el mensaje descriptivo.
- */
 export type ApiResult<T> =
   | { ok: true; data: T }
   | { ok: false; error: string };
 
-/** Roles disponibles para el usuario. Deben coincidir con el enum Rol.kt del backend. */
 export type Rol = "ADOPTANTE" | "CUIDADOR";
 
-/** Datos del usuario devueltos por GET /usuarios/me */
 export interface Usuario {
   id: string | null;
   curp: string;
@@ -33,7 +59,6 @@ export interface Usuario {
   codigoPostal: string;
 }
 
-/** Payload para POST /usuarios/register */
 export interface RegistroPayload {
   nombres: string;
   curp: string;
@@ -47,13 +72,11 @@ export interface RegistroPayload {
   password: string;
 }
 
-/** Payload para POST /usuarios/login */
 export interface LoginPayload {
   email: string;
   password: string;
 }
 
-/** Payload para PUT /usuarios */
 export interface ActualizarPerfilPayload {
   nombres: string;
   apellidoPaterno: string;
@@ -63,147 +86,6 @@ export interface ActualizarPerfilPayload {
   fotoPerfil?: string;
 }
 
-// ---------------------------------------------------------------------------
-// Utilidades internas
-// ---------------------------------------------------------------------------
-
-/**
- * Construye los headers HTTP para las peticiones JSON.
- * @param token - Token de autenticacion (opcional, solo para endpoints protegidos).
- * @returns Objeto con los headers necesarios.
- */
-export function buildHeaders(token?: string): Record<string, string> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (token) {
-    // El backend espera el formato: Authorization: Bearer <token>
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-  return headers;
-}
-
-/**
- * Procesa la respuesta de fetch y la convierte en ApiResult.
- * - HTTP 401/403 devuelve el error especial "SESSION_EXPIRED".
- * - Otros errores HTTP devuelven el texto del cuerpo de la respuesta.
- * @param response - Respuesta de fetch a procesar.
- */
-async function handleResponse<T>(response: Response): Promise<ApiResult<T>> {
-  if (response.ok) {
-    const text = await response.text();
-    if (!text) return { ok: true, data: {} as T };
-    try {
-      return { ok: true, data: JSON.parse(text) as T };
-    } catch {
-      // Respuesta es texto plano (ej: "Interes eliminado correctamente")
-      return { ok: true, data: text as unknown as T };
-    }
-  }
-  if (response.status === 401 || response.status === 403) {
-    if (typeof window !== "undefined") sessionEvents.emit("session:expired");
-    return { ok: false, error: "SESSION_EXPIRED" };
-  }
-  const errorText = await response.text();
-  return { ok: false, error: errorText || `Error ${response.status}` };
-}
-
-// ---------------------------------------------------------------------------
-// Endpoints de usuarios
-// ---------------------------------------------------------------------------
-
-/**
- * Registra un nuevo usuario en el sistema.
- * Endpoint: POST /usuarios/register
- * @param body - Datos del nuevo usuario.
- */
-export async function registrarUsuario(body: RegistroPayload): Promise<ApiResult<void>> {
-  try {
-    const response = await fetch(`${BASE_URL}/usuarios/register`, {
-      method: "POST",
-      headers: buildHeaders(),
-      body: JSON.stringify(body),
-    });
-    return handleResponse<void>(response);
-  } catch {
-    return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
-  }
-}
-
-/**
- * Autentica al usuario y devuelve el token de sesion.
- * Endpoint: POST /usuarios/login
- * @param body - Credenciales del usuario (email y password).
- */
-export async function loginUsuario(body: LoginPayload): Promise<ApiResult<{ token: string }>> {
-  try {
-    const response = await fetch(`${BASE_URL}/usuarios/login`, {
-      method: "POST",
-      headers: buildHeaders(),
-      body: JSON.stringify(body),
-    });
-    return handleResponse<{ token: string }>(response);
-  } catch {
-    return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
-  }
-}
-
-/**
- * Cierra la sesion del usuario autenticado e invalida el token en el backend.
- * Endpoint: POST /usuarios/logout
- * @param token - Token de autenticacion activo.
- */
-export async function logoutUsuario(token: string): Promise<ApiResult<void>> {
-  try {
-    const response = await fetch(`${BASE_URL}/usuarios/logout`, {
-      method: "POST",
-      headers: buildHeaders(token),
-    });
-    return handleResponse<void>(response);
-  } catch {
-    return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
-  }
-}
-
-/**
- * Obtiene la informacion del usuario autenticado.
- * Endpoint: GET /usuarios/me
- * @param token - Token de autenticacion activo.
- */
-export async function obtenerPerfil(token: string): Promise<ApiResult<Usuario>> {
-  try {
-    const response = await fetch(`${BASE_URL}/usuarios/me`, {
-      method: "GET",
-      headers: buildHeaders(token),
-    });
-    return handleResponse<Usuario>(response);
-  } catch {
-    return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
-  }
-}
-
-/**
- * Actualiza la informacion del usuario autenticado.
- * Endpoint: PUT /usuarios
- * @param token - Token de autenticacion activo.
- * @param body - Campos a actualizar.
- */
-export async function actualizarPerfil(token: string, body: ActualizarPerfilPayload): Promise<ApiResult<Usuario>> {
-  try {
-    const response = await fetch(`${BASE_URL}/usuarios`, {
-      method: "PUT",
-      headers: buildHeaders(token),
-      body: JSON.stringify(body),
-    });
-    return handleResponse<Usuario>(response);
-  } catch {
-    return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Endpoints de intereses
-// ---------------------------------------------------------------------------
-
-/** Datos de un animal favorito devueltos por GET /api/usuarios/me/intereses */
 export interface AnimalInteresResponse {
   animalId: string;
   nombre: string;
@@ -219,98 +101,13 @@ export interface AnimalInteresResponse {
   fechaRegistro: string | null;
 }
 
-/** Respuesta del backend al manifestar interes en un animal */
 export interface InteresResponse {
   usuarioId: string;
   animalId: string;
   fecha: string;
-  /** Presente si el correo de notificacion no se pudo enviar */
   advertencia: string | null;
 }
 
-/**
- * Registra el interes del usuario autenticado en un animal.
- * Endpoint: POST /api/animales/{id}/interes
- * @param token - Token de autenticacion activo.
- * @param animalId - ID del animal.
- */
-export async function manifestarInteres(token: string, animalId: string): Promise<ApiResult<InteresResponse>> {
-  try {
-    const response = await fetch(`${BASE_URL}/api/animales/${animalId}/interes`, {
-      method: "POST",
-      headers: buildHeaders(token),
-    });
-    return handleResponse<InteresResponse>(response);
-  } catch {
-    return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
-  }
-}
-
-/**
- * Elimina el interes del usuario autenticado en un animal.
- * Endpoint: DELETE /api/animales/{id}/interes
- * @param token - Token de autenticacion activo.
- * @param animalId - ID del animal.
- */
-export async function eliminarInteres(token: string, animalId: string): Promise<ApiResult<void>> {
-  try {
-    const response = await fetch(`${BASE_URL}/api/animales/${animalId}/interes`, {
-      method: "DELETE",
-      headers: buildHeaders(token),
-    });
-    return handleResponse<void>(response);
-  } catch {
-    return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
-  }
-}
-
-/**
- * Obtiene la lista de animales favoritos del usuario autenticado.
- * Endpoint: GET /api/usuarios/me/intereses
- * @param token - Token de autenticacion activo.
- */
-export async function listarIntereses(token: string): Promise<ApiResult<AnimalInteresResponse[]>> {
-  try {
-    const response = await fetch(`${BASE_URL}/api/usuarios/me/intereses`, {
-      method: "GET",
-      headers: buildHeaders(token),
-    });
-    return handleResponse<AnimalInteresResponse[]>(response);
-  } catch {
-    return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Subida de imagenes
-// ---------------------------------------------------------------------------
-
-/**
- * Sube una imagen de perfil al backend y devuelve la URL publica.
- * Endpoint: POST /uploads/foto-perfil
- * @param token - Token de autenticacion activo.
- * @param file - Archivo de imagen a subir.
- */
-export async function subirFotoPerfil(token: string, file: File): Promise<ApiResult<{ url: string }>> {
-  try {
-    const formData = new FormData();
-    formData.append("file", file);
-    const response = await fetch(`${BASE_URL}/uploads/foto-perfil`, {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${token}` },
-      body: formData,
-    });
-    return handleResponse<{ url: string }>(response);
-  } catch {
-    return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Endpoints de animales
-// ---------------------------------------------------------------------------
-
-/** Datos de un animal del catálogo devueltos por GET /api/animales */
 export interface AnimalResponse {
   id: string;
   nombre: string;
@@ -323,13 +120,10 @@ export interface AnimalResponse {
   esterilizado: boolean;
   usuarioId: string;
   fechaRegistro: string;
-  /** Primera foto del animal para mostrar en tarjetas. Null si no tiene fotos. */
   fotoPortada: string | null;
-  /** Numero de adoptantes interesados. Solo presente en respuestas del cuidador. */
   numInteresados: number;
 }
 
-/** Datos detallados de un animal devueltos por GET /api/animales/{id} */
 export interface AnimalDetalleResponse extends AnimalResponse {
   fotos: string[];
   vacunas: string[];
@@ -337,7 +131,6 @@ export interface AnimalDetalleResponse extends AnimalResponse {
   numInteresados: number;
 }
 
-/** Payload para POST /api/animales */
 export interface CreateAnimalPayload {
   nombre: string;
   especie: string;
@@ -348,7 +141,6 @@ export interface CreateAnimalPayload {
   esterilizado: boolean;
 }
 
-/** Payload para PUT /api/animales/{id} */
 export interface UpdateAnimalPayload {
   nombre: string;
   especie: string;
@@ -361,215 +153,172 @@ export interface UpdateAnimalPayload {
   esterilizado: boolean;
 }
 
-/** Payload para DELETE /api/animales */
 export interface DeleteAnimalPayload {
   animalId: string;
 }
 
-/**
- * Obtiene los animales del cuidador autenticado.
- * Endpoint: GET /api/animales/me
- * @param token - Token de autenticacion activo.
- */
-export async function listarMisAnimales(token: string): Promise<ApiResult<AnimalResponse[]>> {
+// ---------------------------------------------------------------------------
+// Helper interno
+// ---------------------------------------------------------------------------
+
+/** Convierte una respuesta Axios exitosa o un error en ApiResult */
+async function call<T>(fn: () => Promise<{ data: T }>): Promise<ApiResult<T>> {
   try {
-    const response = await fetch(`${BASE_URL}/api/animales/me`, {
-      method: "GET",
-      headers: buildHeaders(token),
-    });
-    return handleResponse<AnimalResponse[]>(response);
-  } catch {
-    return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
+    const res = await fn();
+    return { ok: true, data: res.data };
+  } catch (err: any) {
+    if (err?.response?.status === 401 || err?.response?.status === 403) {
+      return { ok: false, error: "SESSION_EXPIRED" };
+    }
+    const msg =
+      err?.response?.data
+        ? typeof err.response.data === "string"
+          ? err.response.data
+          : JSON.stringify(err.response.data)
+        : "El servicio no esta disponible. Intenta mas tarde.";
+    return { ok: false, error: msg };
   }
 }
 
-/**
- * Obtiene la lista de todos los animales disponibles.
- * Endpoint: GET /api/animales
- * @param token - Token de autenticación (opcional).
- */
-export async function listarAnimales(token?: string): Promise<ApiResult<AnimalResponse[]>> {
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    const response = await fetch(`${BASE_URL}/api/animales`, {
-      method: "GET",
-      headers: buildHeaders(token),
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
-    return handleResponse<AnimalResponse[]>(response);
-  } catch {
-    return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
-  }
+// ---------------------------------------------------------------------------
+// Usuarios
+// ---------------------------------------------------------------------------
+
+export const registrarUsuario = (body: RegistroPayload) =>
+  call<void>(() => http.post("/usuarios/register", body));
+
+export const loginUsuario = (body: LoginPayload) =>
+  call<{ token: string }>(() => http.post("/usuarios/login", body));
+
+export const logoutUsuario = (token: string) =>
+  call<void>(() => http.post("/usuarios/logout", {}, { headers: { Authorization: `Bearer ${token}` } }));
+
+export const obtenerPerfil = (token: string) =>
+  call<Usuario>(() => http.get("/usuarios/me", { headers: { Authorization: `Bearer ${token}` } }));
+
+export const actualizarPerfil = (token: string, body: ActualizarPerfilPayload) =>
+  call<Usuario>(() => http.put("/usuarios", body, { headers: { Authorization: `Bearer ${token}` } }));
+
+// ---------------------------------------------------------------------------
+// Intereses
+// ---------------------------------------------------------------------------
+
+export const manifestarInteres = (token: string, animalId: string) =>
+  call<InteresResponse>(() =>
+    http.post(`/api/animales/${animalId}/interes`, {}, { headers: { Authorization: `Bearer ${token}` } })
+  );
+
+export const eliminarInteres = (token: string, animalId: string) =>
+  call<void>(() =>
+    http.delete(`/api/animales/${animalId}/interes`, { headers: { Authorization: `Bearer ${token}` } })
+  );
+
+export const listarIntereses = (token: string) =>
+  call<AnimalInteresResponse[]>(() =>
+    http.get("/api/usuarios/me/intereses", { headers: { Authorization: `Bearer ${token}` } })
+  );
+
+// ---------------------------------------------------------------------------
+// Imagenes
+// ---------------------------------------------------------------------------
+
+export async function subirFotoPerfil(token: string, file: File): Promise<ApiResult<{ url: string }>> {
+  const formData = new FormData();
+  formData.append("file", file);
+  return call<{ url: string }>(() =>
+    http.post("/uploads/foto-perfil", formData, {
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" },
+    })
+  );
 }
 
-/**
- * Publica un nuevo animal en el catálogo.
- * Endpoint: POST /api/animales
- * @param token - Token de autenticación activo.
- * @param body - Datos del nuevo animal.
- */
-export async function publicarAnimal(token: string, body: CreateAnimalPayload): Promise<ApiResult<AnimalResponse>> {
-  try {
-    const response = await fetch(`${BASE_URL}/api/animales`, {
-      method: "POST",
-      headers: buildHeaders(token),
-      body: JSON.stringify(body),
-    });
-    return handleResponse<AnimalResponse>(response);
-  } catch {
-    return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
-  }
-}
-
-/**
- * Obtiene el catalogo de vacunas disponibles.
- * Endpoint: GET /api/vacunas
- */
-export async function listarVacunas(token: string): Promise<ApiResult<{ id: string; nombre: string }[]>> {
-  try {
-    const response = await fetch(`${BASE_URL}/api/vacunas`, { headers: buildHeaders(token) });
-    return handleResponse(response);
-  } catch {
-    return { ok: false, error: "El servicio no esta disponible." };
-  }
-}
-
-/**
- * Obtiene el catalogo de padecimientos disponibles.
- * Endpoint: GET /api/padecimientos
- */
-export async function listarPadecimientos(token: string): Promise<ApiResult<{ id: string; nombre: string }[]>> {
-  try {
-    const response = await fetch(`${BASE_URL}/api/padecimientos`, { headers: buildHeaders(token) });
-    return handleResponse(response);
-  } catch {
-    return { ok: false, error: "El servicio no esta disponible." };
-  }
-}
-
-/**
- * Actualiza las vacunas de un animal (reemplaza la lista completa).
- * Endpoint: PUT /api/animales/{id}/vacunas
- */
-export async function actualizarVacunasAnimal(token: string, animalId: string, nombres: string[]): Promise<ApiResult<void>> {
-  try {
-    const response = await fetch(`${BASE_URL}/api/animales/${animalId}/vacunas`, {
-      method: "PUT",
-      headers: buildHeaders(token),
-      body: JSON.stringify(nombres),
-    });
-    return handleResponse(response);
-  } catch {
-    return { ok: false, error: "El servicio no esta disponible." };
-  }
-}
-
-/**
- * Actualiza los padecimientos de un animal (reemplaza la lista completa).
- * Endpoint: PUT /api/animales/{id}/padecimientos
- */
-export async function actualizarPadecimientosAnimal(token: string, animalId: string, nombres: string[]): Promise<ApiResult<void>> {
-  try {
-    const response = await fetch(`${BASE_URL}/api/animales/${animalId}/padecimientos`, {
-      method: "PUT",
-      headers: buildHeaders(token),
-      body: JSON.stringify(nombres),
-    });
-    return handleResponse(response);
-  } catch {
-    return { ok: false, error: "El servicio no esta disponible." };
-  }
-}
-export async function obtenerAnimal(
-  id: string,
-  token?: string
-): Promise<ApiResult<AnimalDetalleResponse>> {
-  try {
-    const response = await fetch(`${BASE_URL}/api/animales/${id}`, {
-      method: "GET",
-      headers: buildHeaders(token),
-    });
-    return handleResponse<AnimalDetalleResponse>(response);
-  } catch {
-    return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
-  }
-}
-
-/**
- * Actualiza un animal existente.
- * Endpoint: PUT /api/animales/{id}
- */
-export async function actualizarAnimal(
-  token: string,
-  id: string,
-  body: UpdateAnimalPayload
-): Promise<ApiResult<AnimalResponse>> {
-  try {
-    const response = await fetch(`${BASE_URL}/api/animales/${id}`, {
-      method: "PUT",
-      headers: buildHeaders(token),
-      body: JSON.stringify(body),
-    });
-    return handleResponse<AnimalResponse>(response);
-  } catch {
-    return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
-  }
-}
-
-/**
- * Elimina un animal por ID.
- * Endpoint: DELETE /api/animales
- */
-export async function eliminarAnimal(
-  token: string,
-  body: DeleteAnimalPayload
-): Promise<ApiResult<string>> {
-  try {
-    const response = await fetch(`${BASE_URL}/api/animales`, {
-      method: "DELETE",
-      headers: buildHeaders(token),
-      body: JSON.stringify(body),
-    });
-    return handleResponse<string>(response);
-  } catch {
-    return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
-  }
-}
-
-/**
- * Sube una foto de un animal a Cloudinary.
- * Endpoint: POST /api/animales/{id}/fotos
- */
 export async function subirFotoAnimal(token: string, animalId: string, file: File): Promise<ApiResult<{ url: string }>> {
-  try {
-    const formData = new FormData();
-    formData.append("file", file);
-    const response = await fetch(`${BASE_URL}/api/animales/${animalId}/fotos`, {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${token}` },
-      body: formData,
-    });
-    return handleResponse<{ url: string }>(response);
-  } catch {
-    return { ok: false, error: "El servicio no esta disponible." };
-  }
+  const formData = new FormData();
+  formData.append("file", file);
+  return call<{ url: string }>(() =>
+    http.post(`/api/animales/${animalId}/fotos`, formData, {
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" },
+    })
+  );
 }
 
-/**
- * Elimina una foto de un animal por su URL.
- * Endpoint: DELETE /api/animales/{id}/fotos
- */
-export async function eliminarFotoAnimal(token: string, animalId: string, url: string): Promise<ApiResult<void>> {
-  try {
-    const response = await fetch(`${BASE_URL}/api/animales/${animalId}/fotos`, {
-      method: "DELETE",
-      headers: buildHeaders(token),
-      body: JSON.stringify({ url }),
-    });
-    return handleResponse<void>(response);
-  } catch {
-    return { ok: false, error: "El servicio no esta disponible." };
-  }
+export const eliminarFotoAnimal = (token: string, animalId: string, url: string) =>
+  call<void>(() =>
+    http.delete(`/api/animales/${animalId}/fotos`, {
+      headers: { Authorization: `Bearer ${token}` },
+      data: { url },
+    })
+  );
+
+// ---------------------------------------------------------------------------
+// Animales
+// ---------------------------------------------------------------------------
+
+export const listarAnimales = (token?: string) =>
+  call<AnimalResponse[]>(() =>
+    http.get("/api/animales", {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      timeout: 5000,
+    })
+  );
+
+export const listarMisAnimales = (token: string) =>
+  call<AnimalResponse[]>(() =>
+    http.get("/api/animales/me", { headers: { Authorization: `Bearer ${token}` } })
+  );
+
+export const obtenerAnimal = (id: string, token?: string) =>
+  call<AnimalDetalleResponse>(() =>
+    http.get(`/api/animales/${id}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+  );
+
+export const publicarAnimal = (token: string, body: CreateAnimalPayload) =>
+  call<AnimalResponse>(() =>
+    http.post("/api/animales", body, { headers: { Authorization: `Bearer ${token}` } })
+  );
+
+export const actualizarAnimal = (token: string, id: string, body: UpdateAnimalPayload) =>
+  call<AnimalResponse>(() =>
+    http.put(`/api/animales/${id}`, body, { headers: { Authorization: `Bearer ${token}` } })
+  );
+
+export const eliminarAnimal = (token: string, body: DeleteAnimalPayload) =>
+  call<string>(() =>
+    http.delete("/api/animales", {
+      headers: { Authorization: `Bearer ${token}` },
+      data: body,
+    })
+  );
+
+// ---------------------------------------------------------------------------
+// Vacunas y padecimientos
+// ---------------------------------------------------------------------------
+
+export const listarVacunas = (token: string) =>
+  call<{ id: string; nombre: string }[]>(() =>
+    http.get("/api/vacunas", { headers: { Authorization: `Bearer ${token}` } })
+  );
+
+export const listarPadecimientos = (token: string) =>
+  call<{ id: string; nombre: string }[]>(() =>
+    http.get("/api/padecimientos", { headers: { Authorization: `Bearer ${token}` } })
+  );
+
+export const actualizarVacunasAnimal = (token: string, animalId: string, nombres: string[]) =>
+  call<void>(() =>
+    http.put(`/api/animales/${animalId}/vacunas`, nombres, { headers: { Authorization: `Bearer ${token}` } })
+  );
+
+export const actualizarPadecimientosAnimal = (token: string, animalId: string, nombres: string[]) =>
+  call<void>(() =>
+    http.put(`/api/animales/${animalId}/padecimientos`, nombres, { headers: { Authorization: `Bearer ${token}` } })
+  );
+
+// Keep buildHeaders exported for any legacy usage
+export function buildHeaders(token?: string): Record<string, string> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  return headers;
 }
