@@ -12,22 +12,6 @@ import { ROUTES } from "@/lib/routes";
 
 type Orden = "nombre-asc" | "nombre-desc" | "edad-asc" | "edad-desc";
 
-function calcularEdad(fechaNacimiento: string): string {
-  const [y, m, d] = fechaNacimiento.split("-").map(Number);
-  if (!y || !m || !d) return "Edad desconocida";
-  const hoy = new Date();
-  const nacimiento = new Date(y, m - 1, d);
-  let anos = hoy.getFullYear() - nacimiento.getFullYear();
-  let meses = hoy.getMonth() - nacimiento.getMonth();
-  if (hoy.getDate() < nacimiento.getDate()) meses--;
-  if (meses < 0) { anos--; meses += 12; }
-  if (anos < 0) return "Recien nacido";
-  if (anos === 0 && meses <= 0) return "Recien nacido";
-  if (anos === 0) return meses === 1 ? "1 mes" : `${meses} meses`;
-  if (meses === 0) return anos === 1 ? "1 ano" : `${anos} años`;
-  return `${anos} ${anos === 1 ? "año" : "años"} y ${meses} ${meses === 1 ? "mes" : "meses"}`;
-}
-
 function calcularEdadMeses(fechaNacimiento: string): number {
   const [y, m, d] = fechaNacimiento.split("-").map(Number);
   if (!y || !m || !d) return 0;
@@ -101,10 +85,6 @@ export default function MisMascotasPage() {
     } else {
       setError("No se pudo eliminar la mascota.");
     }
-  }
-
-  function handleEditAnimal(id: string) {
-    router.push(`${ROUTES.PUBLICAR}?edit=${id}`);
   }
 
   const filtradas = mascotas
