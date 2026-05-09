@@ -59,8 +59,8 @@ function calcularEdad(fechaNacimiento: string) {
   if (anos < 0) return "Recien nacido";
   if (anos === 0 && meses <= 0) return "Recien nacido";
   if (anos === 0) return meses === 1 ? "1 mes" : `${meses} meses`;
-  if (meses === 0) return anos === 1 ? "1 ano" : `${anos} anos`;
-  return `${anos} ${anos === 1 ? "ano" : "anos"} y ${meses} ${meses === 1 ? "mes" : "meses"}`;
+  if (meses === 0) return anos === 1 ? "1 ano" : `${anos} años`;
+  return `${anos} ${anos === 1 ? "año" : "años"} y ${meses} ${meses === 1 ? "mes" : "meses"}`;
 }
 
 function FotoImg({ url, alt, className }: { url: string; alt: string; className?: string }) {
