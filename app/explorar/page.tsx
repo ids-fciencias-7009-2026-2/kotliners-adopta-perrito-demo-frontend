@@ -3,7 +3,7 @@
 import { useState } from "react";
 import AnimalCard from "@/components/AnimalCard";
 import { useAnimalList } from "@/hooks/useAnimalData";
-import { Search, SlidersHorizontal, MapPin, PawPrint, X, Expand } from "lucide-react";
+import { Search, SlidersHorizontal, MapPin, PawPrint, X, Expand, Cat, Dog } from "lucide-react";
 
 const PIN_POSITIONS: Record<string, { x: number; y: number }> = {};
 function getPinPosition(id: string) {
@@ -16,15 +16,18 @@ function getPinPosition(id: string) {
 
 function calcularEdad(fechaNacimiento: string) {
   const [y, m, d] = fechaNacimiento.split("-").map(Number);
-  if (!y || !m || !d) return 0;
+  if (!y || !m || !d) return "Edad desconocida";
   const hoy = new Date();
-  let edad = hoy.getFullYear() - y;
-  if (hoy.getMonth() + 1 < m || (hoy.getMonth() + 1 === m && hoy.getDate() < d)) edad--;
-  return edad;
-}
-
-function emojiEspecie(especie: string) {
-  return especie.toLowerCase().includes("gato") || especie.toLowerCase().includes("cat") ? "🐱" : "🐶";
+  const nacimiento = new Date(y, m - 1, d);
+  let anos = hoy.getFullYear() - nacimiento.getFullYear();
+  let meses = hoy.getMonth() - nacimiento.getMonth();
+  if (hoy.getDate() < nacimiento.getDate()) meses--;
+  if (meses < 0) { anos--; meses += 12; }
+  if (anos < 0) return "Recien nacido";
+  if (anos === 0 && meses <= 0) return "Recien nacido";
+  if (anos === 0) return meses === 1 ? "1 mes" : `${meses} meses`;
+  if (meses === 0) return anos === 1 ? "1 año" : `${anos} años`;
+  return `${anos} ${anos === 1 ? "año" : "años"} y ${meses} ${meses === 1 ? "mes" : "meses"}`;
 }
 
 /** Pagina de exploracion de mascotas. Ruta protegida: /explorar */
@@ -139,8 +142,24 @@ export default function ExplorarPage() {
                 }`}
                 onClick={() => setSelectedId(animal.id === selectedId ? null : animal.id)}
               >
-                <div className="w-16 h-16 rounded-box bg-base-300 flex items-center justify-center text-3xl shrink-0">
-                  {emojiEspecie(animal.especie)}
+                <div className="w-16 h-16 rounded-box bg-base-200 flex items-center justify-center shrink-0 overflow-hidden">
+                  {animal.fotoPortada ? (
+                    animal.fotoPortada.includes("cloudinary.com") ? (
+                      <img
+                        src={`https://res.cloudinary.com/dhrsbftoc/image/upload/w_64,h_64,c_fit,q_auto,f_auto/${animal.fotoPortada.match(/\/upload\/(?:v\d+\/)?(.+)$/)?.[1]?.replace(/\.[^/.]+$/, "") ?? ""}`}
+                        alt={animal.nombre}
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <img src={animal.fotoPortada} alt={animal.nombre} className="w-full h-full object-contain" />
+                    )
+                  ) : (
+                    <span className="flex items-center justify-center w-full h-full">
+                      {animal.especie.toLowerCase().includes("gato")
+                        ? <Cat size={28} className="text-base-content/30" />
+                        : <Dog size={28} className="text-base-content/30" />}
+                    </span>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
@@ -153,7 +172,7 @@ export default function ExplorarPage() {
                     {animal.especie}{animal.raza ? ` · ${animal.raza}` : ""} · {animal.sexo === "MACHO" ? "Macho" : "Hembra"}
                   </p>
                   <p className="text-xs text-base-content/40 mt-1">
-                    {calcularEdad(animal.fechaNacimiento)} {calcularEdad(animal.fechaNacimiento) === 1 ? "ano" : "anos"}
+                    {calcularEdad(animal.fechaNacimiento)}
                   </p>
                 </div>
                 {/* Boton expandir */}
@@ -176,7 +195,7 @@ export default function ExplorarPage() {
               <div className="flex-1 min-w-0">
                 <h3 className="font-bold text-lg">{selected.nombre}</h3>
                 <p className="text-sm text-base-content/60">
-                  {selected.especie}{selected.raza ? ` · ${selected.raza}` : ""} · {calcularEdad(selected.fechaNacimiento)} anos
+                  {selected.especie}{selected.raza ? ` · ${selected.raza}` : ""} · {calcularEdad(selected.fechaNacimiento)} años
                 </p>
                 <p className="text-xs text-base-content/50 mt-1 line-clamp-2">{selected.descripcion}</p>
               </div>

@@ -8,7 +8,7 @@ import { getToken, removeToken } from "@/lib/session";
 import { ROUTES } from "@/lib/routes";
 import { PawPrint, Heart, LogOut, User, Menu, Search, Dog, Plus } from "lucide-react";
 import { AdvancedImage } from "@cloudinary/react";
-import { getOptimizedImage } from "@/lib/cloudinary";
+import { getProfileImage } from "@/lib/cloudinary";
 import AvatarCircle from "@/components/AvatarCircle";
 
 /** Barra de navegacion principal. Solo visible en rutas protegidas. */
@@ -24,14 +24,22 @@ export default function NavBar() {
     if (data) setUsuario(JSON.parse(data));
     setMounted(true);
 
-    // Actualizar el navbar si el perfil cambia en otra pestana
+    // Actualizar el navbar cuando el perfil cambia (misma pestana o otra)
     function onStorage(e: StorageEvent) {
       if (e.key === "usuario" && e.newValue) {
         setUsuario(JSON.parse(e.newValue));
       }
     }
+    function onPerfilActualizado() {
+      const updated = sessionStorage.getItem("usuario");
+      if (updated) setUsuario(JSON.parse(updated));
+    }
     window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    window.addEventListener("perfil:actualizado", onPerfilActualizado);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("perfil:actualizado", onPerfilActualizado);
+    };
   }, []);
 
   /** Llama al endpoint de logout, limpia sessionStorage y redirige al login. */

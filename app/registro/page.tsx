@@ -105,7 +105,7 @@ export default function RegistroPage() {
         edad--;
       }
       if (edad < 18) {
-        newErrors.curp = "Debes ser mayor de 18 anos para registrarte.";
+        newErrors.curp = "Debes ser mayor de 18 años para registrarte.";
       }
     }
 

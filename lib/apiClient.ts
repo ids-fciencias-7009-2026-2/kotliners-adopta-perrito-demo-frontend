@@ -215,6 +215,8 @@ export interface AnimalInteresResponse {
   estatus: string;
   esterilizado: boolean;
   fechaInteres: string;
+  fotoPortada: string | null;
+  fechaRegistro: string | null;
 }
 
 /** Respuesta del backend al manifestar interes en un animal */
@@ -321,6 +323,10 @@ export interface AnimalResponse {
   esterilizado: boolean;
   usuarioId: string;
   fechaRegistro: string;
+  /** Primera foto del animal para mostrar en tarjetas. Null si no tiene fotos. */
+  fotoPortada: string | null;
+  /** Numero de adoptantes interesados. Solo presente en respuestas del cuidador. */
+  numInteresados: number;
 }
 
 /** Datos detallados de un animal devueltos por GET /api/animales/{id} */
@@ -328,6 +334,7 @@ export interface AnimalDetalleResponse extends AnimalResponse {
   fotos: string[];
   vacunas: string[];
   padecimientos: string[];
+  numInteresados: number;
 }
 
 /** Payload para POST /api/animales */
@@ -417,9 +424,64 @@ export async function publicarAnimal(token: string, body: CreateAnimalPayload): 
 }
 
 /**
- * Obtiene el detalle de un animal por su ID.
- * Endpoint: GET /api/animales/{id}
+ * Obtiene el catalogo de vacunas disponibles.
+ * Endpoint: GET /api/vacunas
  */
+export async function listarVacunas(token: string): Promise<ApiResult<{ id: string; nombre: string }[]>> {
+  try {
+    const response = await fetch(`${BASE_URL}/api/vacunas`, { headers: buildHeaders(token) });
+    return handleResponse(response);
+  } catch {
+    return { ok: false, error: "El servicio no esta disponible." };
+  }
+}
+
+/**
+ * Obtiene el catalogo de padecimientos disponibles.
+ * Endpoint: GET /api/padecimientos
+ */
+export async function listarPadecimientos(token: string): Promise<ApiResult<{ id: string; nombre: string }[]>> {
+  try {
+    const response = await fetch(`${BASE_URL}/api/padecimientos`, { headers: buildHeaders(token) });
+    return handleResponse(response);
+  } catch {
+    return { ok: false, error: "El servicio no esta disponible." };
+  }
+}
+
+/**
+ * Actualiza las vacunas de un animal (reemplaza la lista completa).
+ * Endpoint: PUT /api/animales/{id}/vacunas
+ */
+export async function actualizarVacunasAnimal(token: string, animalId: string, nombres: string[]): Promise<ApiResult<void>> {
+  try {
+    const response = await fetch(`${BASE_URL}/api/animales/${animalId}/vacunas`, {
+      method: "PUT",
+      headers: buildHeaders(token),
+      body: JSON.stringify(nombres),
+    });
+    return handleResponse(response);
+  } catch {
+    return { ok: false, error: "El servicio no esta disponible." };
+  }
+}
+
+/**
+ * Actualiza los padecimientos de un animal (reemplaza la lista completa).
+ * Endpoint: PUT /api/animales/{id}/padecimientos
+ */
+export async function actualizarPadecimientosAnimal(token: string, animalId: string, nombres: string[]): Promise<ApiResult<void>> {
+  try {
+    const response = await fetch(`${BASE_URL}/api/animales/${animalId}/padecimientos`, {
+      method: "PUT",
+      headers: buildHeaders(token),
+      body: JSON.stringify(nombres),
+    });
+    return handleResponse(response);
+  } catch {
+    return { ok: false, error: "El servicio no esta disponible." };
+  }
+}
 export async function obtenerAnimal(
   id: string,
   token?: string
@@ -473,5 +535,41 @@ export async function eliminarAnimal(
     return handleResponse<string>(response);
   } catch {
     return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
+  }
+}
+
+/**
+ * Sube una foto de un animal a Cloudinary.
+ * Endpoint: POST /api/animales/{id}/fotos
+ */
+export async function subirFotoAnimal(token: string, animalId: string, file: File): Promise<ApiResult<{ url: string }>> {
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await fetch(`${BASE_URL}/api/animales/${animalId}/fotos`, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${token}` },
+      body: formData,
+    });
+    return handleResponse<{ url: string }>(response);
+  } catch {
+    return { ok: false, error: "El servicio no esta disponible." };
+  }
+}
+
+/**
+ * Elimina una foto de un animal por su URL.
+ * Endpoint: DELETE /api/animales/{id}/fotos
+ */
+export async function eliminarFotoAnimal(token: string, animalId: string, url: string): Promise<ApiResult<void>> {
+  try {
+    const response = await fetch(`${BASE_URL}/api/animales/${animalId}/fotos`, {
+      method: "DELETE",
+      headers: buildHeaders(token),
+      body: JSON.stringify({ url }),
+    });
+    return handleResponse<void>(response);
+  } catch {
+    return { ok: false, error: "El servicio no esta disponible." };
   }
 }

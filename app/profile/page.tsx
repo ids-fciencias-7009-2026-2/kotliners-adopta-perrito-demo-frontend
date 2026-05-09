@@ -79,6 +79,7 @@ export default function PerfilPage() {
       });
       if (!res.ok) { setError(res.error); return; }
       sessionStorage.setItem("usuario", JSON.stringify(res.data));
+      window.dispatchEvent(new Event("perfil:actualizado"));
       setUsuario(res.data);
       setForm({ ...res.data, fotoPerfil: res.data.fotoPerfil ?? null });
       setSuccess("Perfil actualizado correctamente");

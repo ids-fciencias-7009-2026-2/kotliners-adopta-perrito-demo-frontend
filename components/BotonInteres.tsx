@@ -8,16 +8,13 @@ import { Heart, AlertCircle, CheckCircle, X } from "lucide-react";
 
 /** Props del componente BotonInteres. */
 interface BotonInteresProps {
-  /** ID del animal. */
   animalId: string;
-  /** Nombre del animal — se usa en el modal de confirmacion. */
   nombreAnimal?: string;
-  /** Indica si el usuario ya tiene interes registrado en este animal. */
   tieneInteres: boolean;
-  /** Estatus actual del animal. Si es ADOPTADO, el boton se deshabilita. */
   estatus?: string;
-  /** Rol del usuario autenticado. Si es CUIDADOR, el boton no se muestra. */
   rolUsuario?: string;
+  /** Si true, permite quitar el interes aunque el animal este adoptado */
+  allowRemove?: boolean;
 }
 
 /**
@@ -33,18 +30,18 @@ export default function BotonInteres({
   tieneInteres: initialInteres,
   estatus,
   rolUsuario,
+  allowRemove = false,
 }: BotonInteresProps) {
   const [tieneInteres, setTieneInteres] = useState(initialInteres);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [animalNoDisponible, setAnimalNoDisponible] = useState(estatus === "ADOPTADO");
+  // Si allowRemove=true (favoritos), no bloquear aunque este adoptado
+  const [animalNoDisponible, setAnimalNoDisponible] = useState(estatus === "ADOPTADO" && !allowRemove);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTipo, setModalTipo] = useState<"agregar" | "quitar">("agregar");
 
-  // Los cuidadores no pueden dar like
   if (rolUsuario === "CUIDADOR") return null;
 
-  // Animal adoptado o eliminado
   if (animalNoDisponible) {
     return (
       <div className="flex items-center gap-2 text-base-content/50 text-sm">
