@@ -254,13 +254,32 @@ export const eliminarFotoAnimal = (token: string, animalId: string, url: string)
 // Animales
 // ---------------------------------------------------------------------------
 
-export const listarAnimales = (token?: string) =>
-  call<AnimalResponse[]>(() =>
-    http.get("/api/animales", {
+export interface FiltrosAnimales {
+  especie?: string;
+  sexo?: string;
+  esterilizado?: boolean;
+  codigoPostal?: string;
+  vacuna?: string;
+  sinPadecimientos?: boolean;
+  ordenar?: string;
+}
+
+export const listarAnimales = (token?: string, filtros?: FiltrosAnimales) =>
+  call<AnimalResponse[]>(() => {
+    const params: Record<string, string> = {};
+    if (filtros?.especie) params.especie = filtros.especie;
+    if (filtros?.sexo) params.sexo = filtros.sexo;
+    if (filtros?.esterilizado !== undefined) params.esterilizado = String(filtros.esterilizado);
+    if (filtros?.codigoPostal) params.codigoPostal = filtros.codigoPostal;
+    if (filtros?.vacuna) params.vacuna = filtros.vacuna;
+    if (filtros?.sinPadecimientos) params.sinPadecimientos = "true";
+    if (filtros?.ordenar) params.ordenar = filtros.ordenar;
+    return http.get("/api/animales", {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
+      params,
       timeout: 5000,
-    })
-  );
+    });
+  });
 
 export const listarMisAnimales = (token: string) =>
   call<AnimalResponse[]>(() =>

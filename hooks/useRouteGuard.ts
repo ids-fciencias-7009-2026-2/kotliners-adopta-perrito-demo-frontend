@@ -70,9 +70,8 @@ export function useRouteGuard(): boolean {
                 }
             }).catch(() => {
                 clearTimeout(timeoutId);
-                // Si el backend no responde, dejar pasar — no cerrar sesion
-                lastValidatedPath.current = pathname;
-                setChecking(false);
+                // Si el backend no responde o hay timeout, cerrar sesion por seguridad
+                handleSessionExpired();
             });
             return;
         }
