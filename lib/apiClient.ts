@@ -113,6 +113,7 @@ export interface AnimalResponse {
   nombre: string;
   especie: string;
   raza: string | null;
+  razaId: string | null;
   fechaNacimiento: string;
   sexo: string;
   descripcion: string;
@@ -129,12 +130,14 @@ export interface AnimalDetalleResponse extends AnimalResponse {
   vacunas: string[];
   padecimientos: string[];
   numInteresados: number;
+  razaId: string | null;
 }
 
 export interface CreateAnimalPayload {
   nombre: string;
   especie: string;
   raza?: string;
+  razaId?: string;
   fechaNacimiento: string;
   sexo: "MACHO" | "HEMBRA";
   descripcion: string;
@@ -145,6 +148,7 @@ export interface UpdateAnimalPayload {
   nombre: string;
   especie: string;
   raza?: string;
+  razaId?: string;
   fechaNacimiento: string;
   sexo: "MACHO" | "HEMBRA";
   descripcion: string;
@@ -314,6 +318,40 @@ export const eliminarAnimal = (token: string, body: DeleteAnimalPayload) =>
 // ---------------------------------------------------------------------------
 // Vacunas y padecimientos
 // ---------------------------------------------------------------------------
+
+export interface RazaCampoResponse {
+  etiqueta: string;
+  valor: string;
+}
+
+export interface RazaInfoResponse {
+  nombre: string;
+  imagenUrl: string | null;
+  campos: RazaCampoResponse[];
+}
+
+export interface RazaResponse {
+  id: string;
+  especie: string;
+  nombreEs: string;
+  nombreEn: string;
+}
+
+export const listarRazas = (token: string, especie: string) =>
+  call<RazaResponse[]>(() =>
+    http.get("/api/razas", {
+      headers: { Authorization: `Bearer ${token}` },
+      params: { especie },
+    })
+  );
+
+export const obtenerRazaInfo = (token: string, razaId: string, especie: string) =>
+  call<RazaInfoResponse>(() =>
+    http.get("/api/razas/info", {
+      headers: { Authorization: `Bearer ${token}` },
+      params: { razaId, especie },
+    })
+  );
 
 export const listarVacunas = (token: string) =>
   call<{ id: string; nombre: string }[]>(() =>

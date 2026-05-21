@@ -2,19 +2,18 @@
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Pencil, Trash2, CheckCircle, Syringe, AlertTriangle, ChevronLeft, ChevronRight, X, Expand, ZoomIn, Dog, Cat } from "lucide-react";
-import { AdvancedImage } from "@cloudinary/react";
+import { Pencil, Trash2, CheckCircle, Syringe, AlertTriangle, ChevronLeft, ChevronRight, X, Expand, ZoomIn, Dog, Cat, Info } from "lucide-react";
 import { getOptimizedImage } from "@/lib/cloudinary";
 import BotonInteres from "./BotonInteres";
 import ConfirmDialog from "./ConfirmDialog";
 import MultiSelect from "./MultiSelect";
 import GaleriaUpload from "./GaleriaUpload";
+import { AdvancedImage } from "@cloudinary/react";
 import { useAnimalDetalle, useAnimalActions } from "@/hooks/useAnimalData";
 import { useRazaInfo } from "@/hooks/useRazaInfo";
 import { listarVacunas, listarPadecimientos } from "@/lib/apiClient";
 import { getToken } from "@/lib/session";
 import type { AnimalResponse, AnimalDetalleResponse } from "@/lib/apiClient";
-import { Info, Zap, Heart, Clock } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Tipos
@@ -191,6 +190,7 @@ function EditForm({ animal, saving, error, onSave, onCancel }: EditFormProps) {
     nombre: animal.nombre,
     especie: animal.especie.toLowerCase().includes("gato") ? "Gato" : "Perro",
     raza: animal.raza ?? "",
+    razaId: animal.razaId ?? "",
     fechaNacimiento: animal.fechaNacimiento,
     sexo: animal.sexo as "MACHO" | "HEMBRA",
     descripcion: animal.descripcion,
@@ -202,6 +202,7 @@ function EditForm({ animal, saving, error, onSave, onCancel }: EditFormProps) {
   });
   const [catVacunas, setCatVacunas] = useState<string[]>([]);
   const [catPadecimientos, setCatPadecimientos] = useState<string[]>([]);
+  const [razasDisponibles, setRazasDisponibles] = useState<{ id: string; nombreEs: string }[]>([]);
 
   useEffect(() => {
     const token = getToken();
@@ -211,6 +212,20 @@ function EditForm({ animal, saving, error, onSave, onCancel }: EditFormProps) {
       if (p.ok) setCatPadecimientos(p.data.map((x) => x.nombre));
     });
   }, []);
+
+  // Cargar razas cuando cambia la especie
+  useEffect(() => {
+    const token = getToken();
+    if (!token) return;
+    const especieUpper = form.especie.toUpperCase() === "GATO" ? "GATO" : "PERRO";
+    import("@/lib/apiClient").then(({ listarRazas }) => {
+      listarRazas(token, especieUpper).then((res) => {
+        if (res.ok) setRazasDisponibles(res.data.map((r) => ({ id: r.id, nombreEs: r.nombreEs })));
+      });
+    });
+    // Limpiar raza al cambiar especie
+    setForm((p) => ({ ...p, razaId: "", raza: "" }));
+  }, [form.especie]);
 
   const set = (key: string, value: unknown) => setForm((p) => ({ ...p, [key]: value }));
 
@@ -233,7 +248,20 @@ function EditForm({ animal, saving, error, onSave, onCancel }: EditFormProps) {
         </div>
         <div className="form-control">
           <label className="label"><span className="label-text">Raza</span></label>
-          <input className="input input-bordered w-full" value={form.raza} onChange={(e) => set("raza", e.target.value)} />
+          <select
+            className="select select-bordered w-full"
+            value={form.razaId}
+            onChange={(e) => {
+              const selected = razasDisponibles.find((r) => r.id === e.target.value);
+              set("razaId", e.target.value);
+              set("raza", selected?.nombreEs ?? "");
+            }}
+          >
+            <option value="">Sin raza / Mestizo</option>
+            {razasDisponibles.map((r) => (
+              <option key={r.id} value={r.id}>{r.nombreEs}</option>
+            ))}
+          </select>
         </div>
         <div className="form-control">
           <label className="label"><span className="label-text">Fecha de nacimiento</span></label>
@@ -379,13 +407,11 @@ function Compact({ animal, rolUsuario, userId, tieneInteres = false, actions, on
 // SeccionRaza — info de API externa con fallback
 // ---------------------------------------------------------------------------
 
-function SeccionRaza({ especie, raza }: { especie: string; raza: string | null }) {
-  const { info, estado } = useRazaInfo(especie, raza);
+function SeccionRaza({ especie, razaId }: { especie: string; razaId: string | null }) {
+  const { info, estado } = useRazaInfo(especie, razaId);
 
-  // Sin raza registrada — no mostrar nada
-  if (!raza || raza.trim() === "") return null;
+  if (!razaId) return null;
 
-  // Cargando
   if (estado === "cargando") {
     return (
       <div className="rounded-box border border-base-300 p-4 flex items-center gap-3 text-base-content/50">
@@ -395,7 +421,6 @@ function SeccionRaza({ especie, raza }: { especie: string; raza: string | null }
     );
   }
 
-  // Error o no encontrado — fallback silencioso, no mostrar seccion
   if (estado === "error" || estado === "no_encontrado" || !info) return null;
 
   return (
@@ -405,41 +430,28 @@ function SeccionRaza({ especie, raza }: { especie: string; raza: string | null }
         Informacion de la raza: {info.nombre}
       </h2>
 
-      {info.descripcion && (
-        <p className="text-sm text-base-content/80 leading-relaxed">{info.descripcion}</p>
+      {/* Imagen de la raza si existe */}
+      {info.imagenUrl && (
+        <img
+          src={info.imagenUrl}
+          alt={info.nombre}
+          className="w-full max-h-48 object-cover rounded-box"
+        />
       )}
 
-      <div className="grid grid-cols-2 gap-2 text-sm">
-        {info.temperamento && (
-          <div className="col-span-2">
-            <span className="font-medium flex items-center gap-1 mb-1">
-              <Heart size={13} className="text-error" /> Temperamento
+      {/* Todos los campos no nulos, dinamicamente */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+        {info.campos.map(({ etiqueta, valor }) => (
+          <div
+            key={etiqueta}
+            className={valor.length > 80 ? "sm:col-span-2" : ""}
+          >
+            <span className="font-medium text-xs text-base-content/50 block mb-0.5">
+              {etiqueta}
             </span>
-            <p className="text-base-content/70">{info.temperamento}</p>
+            <p className="text-base-content/80 leading-relaxed">{valor}</p>
           </div>
-        )}
-        {info.esperanzaVida && (
-          <div>
-            <span className="font-medium flex items-center gap-1 mb-0.5">
-              <Clock size={13} className="text-info" /> Esperanza de vida
-            </span>
-            <p className="text-base-content/70">{info.esperanzaVida}</p>
-          </div>
-        )}
-        {info.nivelEnergia && (
-          <div>
-            <span className="font-medium flex items-center gap-1 mb-0.5">
-              <Zap size={13} className="text-warning" /> Nivel de energia
-            </span>
-            <p className="text-base-content/70">{info.nivelEnergia}</p>
-          </div>
-        )}
-        {info.pesoPromedio && (
-          <div>
-            <span className="font-medium text-xs text-base-content/50 block mb-0.5">Peso promedio</span>
-            <p className="text-base-content/70">{info.pesoPromedio}</p>
-          </div>
-        )}
+        ))}
       </div>
 
       <p className="text-xs text-base-content/30 text-right">
@@ -507,7 +519,7 @@ function Detail({ animal, rolUsuario, userId, tieneInteres = false, actions }: B
           )}
         </div>
 
-        <SeccionRaza especie={animal.especie} raza={animal.raza} />
+        <SeccionRaza especie={animal.especie} razaId={animal.razaId ?? null} />
 
         <div className="divider my-0" />
 

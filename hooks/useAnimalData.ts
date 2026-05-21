@@ -161,6 +161,7 @@ export function useAnimalActions(
       nombre: formData.nombre!,
       especie: formData.especie!,
       raza: (formData.raza as string)?.trim() || undefined,
+      razaId: (formData as any).razaId || undefined,
       fechaNacimiento: formData.fechaNacimiento!,
       sexo: (formData.sexo as "MACHO" | "HEMBRA") ?? "MACHO",
       descripcion: formData.descripcion!,
