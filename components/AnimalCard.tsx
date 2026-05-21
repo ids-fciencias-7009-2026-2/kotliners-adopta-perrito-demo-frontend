@@ -10,9 +10,11 @@ import ConfirmDialog from "./ConfirmDialog";
 import MultiSelect from "./MultiSelect";
 import GaleriaUpload from "./GaleriaUpload";
 import { useAnimalDetalle, useAnimalActions } from "@/hooks/useAnimalData";
+import { useRazaInfo } from "@/hooks/useRazaInfo";
 import { listarVacunas, listarPadecimientos } from "@/lib/apiClient";
 import { getToken } from "@/lib/session";
 import type { AnimalResponse, AnimalDetalleResponse } from "@/lib/apiClient";
+import { Info, Zap, Heart, Clock } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Tipos
@@ -374,6 +376,80 @@ function Compact({ animal, rolUsuario, userId, tieneInteres = false, actions, on
 }
 
 // ---------------------------------------------------------------------------
+// SeccionRaza — info de API externa con fallback
+// ---------------------------------------------------------------------------
+
+function SeccionRaza({ especie, raza }: { especie: string; raza: string | null }) {
+  const { info, estado } = useRazaInfo(especie, raza);
+
+  // Sin raza registrada — no mostrar nada
+  if (!raza || raza.trim() === "") return null;
+
+  // Cargando
+  if (estado === "cargando") {
+    return (
+      <div className="rounded-box border border-base-300 p-4 flex items-center gap-3 text-base-content/50">
+        <span className="loading loading-spinner loading-sm" />
+        <span className="text-sm">Buscando informacion de la raza...</span>
+      </div>
+    );
+  }
+
+  // Error o no encontrado — fallback silencioso, no mostrar seccion
+  if (estado === "error" || estado === "no_encontrado" || !info) return null;
+
+  return (
+    <div className="rounded-box border border-primary/20 bg-primary/5 p-4 space-y-3">
+      <h2 className="font-semibold flex items-center gap-2 text-primary">
+        <Info size={16} />
+        Informacion de la raza: {info.nombre}
+      </h2>
+
+      {info.descripcion && (
+        <p className="text-sm text-base-content/80 leading-relaxed">{info.descripcion}</p>
+      )}
+
+      <div className="grid grid-cols-2 gap-2 text-sm">
+        {info.temperamento && (
+          <div className="col-span-2">
+            <span className="font-medium flex items-center gap-1 mb-1">
+              <Heart size={13} className="text-error" /> Temperamento
+            </span>
+            <p className="text-base-content/70">{info.temperamento}</p>
+          </div>
+        )}
+        {info.esperanzaVida && (
+          <div>
+            <span className="font-medium flex items-center gap-1 mb-0.5">
+              <Clock size={13} className="text-info" /> Esperanza de vida
+            </span>
+            <p className="text-base-content/70">{info.esperanzaVida}</p>
+          </div>
+        )}
+        {info.nivelEnergia && (
+          <div>
+            <span className="font-medium flex items-center gap-1 mb-0.5">
+              <Zap size={13} className="text-warning" /> Nivel de energia
+            </span>
+            <p className="text-base-content/70">{info.nivelEnergia}</p>
+          </div>
+        )}
+        {info.pesoPromedio && (
+          <div>
+            <span className="font-medium text-xs text-base-content/50 block mb-0.5">Peso promedio</span>
+            <p className="text-base-content/70">{info.pesoPromedio}</p>
+          </div>
+        )}
+      </div>
+
+      <p className="text-xs text-base-content/30 text-right">
+        Fuente: {especie.toUpperCase().includes("GATO") ? "The Cat API" : "The Dog API"}
+      </p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // AnimalCard.Detail
 // ---------------------------------------------------------------------------
 
@@ -430,6 +506,8 @@ function Detail({ animal, rolUsuario, userId, tieneInteres = false, actions }: B
             <div className="flex flex-wrap gap-2">{animal.padecimientos.map((p) => <span key={p} className="badge badge-warning gap-1">{p}</span>)}</div>
           )}
         </div>
+
+        <SeccionRaza especie={animal.especie} raza={animal.raza} />
 
         <div className="divider my-0" />
 
