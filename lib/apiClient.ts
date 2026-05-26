@@ -123,6 +123,8 @@ export interface AnimalResponse {
   fechaRegistro: string;
   fotoPortada: string | null;
   numInteresados: number;
+  latitud: number | null;
+  longitud: number | null;
 }
 
 export interface AnimalDetalleResponse extends AnimalResponse {
