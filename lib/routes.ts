@@ -3,6 +3,8 @@ export const ROUTES = {
     HOME: "/home",
     LOGIN: "/login",
     REGISTRO: "/registro",
+    VERIFICAR_CORREO: "/verificar-correo",
+    RECUPERAR_CONTRASENA: "/recuperar-contrasena",
     PROFILE: "/profile",
     FAVORITOS: "/favoritos",
     ANIMALS: "/animals",
@@ -13,6 +15,8 @@ export const ROUTES = {
 export const PUBLIC_ROUTES = [
     ROUTES.LOGIN,
     ROUTES.REGISTRO,
+    ROUTES.VERIFICAR_CORREO,
+    ROUTES.RECUPERAR_CONTRASENA,
 ];
 
 /** Rutas protegidas que requieren autenticacion. */

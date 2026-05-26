@@ -102,7 +102,7 @@ export default function RegistroPage() {
     setLoading(true);
     try {
       await register(form);
-      router.push(ROUTES.LOGIN);
+      router.push(`${ROUTES.VERIFICAR_CORREO}?email=${encodeURIComponent(form.email)}`);
     } catch {
       setServerError("Error al registrar. Verifica que los datos no esten duplicados.");
     } finally {

@@ -31,6 +31,7 @@ export interface Usuario {
   apellidoMaterno: string;
   email: string;
   codigoPostal: string;
+  twoFactorEnabled?: boolean;
 }
 
 /** Payload para POST /usuarios/register */
@@ -51,6 +52,15 @@ export interface RegistroPayload {
 export interface LoginPayload {
   email: string;
   password: string;
+}
+
+export interface LoginSuccess {
+  token: string;
+}
+
+export interface TwoFactorRequired {
+  requiere2FA: true;
+  mensaje: string;
 }
 
 /** Payload para PUT /usuarios */
@@ -189,20 +199,36 @@ export function normalizarAnimal(raw: unknown): Animal {
  * - Otros errores HTTP devuelven el texto del cuerpo de la respuesta.
  * @param response - Respuesta de fetch a procesar.
  */
-async function handleResponse<T>(response: Response): Promise<ApiResult<T>> {
+function readErrorMessage(errorText: string, fallback: string): string {
+  if (!errorText) return fallback;
+  try {
+    const parsed = JSON.parse(errorText) as Record<string, unknown>;
+    if (typeof parsed.error === "string") return parsed.error;
+    if (typeof parsed.mensaje === "string") return parsed.mensaje;
+  } catch {
+    // Algunos endpoints devuelven texto plano.
+  }
+  return errorText;
+}
+
+async function handleResponse<T>(
+  response: Response,
+  options: { emitSessionExpired?: boolean } = {}
+): Promise<ApiResult<T>> {
+  const emitSessionExpired = options.emitSessionExpired ?? true;
   if (response.ok) {
     // Algunos endpoints no devuelven cuerpo JSON
     const text = await response.text();
     const data = text ? (JSON.parse(text) as T) : ({} as T);
     return { ok: true, data };
   }
-  if (response.status === 401 || response.status === 403) {
+  if ((response.status === 401 || response.status === 403) && emitSessionExpired) {
     // Emitir evento para que todos los observadores reaccionen
     if (typeof window !== "undefined") sessionEvents.emit("session:expired");
     return { ok: false, error: "SESSION_EXPIRED" };
   }
   const errorText = await response.text();
-  return { ok: false, error: errorText || `Error ${response.status}` };
+  return { ok: false, error: readErrorMessage(errorText, `Error ${response.status}`) };
 }
 
 // ---------------------------------------------------------------------------
@@ -232,14 +258,81 @@ export async function registrarUsuario(body: RegistroPayload): Promise<ApiResult
  * Endpoint: POST /usuarios/login
  * @param body - Credenciales del usuario (email y password).
  */
-export async function loginUsuario(body: LoginPayload): Promise<ApiResult<{ token: string }>> {
+export async function loginUsuario(body: LoginPayload): Promise<ApiResult<LoginSuccess | TwoFactorRequired>> {
   try {
     const response = await fetch(`${BASE_URL}/usuarios/login`, {
       method: "POST",
       headers: buildHeaders(),
       body: JSON.stringify(body),
     });
-    return handleResponse<{ token: string }>(response);
+    return handleResponse<LoginSuccess | TwoFactorRequired>(response, { emitSessionExpired: false });
+  } catch {
+    return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
+  }
+}
+
+export async function verificarCorreo(token: string): Promise<ApiResult<{ mensaje: string }>> {
+  try {
+    const response = await fetch(`${BASE_URL}/usuarios/verify-email`, {
+      method: "POST",
+      headers: buildHeaders(),
+      body: JSON.stringify({ token }),
+    });
+    return handleResponse<{ mensaje: string }>(response, { emitSessionExpired: false });
+  } catch {
+    return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
+  }
+}
+
+export async function solicitarRecuperacionContrasena(email: string): Promise<ApiResult<{ mensaje: string }>> {
+  try {
+    const response = await fetch(`${BASE_URL}/usuarios/password-reset/request`, {
+      method: "POST",
+      headers: buildHeaders(),
+      body: JSON.stringify({ email }),
+    });
+    return handleResponse<{ mensaje: string }>(response, { emitSessionExpired: false });
+  } catch {
+    return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
+  }
+}
+
+export async function confirmarRecuperacionContrasena(
+  token: string,
+  newPassword: string
+): Promise<ApiResult<{ mensaje: string }>> {
+  try {
+    const response = await fetch(`${BASE_URL}/usuarios/password-reset/confirm`, {
+      method: "POST",
+      headers: buildHeaders(),
+      body: JSON.stringify({ token, newPassword }),
+    });
+    return handleResponse<{ mensaje: string }>(response, { emitSessionExpired: false });
+  } catch {
+    return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
+  }
+}
+
+export async function verificarTwoFactor(email: string, code: string): Promise<ApiResult<LoginSuccess>> {
+  try {
+    const response = await fetch(`${BASE_URL}/usuarios/2fa/verify`, {
+      method: "POST",
+      headers: buildHeaders(),
+      body: JSON.stringify({ email, code }),
+    });
+    return handleResponse<LoginSuccess>(response, { emitSessionExpired: false });
+  } catch {
+    return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
+  }
+}
+
+export async function cambiarTwoFactor(token: string, enabled: boolean): Promise<ApiResult<{ mensaje: string }>> {
+  try {
+    const response = await fetch(`${BASE_URL}/usuarios/2fa/${enabled ? "enable" : "disable"}`, {
+      method: "POST",
+      headers: buildHeaders(token),
+    });
+    return handleResponse<{ mensaje: string }>(response);
   } catch {
     return { ok: false, error: "El servicio no esta disponible. Intenta mas tarde." };
   }

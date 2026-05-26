@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { actualizarPerfil, obtenerPerfil, subirFotoPerfil, Usuario } from "@/lib/apiClient";
+import { actualizarPerfil, cambiarTwoFactor, obtenerPerfil, subirFotoPerfil, Usuario } from "@/lib/apiClient";
 import { getToken } from "@/lib/session";
 import { ROUTES } from "@/lib/routes";
-import { User, Pencil, X, Save, Upload } from "lucide-react";
+import { KeyRound, Pencil, Save, Upload, User, X } from "lucide-react";
 
 /** Tipo del formulario de perfil — fotoPerfil puede ser string o null. */
 type FormPerfil = Omit<Usuario, "fotoPerfil"> & { fotoPerfil: string | null };
@@ -16,6 +16,7 @@ export default function PerfilPage() {
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [updatingTwoFactor, setUpdatingTwoFactor] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -88,6 +89,26 @@ export default function PerfilPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleTwoFactorChange(enabled: boolean) {
+    const token = getToken();
+    if (!token || !usuario) return;
+    setUpdatingTwoFactor(true);
+    setError(null);
+    setSuccess(null);
+    const res = await cambiarTwoFactor(token, enabled);
+    if (!res.ok) {
+      setError(res.error);
+      setUpdatingTwoFactor(false);
+      return;
+    }
+    const updated = { ...usuario, twoFactorEnabled: enabled };
+    setUsuario(updated);
+    sessionStorage.setItem("usuario", JSON.stringify(updated));
+    setSuccess(enabled ? "2FA habilitado correctamente" : "2FA deshabilitado correctamente");
+    setTimeout(() => setSuccess(null), 3000);
+    setUpdatingTwoFactor(false);
   }
 
   if (!form || !usuario) {
@@ -170,10 +191,28 @@ export default function PerfilPage() {
                       <tr><th>Apellido materno</th><td>{usuario.apellidoMaterno}</td></tr>
                       <tr><th>Correo</th><td>{usuario.email}</td></tr>
                       <tr><th>Codigo postal</th><td>{usuario.codigoPostal}</td></tr>
+                      <tr>
+                        <th>2FA</th>
+                        <td>
+                          <span className={`badge ${usuario.twoFactorEnabled ? "badge-success" : "badge-ghost"}`}>
+                            {usuario.twoFactorEnabled ? "Activo" : "Inactivo"}
+                          </span>
+                        </td>
+                      </tr>
                       <tr><th>Rol</th><td><span className="badge badge-primary">{usuario.rol}</span></td></tr>
                       <tr><th>Username</th><td>@{usuario.username}</td></tr>
                     </tbody>
                   </table>
+                  <button
+                    type="button"
+                    disabled={updatingTwoFactor}
+                    onClick={() => handleTwoFactorChange(!usuario.twoFactorEnabled)}
+                    className="btn btn-outline btn-primary w-full gap-2 mt-4"
+                  >
+                    {updatingTwoFactor
+                      ? <span className="loading loading-spinner loading-sm" />
+                      : <><KeyRound size={18} /> {usuario.twoFactorEnabled ? "Desactivar 2FA" : "Activar 2FA"}</>}
+                  </button>
                 </div>
               ) : (
                 <>
