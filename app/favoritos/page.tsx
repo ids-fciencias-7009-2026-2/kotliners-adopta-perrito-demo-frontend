@@ -18,7 +18,7 @@ function toAnimalResponse(a: AnimalInteresResponse): AnimalResponse {
     raza: a.raza,
     fechaNacimiento: a.fechaNacimiento,
     sexo: a.sexo,
-    descripción: a.descripción,
+    descripcion: a.descripcion,
     estatus: a.estatus,
     esterilizado: a.esterilizado,
     usuarioId: "",

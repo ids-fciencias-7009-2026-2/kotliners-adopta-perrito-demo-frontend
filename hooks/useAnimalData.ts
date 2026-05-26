@@ -126,7 +126,7 @@ export function useAnimalActions(
       raza: animalData.raza ?? undefined,
       fechaNacimiento: animalData.fechaNacimiento,
       sexo: animalData.sexo === "HEMBRA" ? "HEMBRA" : "MACHO",
-      descripción: animalData.descripción,
+      descripcion: animalData.descripcion,
       estatus: nextStatus,
       inapropiado: false,
       esterilizado: animalData.esterilizado,
@@ -150,8 +150,8 @@ export function useAnimalActions(
   async function handleSaveEdit(formData: Partial<AnimalDetalleResponse>) {
     const token = getToken();
     if (!token) { setSaveError("Token requerido"); return; }
-    if (!formData.nombre?.trim() || !formData.especie?.trim() || !formData.descripción?.trim()) {
-      setSaveError("Nombre, especie y descripción son obligatorios.");
+    if (!formData.nombre?.trim() || !formData.especie?.trim() || !formData.descripcion?.trim()) {
+      setSaveError("Nombre, especie y descripcion son obligatorios.");
       return;
     }
     const { actualizarAnimal, actualizarVacunasAnimal, actualizarPadecimientosAnimal } = await import("@/lib/apiClient");
@@ -164,7 +164,7 @@ export function useAnimalActions(
       razaId: (formData as any).razaId || undefined,
       fechaNacimiento: formData.fechaNacimiento!,
       sexo: (formData.sexo as "MACHO" | "HEMBRA") ?? "MACHO",
-      descripción: formData.descripción!,
+      descripcion: formData.descripcion!,
       estatus: (formData.estatus as "DISPONIBLE" | "ADOPTADO") ?? "DISPONIBLE",
       inapropiado: false,
       esterilizado: formData.esterilizado ?? false,

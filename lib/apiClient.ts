@@ -93,7 +93,7 @@ export interface AnimalInteresResponse {
   raza: string | null;
   fechaNacimiento: string;
   sexo: string;
-  descripción: string;
+  descripcion: string;
   estatus: string;
   esterilizado: boolean;
   fechaInteres: string;
@@ -116,7 +116,7 @@ export interface AnimalResponse {
   razaId: string | null;
   fechaNacimiento: string;
   sexo: string;
-  descripción: string;
+  descripcion: string;
   estatus: string;
   esterilizado: boolean;
   usuarioId: string;
@@ -140,7 +140,7 @@ export interface CreateAnimalPayload {
   razaId?: string;
   fechaNacimiento: string;
   sexo: "MACHO" | "HEMBRA";
-  descripción: string;
+  descripcion: string;
   esterilizado: boolean;
 }
 
@@ -151,7 +151,7 @@ export interface UpdateAnimalPayload {
   razaId?: string;
   fechaNacimiento: string;
   sexo: "MACHO" | "HEMBRA";
-  descripción: string;
+  descripcion: string;
   estatus: "DISPONIBLE" | "ADOPTADO";
   inapropiado: boolean;
   esterilizado: boolean;
@@ -265,7 +265,13 @@ export interface FiltrosAnimales {
   codigoPostal?: string;
   vacuna?: string;
   sinPadecimientos?: boolean;
+  soloVacunados?: boolean;
   ordenar?: string;
+  ordenDesc?: boolean;
+  razaId?: string;
+  edadMinAnios?: number;
+  edadMaxAnios?: number;
+  distanciaKm?: number;
 }
 
 export const listarAnimales = (token?: string, filtros?: FiltrosAnimales) =>
@@ -277,7 +283,13 @@ export const listarAnimales = (token?: string, filtros?: FiltrosAnimales) =>
     if (filtros?.codigoPostal) params.codigoPostal = filtros.codigoPostal;
     if (filtros?.vacuna) params.vacuna = filtros.vacuna;
     if (filtros?.sinPadecimientos) params.sinPadecimientos = "true";
+    if (filtros?.soloVacunados) params.soloVacunados = "true";
     if (filtros?.ordenar) params.ordenar = filtros.ordenar;
+    if (filtros?.ordenDesc !== undefined) params.ordenDesc = String(filtros.ordenDesc);
+    if (filtros?.razaId) params.razaId = filtros.razaId;
+    if (filtros?.edadMinAnios !== undefined) params.edadMinAnios = String(filtros.edadMinAnios);
+    if (filtros?.edadMaxAnios !== undefined) params.edadMaxAnios = String(filtros.edadMaxAnios);
+    if (filtros?.distanciaKm !== undefined) params.distanciaKm = String(filtros.distanciaKm);
     return http.get("/api/animales", {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       params,
@@ -322,11 +334,13 @@ export const eliminarAnimal = (token: string, body: DeleteAnimalPayload) =>
 export interface RazaCampoResponse {
   etiqueta: string;
   valor: string;
+  tipo: "TEXT" | "SCORE" | "BOOL";
 }
 
 export interface RazaInfoResponse {
   nombre: string;
   imagenUrl: string | null;
+  wikipediaUrl: string | null;
   campos: RazaCampoResponse[];
 }
 

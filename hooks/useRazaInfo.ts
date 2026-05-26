@@ -32,7 +32,7 @@ export function useRazaInfo(especie: string, razaId: string | null): {
     setEstado("cargando");
     setInfo(null);
 
-    obtenerRazaInfo(token, razaId, especie).then((res) => {
+    obtenerRazaInfo(token, razaId, especie.toUpperCase()).then((res) => {
       if (res.ok) {
         setInfo(res.data);
         setEstado("ok");
