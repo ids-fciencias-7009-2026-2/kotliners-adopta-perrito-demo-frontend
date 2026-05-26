@@ -5,7 +5,7 @@ import { Search, SlidersHorizontal, Plus, PawPrint, X } from "lucide-react";
 import Link from "next/link";
 import AnimalCard from "@/components/AnimalCard";
 import ConfirmDialog from "@/components/ConfirmDialog";
-import { eliminarAnimal, listarMisAnimales, type AnimalResponse } from "@/lib/apiClient";
+import { eliminarAnimal, listarMisAnimales, listarHistorialAdoptados, type AnimalResponse } from "@/lib/apiClient";
 import { getToken } from "@/lib/session";
 import { useRouter } from "next/navigation";
 import { ROUTES } from "@/lib/routes";
@@ -32,6 +32,8 @@ export default function MisMáscotasPage() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [historialAdoptados, setHistorialAdoptados] = useState<AnimalResponse[]>([]);
+  const [loadingHistorial, setLoadingHistorial] = useState(false);
 
   const rol = typeof window !== "undefined"
     ? JSON.parse(sessionStorage.getItem("usuario") || "{}").rol as string | undefined
@@ -41,9 +43,10 @@ export default function MisMáscotasPage() {
     : undefined;
 
   useEffect(() => {
-    const token = getToken();
-    if (!token) return;
-    listarMisAnimales(token).then((res) => {
+    async function cargarDatos() {
+      const token = getToken();
+      if (!token) return;
+      const res = await listarMisAnimales(token);
       if (res.ok) {
         setMáscotas(res.data);
       } else if (res.error !== "SESSION_EXPIRED") {
@@ -52,7 +55,14 @@ export default function MisMáscotasPage() {
         setError(res.error);
       }
       setLoading(false);
-    });
+      setLoadingHistorial(true);
+      const resHistorial = await listarHistorialAdoptados(token);
+      if (resHistorial.ok) {
+        setHistorialAdoptados(resHistorial.data);
+      }
+      setLoadingHistorial(false);
+    }
+    cargarDatos();
   }, []);
 
   function removeMáscotaFromList(id: string) {
@@ -233,6 +243,45 @@ export default function MisMáscotasPage() {
           </div>
         )}
       </div>
+            {/* Historial de adoptados */}
+            <div className="mt-10">
+              <h2 className="text-xl font-bold mb-4">
+                Historial de adoptados
+              </h2>
+              {loadingHistorial ? (
+                <p className="text-gray-400">Cargando...</p>
+              ) : historialAdoptados.length === 0 ? (
+                <p className="text-gray-400">
+                  Aun no tienes animales marcados como adoptados.
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {historialAdoptados.map((animal) => (
+                    <div
+                      key={animal.id}
+                      className="card bg-base-200 shadow p-4"
+                    >
+                      {animal.fotoPortada && (
+                        <img
+                          src={animal.fotoPortada}
+                          alt={animal.nombre}
+                          className="rounded-lg w-full h-40 object-cover mb-3"
+                        />
+                      )}
+                      <h3 className="font-bold text-lg">
+                        {animal.nombre}
+                      </h3>
+                      <p className="text-sm text-gray-500">
+                        {animal.especie} · {animal.raza ?? "Raza desconocida"}
+                      </p>
+                      <span className="badge badge-success mt-2">
+                        Adoptado
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
       <ConfirmDialog
         open={pendingDeleteId !== null}

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { actualizarPerfil, obtenerPerfil, subirFotoPerfil, Usuario } from "@/lib/apiClient";
-import { getToken } from "@/lib/session";
+import { actualizarPerfil, eliminarCuenta, obtenerPerfil, subirFotoPerfil, Usuario } from "@/lib/apiClient";
+import { getToken, removeToken } from "@/lib/session";
 import { ROUTES } from "@/lib/routes";
 import { User, Pencil, X, Save, Upload } from "lucide-react";
 import AvatarCircle from "@/components/AvatarCircle";
@@ -19,6 +19,8 @@ export default function PerfilPage() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [eliminando, setEliminando] = useState(false);
+  const [confirmarEliminar, setConfirmarEliminar] = useState(false);
 
   /** Carga el perfil desde el backend al montar el componente. */
   useEffect(() => {
@@ -91,6 +93,22 @@ export default function PerfilPage() {
       setLoading(false);
     }
   }
+
+    async function handleEliminarCuenta() {
+      const token = getToken();
+      if (!token) return;
+      setEliminando(true);
+      const res = await eliminarCuenta(token);
+      if (res.ok) {
+        removeToken();
+        sessionStorage.removeItem("usuario");
+        window.location.href = "/login";
+      } else {
+        setError(res.error);
+        setEliminando(false);
+      }
+      setConfirmarEliminar(false);
+    }
 
   if (!form || !usuario) {
     return (
@@ -198,6 +216,39 @@ export default function PerfilPage() {
                 </>
               )}
             </form>
+            {/* Zona de eliminacion de cuenta */}
+            <div className="mt-8 border-t border-red-200 pt-6">
+              <p className="text-sm text-gray-500 mb-3">
+                Zona de peligro — esta accion no se puede deshacer.
+              </p>
+              {!confirmarEliminar ? (
+                <button
+                  onClick={() => setConfirmarEliminar(true)}
+                  className="btn btn-error btn-outline btn-sm"
+                >
+                  Eliminar mi cuenta
+                </button>
+              ) : (
+                <div className="flex gap-3 items-center">
+                  <p className="text-sm text-red-600 font-medium">
+                    ¿Seguro? Esta accion es permanente.
+                  </p>
+                  <button
+                    onClick={handleEliminarCuenta}
+                    disabled={eliminando}
+                    className="btn btn-error btn-sm"
+                  >
+                    {eliminando ? "Eliminando..." : "Sí, eliminar"}
+                  </button>
+                  <button
+                    onClick={() => setConfirmarEliminar(false)}
+                    className="btn btn-ghost btn-sm"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

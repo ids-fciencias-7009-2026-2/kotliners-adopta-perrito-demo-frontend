@@ -203,6 +203,12 @@ export const obtenerPerfil = (token: string) =>
 export const actualizarPerfil = (token: string, body: ActualizarPerfilPayload) =>
   call<Usuario>(() => http.put("/usuarios", body, { headers: { Authorization: `Bearer ${token}` } }));
 
+export const eliminarCuenta = (token: string) =>
+  call<{ mensaje: string }>(() => http.delete("/usuarios/me", { headers: { Authorization: `Bearer ${token}` }, }));
+
+export const listarHistorialAdoptados = (token: string) =>
+  call<AnimalResponse[]>(() => http.get("/api/animales/historial-adoptados", { headers: { Authorization: `Bearer ${token}` },}));
+
 // ---------------------------------------------------------------------------
 // Intereses
 // ---------------------------------------------------------------------------
@@ -326,6 +332,12 @@ export const eliminarAnimal = (token: string, body: DeleteAnimalPayload) =>
       data: body,
     })
   );
+
+// Endpoint para marcar un animal como inapropiado (solo para adoptantes)
+export const marcarAnimalInapropiado = (animalId: string) =>
+    call<void>(() =>
+        http.patch(`/api/animales/${animalId}/inapropiado`)
+    );
 
 // ---------------------------------------------------------------------------
 // Vacunas y padecimientos
