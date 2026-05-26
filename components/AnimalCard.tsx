@@ -6,6 +6,7 @@ import { Pencil, Trash2, CheckCircle, Syringe, AlertTriangle, ChevronLeft, Chevr
 import { AdvancedImage } from "@cloudinary/react";
 import { getOptimizedImage } from "@/lib/cloudinary";
 import BotonInteres from "./BotonInteres";
+import BotonFlag from "./BotonFlag";
 import ConfirmDialog from "./ConfirmDialog";
 import MultiSelect from "./MultiSelect";
 import GaleriaUpload from "./GaleriaUpload";
@@ -345,7 +346,22 @@ function Compact({ animal, rolUsuario, userId, tieneInteres = false, actions, on
                 {actions?.onDelete && <button onClick={() => actions.onDelete!(animalLocal.id)} className="btn btn-sm btn-error btn-outline gap-1"><Trash2 size={14} /> Eliminar</button>}
               </div>
             ) : (
-              <BotonInteres animalId={animalLocal.id} nombreAnimal={animalLocal.nombre} tieneInteres={tieneInteres} estatus={animalLocal.estatus} rolUsuario={rolUsuario} allowRemove={allowRemove} />
+                <div className="flex gap-2 flex-wrap">
+                    <BotonInteres
+                        animalId={animalLocal.id}
+                        nombreAnimal={animalLocal.nombre}
+                        tieneInteres={tieneInteres}
+                        estatus={animalLocal.estatus}
+                        rolUsuario={rolUsuario}
+                        allowRemove={allowRemove}
+                    />
+
+                    <BotonFlag
+                        animalId={animalLocal.id}
+                        nombreAnimal={animalLocal.nombre}
+                        rolUsuario={rolUsuario}
+                    />
+                </div>
             )}
           </div>
         </div>
