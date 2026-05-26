@@ -1,21 +1,15 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, lazy, Suspense } from "react";
 import AnimalCard from "@/components/AnimalCard";
 import RangeSlider from "@/components/RangeSlider";
 import { useAnimalList } from "@/hooks/useAnimalData";
 import { listarRazas, type FiltrosAnimales, type RazaResponse } from "@/lib/apiClient";
 import { getToken } from "@/lib/session";
-import { Search, SlidersHorizontal, MapPin, PawPrint, X, Expand, Cat, Dog, ArrowUpDown } from "lucide-react";
+import { Search, SlidersHorizontal, PawPrint, X, Expand, Cat, Dog, ArrowUpDown } from "lucide-react";
 
-const PIN_POSITIONS: Record<string, { x: number; y: number }> = {};
-function getPinPosition(id: string) {
-  if (!PIN_POSITIONS[id]) {
-    const hash = id.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
-    PIN_POSITIONS[id] = { x: 20 + (hash % 60), y: 20 + ((hash * 7) % 55) };
-  }
-  return PIN_POSITIONS[id];
-}
+const MapaAnimales = lazy(() => import("@/components/MapaAnimales"));
+
 
 function calcularEdad(fechaNacimiento: string) {
   const [y, m, d] = fechaNacimiento.split("-").map(Number);
@@ -391,35 +385,20 @@ export default function ExplorarPage() {
         )}
       </div>
 
-      {/* MAPA placeholder */}
-      <div className="hidden lg:flex flex-1 relative bg-primary/5 items-center justify-center">
-        <div className="absolute inset-0 opacity-10" style={{
-          backgroundImage: "repeating-linear-gradient(0deg, #888 0, #888 1px, transparent 1px, transparent 40px), repeating-linear-gradient(90deg, #888 0, #888 1px, transparent 1px, transparent 40px)",
-        }} />
-        {filtrados.map((animal) => {
-          const pos = getPinPosition(animal.id);
-          const isSelected = selectedId === animal.id;
-          const isAdoptado = animal.estatus === "ADOPTADO";
-          return (
-            <button key={animal.id}
-              onClick={() => setSelectedId(animal.id === selectedId ? null : animal.id)}
-              className="absolute transition-transform hover:scale-110"
-              style={{ left: `${pos.x}%`, top: `${pos.y}%`, transform: "translate(-50%, -100%)" }}>
-              <div className="flex flex-col items-center gap-0.5">
-                <div className={`px-2 py-1 rounded-full text-xs font-semibold shadow-lg whitespace-nowrap ${
-                  isSelected ? "bg-primary text-primary-content scale-110"
-                  : isAdoptado ? "bg-neutral text-neutral-content"
-                  : "bg-base-100 text-base-content border border-base-300"
-                }`}>{animal.nombre}</div>
-                <div className={`w-2 h-2 rounded-full ${isSelected ? "bg-primary" : isAdoptado ? "bg-neutral" : "bg-base-content/40"}`} />
-              </div>
-            </button>
-          );
-        })}
-        <div className="text-center text-base-content/30 select-none pointer-events-none">
-          <MapPin size={48} className="mx-auto mb-2" />
-          <p className="text-sm">Mapa interactivo proximamente</p>
-        </div>
+      {/* MAPA con OpenStreetMap */}
+      <div className="hidden lg:block flex-1 relative">
+        <Suspense fallback={
+          <div className="w-full h-full flex items-center justify-center bg-base-200">
+            <span className="loading loading-spinner loading-lg text-primary" />
+          </div>
+        }>
+          <MapaAnimales
+            animales={filtrados}
+            selectedId={selectedId}
+            onSelect={(id) => setSelectedId(id === selectedId ? null : id)}
+            onOpenModal={(id) => setModalId(id)}
+          />
+        </Suspense>
       </div>
 
       {modalId && (

@@ -16,6 +16,7 @@ function toAnimalResponse(a: AnimalInteresResponse): AnimalResponse {
     nombre: a.nombre,
     especie: a.especie,
     raza: a.raza,
+    razaId: null,
     fechaNacimiento: a.fechaNacimiento,
     sexo: a.sexo,
     descripcion: a.descripcion,
@@ -25,6 +26,8 @@ function toAnimalResponse(a: AnimalInteresResponse): AnimalResponse {
     fechaRegistro: a.fechaRegistro ?? "",
     fotoPortada: a.fotoPortada,
     numInteresados: 0,
+    latitud: null,
+    longitud: null,
   };
 }
 
