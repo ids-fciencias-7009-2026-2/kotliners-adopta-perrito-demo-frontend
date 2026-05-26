@@ -292,6 +292,12 @@ export const eliminarAnimal = (token: string, body: DeleteAnimalPayload) =>
     })
   );
 
+// Endpoint para marcar un animal como inapropiado (solo para adoptantes)
+export const marcarAnimalInapropiado = (animalId: string) =>
+    call<void>(() =>
+        http.patch(`/api/animales/${animalId}/inapropiado`)
+    );
+
 // ---------------------------------------------------------------------------
 // Vacunas y padecimientos
 // ---------------------------------------------------------------------------
