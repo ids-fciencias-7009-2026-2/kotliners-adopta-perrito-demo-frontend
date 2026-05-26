@@ -93,7 +93,7 @@ export interface AnimalInteresResponse {
   raza: string | null;
   fechaNacimiento: string;
   sexo: string;
-  descripcion: string;
+  descripción: string;
   estatus: string;
   esterilizado: boolean;
   fechaInteres: string;
@@ -116,7 +116,7 @@ export interface AnimalResponse {
   razaId: string | null;
   fechaNacimiento: string;
   sexo: string;
-  descripcion: string;
+  descripción: string;
   estatus: string;
   esterilizado: boolean;
   usuarioId: string;
@@ -140,7 +140,7 @@ export interface CreateAnimalPayload {
   razaId?: string;
   fechaNacimiento: string;
   sexo: "MACHO" | "HEMBRA";
-  descripcion: string;
+  descripción: string;
   esterilizado: boolean;
 }
 
@@ -151,7 +151,7 @@ export interface UpdateAnimalPayload {
   razaId?: string;
   fechaNacimiento: string;
   sexo: "MACHO" | "HEMBRA";
-  descripcion: string;
+  descripción: string;
   estatus: "DISPONIBLE" | "ADOPTADO";
   inapropiado: boolean;
   esterilizado: boolean;
@@ -165,7 +165,7 @@ export interface DeleteAnimalPayload {
 // Helper interno
 // ---------------------------------------------------------------------------
 
-/** Convierte una respuesta Axios exitosa o un error en ApiResult */
+/** Convierte una respuesta Axios éxitosa o un error en ApiResult */
 async function call<T>(fn: () => Promise<{ data: T }>): Promise<ApiResult<T>> {
   try {
     const res = await fn();
@@ -179,7 +179,7 @@ async function call<T>(fn: () => Promise<{ data: T }>): Promise<ApiResult<T>> {
         ? typeof err.response.data === "string"
           ? err.response.data
           : JSON.stringify(err.response.data)
-        : "El servicio no esta disponible. Intenta mas tarde.";
+        : "El servicio no está disponible. Intenta mas tarde.";
     return { ok: false, error: msg };
   }
 }

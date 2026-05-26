@@ -10,7 +10,7 @@ import AvatarCircle from "@/components/AvatarCircle";
 /** Tipo del formulario de perfil — fotoPerfil puede ser string o null. */
 type FormPerfil = Omit<Usuario, "fotoPerfil"> & { fotoPerfil: string | null };
 
-/** Pagina de perfil del usuario autenticado. Ruta protegida: /profile */
+/** Página de perfil del usuario autenticado. Ruta protegida: /profile */
 export default function PerfilPage() {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [form, setForm] = useState<FormPerfil | null>(null);
@@ -67,7 +67,7 @@ export default function PerfilPage() {
     setSuccess(null);
     setLoading(true);
     const token = getToken();
-    if (!token) { setError("Sesion expirada"); setLoading(false); return; }
+    if (!token) { setError("Sesión expirada"); setLoading(false); return; }
     try {
       const res = await actualizarPerfil(token, {
         nombres: form.nombres,
@@ -161,7 +161,7 @@ export default function PerfilPage() {
                       <tr><th>Apellido paterno</th><td>{usuario.apellidoPaterno}</td></tr>
                       <tr><th>Apellido materno</th><td>{usuario.apellidoMaterno}</td></tr>
                       <tr><th>Correo</th><td>{usuario.email}</td></tr>
-                      <tr><th>Codigo postal</th><td>{usuario.codigoPostal}</td></tr>
+                      <tr><th>Código postal</th><td>{usuario.codigoPostal}</td></tr>
                       <tr><th>Rol</th><td><span className="badge badge-primary">{usuario.rol}</span></td></tr>
                       <tr><th>Username</th><td>@{usuario.username}</td></tr>
                     </tbody>
@@ -174,8 +174,8 @@ export default function PerfilPage() {
                       nombres: "Nombre(s)",
                       apellidoPaterno: "Apellido paterno",
                       apellidoMaterno: "Apellido materno",
-                      email: "Correo electronico",
-                      codigoPostal: "Codigo postal",
+                      email: "Correo electrónico",
+                      codigoPostal: "Código postal",
                     };
                     return (
                       <div key={name} className="form-control">

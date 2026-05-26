@@ -14,7 +14,7 @@ import MultiSelect from "@/components/MultiSelect";
 import GaleriaUpload from "@/components/GaleriaUpload";
 import { PawPrint, Send, CheckCircle } from "lucide-react";
 
-/** Pagina para que un cuidador publique un nuevo animal. Ruta protegida: /publicar */
+/** Página para que un cuidador publique un nuevo animal. Ruta protegida: /publicar */
 export default function PublicarPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +25,7 @@ export default function PublicarPage() {
 
   const [form, setForm] = useState<CreateAnimalPayload & { razaId: string }>({
     nombre: "", especie: "", raza: "", razaId: "", fechaNacimiento: "",
-    sexo: "MACHO", descripcion: "", esterilizado: false,
+    sexo: "MACHO", descripción: "", esterilizado: false,
   });
   const [vacunas, setVacunas] = useState<string[]>([]);
   const [padecimientos, setPadecimientos] = useState<string[]>([]);
@@ -71,7 +71,7 @@ export default function PublicarPage() {
     if (!form.nombre.trim()) newErrors.nombre = "Obligatorio.";
     if (!form.especie.trim()) newErrors.especie = "Obligatorio.";
     if (!form.fechaNacimiento) newErrors.fechaNacimiento = "Obligatorio.";
-    if (!form.descripcion.trim()) newErrors.descripcion = "Obligatorio.";
+    if (!form.descripción.trim()) newErrors.descripción = "Obligatorio.";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }
@@ -112,7 +112,7 @@ export default function PublicarPage() {
           <div className="card-body gap-4">
             <div className="flex flex-col items-center gap-2">
               <CheckCircle size={48} className="text-success" />
-              <h1 className="card-title text-2xl">Mascota publicada</h1>
+              <h1 className="card-title text-2xl">Máscota publicada</h1>
               <p className="text-base-content/60 text-sm text-center">
                 Ahora puedes agregar fotos para que los adoptantes la conozcan mejor.
               </p>
@@ -143,7 +143,7 @@ export default function PublicarPage() {
             <PawPrint size={40} className="text-primary" />
             <h1 className="card-title text-2xl">Publicar mascota</h1>
             <p className="text-base-content/60 text-sm text-center">
-              Completa la informacion para que los adoptantes puedan encontrar a tu mascota.
+              Completa la información para que los adoptantes puedan encontrar a tu mascota.
             </p>
           </div>
 
@@ -162,7 +162,7 @@ export default function PublicarPage() {
               <label className="label" htmlFor="especie"><span className="label-text">Especie <span className="text-error">*</span></span></label>
               <select id="especie" name="especie" value={form.especie} onChange={handleChange}
                 className={`select select-bordered w-full ${errors.especie ? "select-error" : ""}`}>
-                <option value="">Selecciona</option>
+                <option value="">Seleccióna</option>
                 <option value="Perro">Perro</option>
                 <option value="Gato">Gato</option>
               </select>
@@ -202,17 +202,17 @@ export default function PublicarPage() {
             </div>
 
             <div className="form-control sm:col-span-2">
-              <label className="label" htmlFor="descripcion"><span className="label-text">Descripcion <span className="text-error">*</span></span></label>
-              <textarea id="descripcion" name="descripcion" value={form.descripcion} onChange={handleChange}
-                placeholder="Cuentanos sobre la mascota..." rows={3}
-                className={`textarea textarea-bordered w-full ${errors.descripcion ? "textarea-error" : ""}`} />
-              {errors.descripcion && <span className="label-text-alt text-error mt-1">{errors.descripcion}</span>}
+              <label className="label" htmlFor="descripción"><span className="label-text">Descripción <span className="text-error">*</span></span></label>
+              <textarea id="descripción" name="descripción" value={form.descripción} onChange={handleChange}
+                placeholder="Cuéntanos sobre la mascota..." rows={3}
+                className={`textarea textarea-bordered w-full ${errors.descripción ? "textarea-error" : ""}`} />
+              {errors.descripción && <span className="label-text-alt text-error mt-1">{errors.descripción}</span>}
             </div>
 
             <div className="form-control sm:col-span-2">
               <label className="label cursor-pointer justify-start gap-3">
                 <input type="checkbox" name="esterilizado" checked={form.esterilizado} onChange={handleChange} className="checkbox checkbox-primary" />
-                <span className="label-text">Esta esterilizado/a</span>
+                <span className="label-text">Está esterilizado/a</span>
               </label>
             </div>
 
@@ -221,7 +221,7 @@ export default function PublicarPage() {
             </div>
 
             <div className="sm:col-span-2 relative">
-              <MultiSelect label="Condiciones medicas (opcional)" opciones={catPadecimientos} values={padecimientos} onChange={setPadecimientos} placeholder="Buscar condicion o agregar nueva..." />
+              <MultiSelect label="Condiciones médicas (opcional)" opciones={catPadecimientos} values={padecimientos} onChange={setPadecimientos} placeholder="Buscar condicion o agregar nueva..." />
             </div>
 
             <div className="sm:col-span-2 mt-2">
@@ -243,7 +243,7 @@ import MultiSelect from "@/components/MultiSelect";
 import GaleriaUpload from "@/components/GaleriaUpload";
 import { PawPrint, Send, CheckCircle } from "lucide-react";
 
-/** Pagina para que un cuidador publique un nuevo animal. Ruta protegida: /publicar */
+/** Página para que un cuidador publique un nuevo animal. Ruta protegida: /publicar */
 export default function PublicarPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -254,7 +254,7 @@ export default function PublicarPage() {
 
   const [form, setForm] = useState<CreateAnimalPayload>({
     nombre: "", especie: "", raza: "", fechaNacimiento: "",
-    sexo: "MACHO", descripcion: "", esterilizado: false,
+    sexo: "MACHO", descripción: "", esterilizado: false,
   });
   const [vacunas, setVacunas] = useState<string[]>([]);
   const [padecimientos, setPadecimientos] = useState<string[]>([]);
@@ -281,7 +281,7 @@ export default function PublicarPage() {
     if (!form.nombre.trim()) newErrors.nombre = "Obligatorio.";
     if (!form.especie.trim()) newErrors.especie = "Obligatorio.";
     if (!form.fechaNacimiento) newErrors.fechaNacimiento = "Obligatorio.";
-    if (!form.descripcion.trim()) newErrors.descripcion = "Obligatorio.";
+    if (!form.descripción.trim()) newErrors.descripción = "Obligatorio.";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }
@@ -319,7 +319,7 @@ export default function PublicarPage() {
           <div className="card-body gap-4">
             <div className="flex flex-col items-center gap-2">
               <CheckCircle size={48} className="text-success" />
-              <h1 className="card-title text-2xl">Mascota publicada</h1>
+              <h1 className="card-title text-2xl">Máscota publicada</h1>
               <p className="text-base-content/60 text-sm text-center">
                 Ahora puedes agregar fotos para que los adoptantes la conozcan mejor.
               </p>
@@ -350,7 +350,7 @@ export default function PublicarPage() {
             <PawPrint size={40} className="text-primary" />
             <h1 className="card-title text-2xl">Publicar mascota</h1>
             <p className="text-base-content/60 text-sm text-center">
-              Completa la informacion para que los adoptantes puedan encontrar a tu mascota.
+              Completa la información para que los adoptantes puedan encontrar a tu mascota.
             </p>
           </div>
 
@@ -369,7 +369,7 @@ export default function PublicarPage() {
               <label className="label" htmlFor="especie"><span className="label-text">Especie <span className="text-error">*</span></span></label>
               <select id="especie" name="especie" value={form.especie} onChange={handleChange}
                 className={`select select-bordered w-full ${errors.especie ? "select-error" : ""}`}>
-                <option value="">Selecciona</option>
+                <option value="">Seleccióna</option>
                 <option value="Perro">Perro</option>
                 <option value="Gato">Gato</option>
               </select>
@@ -397,17 +397,17 @@ export default function PublicarPage() {
             </div>
 
             <div className="form-control sm:col-span-2">
-              <label className="label" htmlFor="descripcion"><span className="label-text">Descripcion <span className="text-error">*</span></span></label>
-              <textarea id="descripcion" name="descripcion" value={form.descripcion} onChange={handleChange}
-                placeholder="Cuentanos sobre la mascota..." rows={3}
-                className={`textarea textarea-bordered w-full ${errors.descripcion ? "textarea-error" : ""}`} />
-              {errors.descripcion && <span className="label-text-alt text-error mt-1">{errors.descripcion}</span>}
+              <label className="label" htmlFor="descripción"><span className="label-text">Descripción <span className="text-error">*</span></span></label>
+              <textarea id="descripción" name="descripción" value={form.descripción} onChange={handleChange}
+                placeholder="Cuéntanos sobre la mascota..." rows={3}
+                className={`textarea textarea-bordered w-full ${errors.descripción ? "textarea-error" : ""}`} />
+              {errors.descripción && <span className="label-text-alt text-error mt-1">{errors.descripción}</span>}
             </div>
 
             <div className="form-control sm:col-span-2">
               <label className="label cursor-pointer justify-start gap-3">
                 <input type="checkbox" name="esterilizado" checked={form.esterilizado} onChange={handleChange} className="checkbox checkbox-primary" />
-                <span className="label-text">Esta esterilizado/a</span>
+                <span className="label-text">Está esterilizado/a</span>
               </label>
             </div>
 
@@ -416,7 +416,7 @@ export default function PublicarPage() {
             </div>
 
             <div className="sm:col-span-2 relative">
-              <MultiSelect label="Condiciones medicas (opcional)" opciones={catPadecimientos} values={padecimientos} onChange={setPadecimientos} placeholder="Buscar condicion o agregar nueva..." />
+              <MultiSelect label="Condiciones médicas (opcional)" opciones={catPadecimientos} values={padecimientos} onChange={setPadecimientos} placeholder="Buscar condicion o agregar nueva..." />
             </div>
 
             <div className="sm:col-span-2 mt-2">

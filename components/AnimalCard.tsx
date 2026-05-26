@@ -57,8 +57,8 @@ function calcularEdad(fechaNacimiento: string) {
   let meses = hoy.getMonth() - nacimiento.getMonth();
   if (hoy.getDate() < nacimiento.getDate()) meses--;
   if (meses < 0) { anos--; meses += 12; }
-  if (anos < 0) return "Recien nacido";
-  if (anos === 0 && meses <= 0) return "Recien nacido";
+  if (anos < 0) return "Recién nacido";
+  if (anos === 0 && meses <= 0) return "Recién nacido";
   if (anos === 0) return meses === 1 ? "1 mes" : `${meses} meses`;
   if (meses === 0) return anos === 1 ? "1 ano" : `${anos} años`;
   return `${anos} ${anos === 1 ? "año" : "años"} y ${meses} ${meses === 1 ? "mes" : "meses"}`;
@@ -193,7 +193,7 @@ function EditForm({ animal, saving, error, onSave, onCancel }: EditFormProps) {
     razaId: animal.razaId ?? "",
     fechaNacimiento: animal.fechaNacimiento,
     sexo: animal.sexo as "MACHO" | "HEMBRA",
-    descripcion: animal.descripcion,
+    descripción: animal.descripción,
     estatus: animal.estatus as "DISPONIBLE" | "ADOPTADO",
     esterilizado: animal.esterilizado,
     vacunas: animal.vacunas ?? [],
@@ -275,8 +275,8 @@ function EditForm({ animal, saving, error, onSave, onCancel }: EditFormProps) {
           </select>
         </div>
         <div className="form-control sm:col-span-2">
-          <label className="label"><span className="label-text">Descripcion</span></label>
-          <textarea className="textarea textarea-bordered w-full" rows={3} value={form.descripcion} onChange={(e) => set("descripcion", e.target.value)} />
+          <label className="label"><span className="label-text">Descripción</span></label>
+          <textarea className="textarea textarea-bordered w-full" rows={3} value={form.descripción} onChange={(e) => set("descripción", e.target.value)} />
         </div>
         <div className="form-control">
           <label className="label"><span className="label-text">Estatus</span></label>
@@ -293,7 +293,7 @@ function EditForm({ animal, saving, error, onSave, onCancel }: EditFormProps) {
           <MultiSelect label="Vacunas" opciones={catVacunas} values={form.vacunas} onChange={(v) => set("vacunas", v)} placeholder="Buscar vacuna o agregar nueva..." />
         </div>
         <div className="sm:col-span-2 relative">
-          <MultiSelect label="Condiciones medicas" opciones={catPadecimientos} values={form.padecimientos} onChange={(v) => set("padecimientos", v)} placeholder="Buscar condicion o agregar nueva..." />
+          <MultiSelect label="Condiciones médicas" opciones={catPadecimientos} values={form.padecimientos} onChange={(v) => set("padecimientos", v)} placeholder="Buscar condicion o agregar nueva..." />
         </div>
         <div className="sm:col-span-2">
           <GaleriaUpload animalId={animal.id} fotos={form.fotos} onFotosChange={(f) => set("fotos", f)} />
@@ -404,10 +404,10 @@ function Compact({ animal, rolUsuario, userId, tieneInteres = false, actions, on
 }
 
 // ---------------------------------------------------------------------------
-// SeccionRaza — info de API externa con fallback
+// SecciónRaza — info de API externa con fallback
 // ---------------------------------------------------------------------------
 
-function SeccionRaza({ especie, razaId }: { especie: string; razaId: string | null }) {
+function SecciónRaza({ especie, razaId }: { especie: string; razaId: string | null }) {
   const { info, estado } = useRazaInfo(especie, razaId);
 
   if (!razaId) return null;
@@ -416,7 +416,7 @@ function SeccionRaza({ especie, razaId }: { especie: string; razaId: string | nu
     return (
       <div className="rounded-box border border-base-300 p-4 flex items-center gap-3 text-base-content/50">
         <span className="loading loading-spinner loading-sm" />
-        <span className="text-sm">Buscando informacion de la raza...</span>
+        <span className="text-sm">Buscando información de la raza...</span>
       </div>
     );
   }
@@ -427,7 +427,7 @@ function SeccionRaza({ especie, razaId }: { especie: string; razaId: string | nu
     <div className="rounded-box border border-primary/20 bg-primary/5 p-4 space-y-3">
       <h2 className="font-semibold flex items-center gap-2 text-primary">
         <Info size={16} />
-        Informacion de la raza: {info.nombre}
+        Información de la raza: {info.nombre}
       </h2>
 
       {/* Imagen de la raza si existe */}
@@ -501,8 +501,8 @@ function Detail({ animal, rolUsuario, userId, tieneInteres = false, actions }: B
         <div className="divider my-0" />
 
         <div>
-          <h2 className="font-semibold mb-2">Descripcion</h2>
-          <p className="text-base-content/80 leading-relaxed">{animal.descripcion}</p>
+          <h2 className="font-semibold mb-2">Descripción</h2>
+          <p className="text-base-content/80 leading-relaxed">{animal.descripción}</p>
         </div>
 
         <div>
@@ -513,13 +513,13 @@ function Detail({ animal, rolUsuario, userId, tieneInteres = false, actions }: B
         </div>
 
         <div>
-          <h2 className="font-semibold mb-2 flex items-center gap-2"><AlertTriangle size={16} className="text-warning" /> Condiciones medicas</h2>
+          <h2 className="font-semibold mb-2 flex items-center gap-2"><AlertTriangle size={16} className="text-warning" /> Condiciones médicas</h2>
           {animal.padecimientos.length === 0 ? <p className="text-base-content/50 text-sm">Sin condiciones registradas</p> : (
             <div className="flex flex-wrap gap-2">{animal.padecimientos.map((p) => <span key={p} className="badge badge-warning gap-1">{p}</span>)}</div>
           )}
         </div>
 
-        <SeccionRaza especie={animal.especie} razaId={animal.razaId ?? null} />
+        <SecciónRaza especie={animal.especie} razaId={animal.razaId ?? null} />
 
         <div className="divider my-0" />
 
@@ -608,7 +608,7 @@ function DetailModal({ animalId, rolUsuario, userId: userIdProp, onClose, onDele
       <ConfirmDialog
         open={pendingDeleteId !== null}
         title="Eliminar mascota"
-        message="Esta accion no se puede deshacer."
+        message="Esta acción no se puede deshacer."
         confirmText="Eliminar"
         cancelText="Cancelar"
         loading={deleting}

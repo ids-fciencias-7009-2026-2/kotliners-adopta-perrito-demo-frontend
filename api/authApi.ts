@@ -1,10 +1,10 @@
 /**
- * Funciones para comunicarse con la API de autenticacion y usuarios.
+ * Funciones para comunicarse con la API de autenticación y usuarios.
  * Usa la instancia de Axios de axios.ts, que agrega el token automaticamente.
  */
 import apiClient from './axios'
 
-/** Credenciales para iniciar sesion. */
+/** Credenciales para iniciar sesión. */
 export interface LoginPayload {
     email: string
     password: string
@@ -35,10 +35,10 @@ export interface ActualizarPerfilPayload {
 }
 
 /**
- * Autentica al usuario con email y contrasena.
+ * Autentica al usuario con email y contraseña.
  * Endpoint: POST /usuarios/login
  * @param payload - Credenciales del usuario.
- * @returns Token de sesion si las credenciales son correctas.
+ * @returns Token de sesión si las credenciales son correctas.
  */
 export function login(payload: LoginPayload) {
   return apiClient.post<{ token: string }>('/usuarios/login', payload)
@@ -54,7 +54,7 @@ export function register(payload: RegistroPayload) {
 }
 
 /**
- * Obtiene la informacion del usuario autenticado.
+ * Obtiene la información del usuario autenticado.
  * Endpoint: GET /usuarios/me
  * El interceptor agrega el token automaticamente desde sessionStorage.
  */
@@ -63,7 +63,7 @@ export function getPerfil() {
 }
 
 /**
- * Cierra la sesion del usuario e invalida el token en el backend.
+ * Cierra la sesión del usuario e invalida el token en el backend.
  * Endpoint: POST /usuarios/logout
  * El interceptor agrega el token automaticamente desde sessionStorage.
  */
@@ -72,7 +72,7 @@ export function logout() {
 }
 
 /**
- * Actualiza la informacion del perfil del usuario autenticado.
+ * Actualiza la información del perfil del usuario autenticado.
  * Endpoint: PUT /usuarios
  * El interceptor agrega el token automaticamente desde sessionStorage.
  * @param payload - Campos a actualizar.

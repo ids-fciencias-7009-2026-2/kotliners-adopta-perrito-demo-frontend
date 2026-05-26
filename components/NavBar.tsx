@@ -48,7 +48,7 @@ export default function NavBar() {
     try {
       if (token) await logoutUsuario(token);
     } catch {
-      // ignorar errores de red al cerrar sesion
+      // ignorar errores de red al cerrar sesión
     } finally {
       removeToken();
       sessionStorage.removeItem("usuario");

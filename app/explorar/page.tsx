@@ -24,8 +24,8 @@ function calcularEdad(fechaNacimiento: string) {
   let meses = hoy.getMonth() - nacimiento.getMonth();
   if (hoy.getDate() < nacimiento.getDate()) meses--;
   if (meses < 0) { anos--; meses += 12; }
-  if (anos < 0) return "Recien nacido";
-  if (anos === 0 && meses <= 0) return "Recien nacido";
+  if (anos < 0) return "Recién nacido";
+  if (anos === 0 && meses <= 0) return "Recién nacido";
   if (anos === 0) return meses === 1 ? "1 mes" : `${meses} meses`;
   if (meses === 0) return anos === 1 ? "1 año" : `${anos} años`;
   return `${anos} ${anos === 1 ? "año" : "años"} y ${meses} ${meses === 1 ? "mes" : "meses"}`;
@@ -33,7 +33,7 @@ function calcularEdad(fechaNacimiento: string) {
 
 /** Estado local del formulario de filtros antes de aplicarlos */
 interface FiltroForm {
-  busqueda: string;
+  búsqueda: string;
   especie: string;
   sexo: string;
   esterilizado: string;
@@ -44,7 +44,7 @@ interface FiltroForm {
 }
 
 const FILTRO_INICIAL: FiltroForm = {
-  busqueda: "",
+  búsqueda: "",
   especie: "",
   sexo: "",
   esterilizado: "",
@@ -67,7 +67,7 @@ function toFiltrosBackend(form: FiltroForm): FiltrosAnimales {
   };
 }
 
-/** Pagina de exploracion de mascotas. Ruta protegida: /explorar */
+/** Página de exploracion de mascotas. Ruta protegida: /explorar */
 export default function ExplorarPage() {
   const [filtroForm, setFiltroForm] = useState<FiltroForm>(FILTRO_INICIAL);
   // filtrosAplicados es lo que realmente se manda al backend
@@ -78,11 +78,11 @@ export default function ExplorarPage() {
 
   const { animals: animales, interes, loading, error, rol: rolUsuario } = useAnimalList(filtrosAplicados);
 
-  // Filtro de busqueda local por nombre/raza (no requiere llamada al backend)
-  const filtrados = filtroForm.busqueda
+  // Filtro de búsqueda local por nombre/raza (no requiere llamada al backend)
+  const filtrados = filtroForm.búsqueda
     ? animales.filter((a) =>
-        a.nombre.toLowerCase().includes(filtroForm.busqueda.toLowerCase()) ||
-        (a.raza ?? "").toLowerCase().includes(filtroForm.busqueda.toLowerCase())
+        a.nombre.toLowerCase().includes(filtroForm.búsqueda.toLowerCase()) ||
+        (a.raza ?? "").toLowerCase().includes(filtroForm.búsqueda.toLowerCase())
       )
     : animales;
 
@@ -107,7 +107,7 @@ export default function ExplorarPage() {
       {/* PANEL IZQUIERDO */}
       <div className="w-full lg:w-[440px] flex flex-col bg-base-100 shadow-xl z-10 overflow-hidden">
 
-        {/* Barra de busqueda y filtros */}
+        {/* Barra de búsqueda y filtros */}
         <div className="p-4 border-b border-base-200 flex flex-col gap-3">
           <div className="flex gap-2">
             <label className="input input-bordered flex items-center gap-2 flex-1">
@@ -115,12 +115,12 @@ export default function ExplorarPage() {
               <input
                 type="text"
                 placeholder="Buscar por nombre o raza..."
-                value={filtroForm.busqueda}
-                onChange={(e) => setFiltroForm((f) => ({ ...f, busqueda: e.target.value }))}
+                value={filtroForm.búsqueda}
+                onChange={(e) => setFiltroForm((f) => ({ ...f, búsqueda: e.target.value }))}
                 className="grow"
               />
-              {filtroForm.busqueda && (
-                <button onClick={() => setFiltroForm((f) => ({ ...f, busqueda: "" }))}>
+              {filtroForm.búsqueda && (
+                <button onClick={() => setFiltroForm((f) => ({ ...f, búsqueda: "" }))}>
                   <X size={14} className="text-base-content/40" />
                 </button>
               )}
@@ -187,7 +187,7 @@ export default function ExplorarPage() {
                     value={filtroForm.ordenar}
                     onChange={(e) => setFiltroForm((f) => ({ ...f, ordenar: e.target.value }))}
                   >
-                    <option value="">Mas reciente</option>
+                    <option value="">Más reciente</option>
                     <option value="nombre">Nombre A-Z</option>
                     <option value="fechaNacimiento">Edad</option>
                     <option value="fechaRegistro">Fecha de registro</option>
@@ -195,9 +195,9 @@ export default function ExplorarPage() {
                 </div>
               </div>
 
-              {/* Codigo postal */}
+              {/* Código postal */}
               <div className="form-control">
-                <label className="label py-0"><span className="label-text text-xs">Codigo postal del cuidador</span></label>
+                <label className="label py-0"><span className="label-text text-xs">Código postal del cuidador</span></label>
                 <input
                   type="text"
                   placeholder="Ej: 06600"
@@ -325,7 +325,7 @@ export default function ExplorarPage() {
           )}
         </div>
 
-        {/* Preview de mascota seleccionada */}
+        {/* Preview de mascota selecciónada */}
         {selected && (
           <div className="border-t border-base-200 p-4 bg-base-100 shadow-inner">
             <div className="flex justify-between items-start mb-3">
@@ -334,7 +334,7 @@ export default function ExplorarPage() {
                 <p className="text-sm text-base-content/60">
                   {selected.especie}{selected.raza ? ` · ${selected.raza}` : ""} · {calcularEdad(selected.fechaNacimiento)}
                 </p>
-                <p className="text-xs text-base-content/50 mt-1 line-clamp-2">{selected.descripcion}</p>
+                <p className="text-xs text-base-content/50 mt-1 line-clamp-2">{selected.descripción}</p>
               </div>
               <div className="flex gap-1 shrink-0 ml-2">
                 <button
@@ -342,7 +342,7 @@ export default function ExplorarPage() {
                   className="btn btn-ghost btn-xs gap-1"
                   title="Ver detalle completo"
                 >
-                  <Expand size={14} /> Ver mas
+                  <Expand size={14} /> Ver más
                 </button>
                 <button onClick={() => setSelectedId(null)} className="btn btn-ghost btn-xs btn-square">
                   <X size={14} />
@@ -386,7 +386,7 @@ export default function ExplorarPage() {
         })}
         <div className="text-center text-base-content/30 select-none pointer-events-none">
           <MapPin size={48} className="mx-auto mb-2" />
-          <p className="text-sm">Mapa interactivo proximamente</p>
+          <p className="text-sm">Mapa interactivo próximamente</p>
         </div>
       </div>
 

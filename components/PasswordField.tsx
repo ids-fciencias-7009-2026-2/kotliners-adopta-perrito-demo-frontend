@@ -19,7 +19,7 @@ interface PasswordFieldProps {
 }
 
 /**
- * Campo de contrasena con boton para mostrar u ocultar el texto.
+ * Campo de contraseña con boton para mostrar u ocultar el texto.
  * Usa el icono Eye/EyeOff de lucide-react y componentes DaisyUI.
  */
 export default function PasswordField({
@@ -46,7 +46,7 @@ export default function PasswordField({
           type="button"
           onClick={() => setVisible(!visible)}
           className="absolute right-3 top-1/2 -translate-y-1/2 text-base-content/50 hover:text-base-content"
-          aria-label={visible ? "Ocultar contrasena" : "Mostrar contrasena"}
+          aria-label={visible ? "Ocultar contraseña" : "Mostrar contraseña"}
         >
           {visible ? <EyeOff size={18} /> : <Eye size={18} />}
         </button>

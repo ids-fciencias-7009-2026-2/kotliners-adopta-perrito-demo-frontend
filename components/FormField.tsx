@@ -15,7 +15,7 @@ interface FormFieldProps {
 }
 
 /**
- * Campo de formulario reutilizable con etiqueta, input y mensaje de error.
+ * Campo de formulario reútilizable con etiqueta, input y mensaje de error.
  * Aplica estilos de error automáticamente cuando se proporciona el prop `error`.
  * @param label - Texto de la etiqueta visible.
  * @param name - Nombre del campo (usado como id y name del input).

@@ -18,13 +18,13 @@ function calcularEdadMeses(fechaNacimiento: string): number {
   const hoy = new Date();
   return (hoy.getFullYear() - y) * 12 + (hoy.getMonth() + 1 - m);
 }
-export default function MisMascotasPage() {
+export default function MisMáscotasPage() {
   const router = useRouter();
-  const [mascotas, setMascotas] = useState<AnimalResponse[]>([]);
+  const [mascotas, setMáscotas] = useState<AnimalResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [busqueda, setBusqueda] = useState("");
+  const [búsqueda, setBúsqueda] = useState("");
   const [filtroEspecie, setFiltroEspecie] = useState("TODOS");
   const [filtroEstatus, setFiltroEstatus] = useState("TODOS");
   const [filtroSexo, setFiltroSexo] = useState("TODOS");
@@ -45,9 +45,9 @@ export default function MisMascotasPage() {
     if (!token) return;
     listarMisAnimales(token).then((res) => {
       if (res.ok) {
-        setMascotas(res.data);
+        setMáscotas(res.data);
       } else if (res.error !== "SESSION_EXPIRED") {
-        // Solo mostrar error si no es un problema de sesion
+        // Solo mostrar error si no es un problema de sesión
         // Lista vacia no es un error
         setError(res.error);
       }
@@ -55,12 +55,12 @@ export default function MisMascotasPage() {
     });
   }, []);
 
-  function removeMascotaFromList(id: string) {
-    setMascotas((prev) => prev.filter((m) => m.id !== id));
+  function removeMáscotaFromList(id: string) {
+    setMáscotas((prev) => prev.filter((m) => m.id !== id));
   }
 
-  function updateMascotaInList(updatedAnimal: AnimalResponse) {
-    setMascotas((prev) => prev.map((m) => (m.id === updatedAnimal.id ? updatedAnimal : m)));
+  function updateMáscotaInList(updatedAnimal: AnimalResponse) {
+    setMáscotas((prev) => prev.map((m) => (m.id === updatedAnimal.id ? updatedAnimal : m)));
   }
 
   function handleDeleteAnimal(id: string) {
@@ -80,7 +80,7 @@ export default function MisMascotasPage() {
     setDeleting(false);
 
     if (result.ok) {
-      removeMascotaFromList(pendingDeleteId);
+      removeMáscotaFromList(pendingDeleteId);
       setPendingDeleteId(null);
     } else {
       setError("No se pudo eliminar la mascota.");
@@ -89,13 +89,13 @@ export default function MisMascotasPage() {
 
   const filtradas = mascotas
     .filter((m) => {
-      const matchBusqueda =
-        m.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-        (m.raza ?? "").toLowerCase().includes(busqueda.toLowerCase());
+      const matchBúsqueda =
+        m.nombre.toLowerCase().includes(búsqueda.toLowerCase()) ||
+        (m.raza ?? "").toLowerCase().includes(búsqueda.toLowerCase());
       const matchEspecie = filtroEspecie === "TODOS" || m.especie.toUpperCase() === filtroEspecie;
       const matchEstatus = filtroEstatus === "TODOS" || m.estatus === filtroEstatus;
       const matchSexo = filtroSexo === "TODOS" || m.sexo === filtroSexo;
-      return matchBusqueda && matchEspecie && matchEstatus && matchSexo;
+      return matchBúsqueda && matchEspecie && matchEstatus && matchSexo;
     })
     .sort((a, b) => {
       if (orden === "nombre-asc") return a.nombre.localeCompare(b.nombre);
@@ -137,7 +137,7 @@ export default function MisMascotasPage() {
 
         {error && <div role="alert" className="alert alert-error mb-4"><span>{error}</span></div>}
 
-        {/* Barra de busqueda y filtros */}
+        {/* Barra de búsqueda y filtros */}
         <div className="bg-base-100 rounded-box shadow p-4 mb-6 flex flex-col gap-3">
           <div className="flex gap-2">
             <label className="input input-bordered flex items-center gap-2 flex-1">
@@ -145,12 +145,12 @@ export default function MisMascotasPage() {
               <input
                 type="text"
                 placeholder="Buscar por nombre"
-                value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
+                value={búsqueda}
+                onChange={(e) => setBúsqueda(e.target.value)}
                 className="grow"
               />
-              {busqueda && (
-                <button onClick={() => setBusqueda("")}>
+              {búsqueda && (
+                <button onClick={() => setBúsqueda("")}>
                   <X size={14} className="text-base-content/40" />
                 </button>
               )}
@@ -194,8 +194,8 @@ export default function MisMascotasPage() {
                 <select className="select select-bordered select-sm" value={orden} onChange={(e) => setOrden(e.target.value as Orden)}>
                   <option value="nombre-asc">Nombre A-Z</option>
                   <option value="nombre-desc">Nombre Z-A</option>
-                  <option value="edad-asc">Mas jovenes</option>
-                  <option value="edad-desc">Mas mayores</option>
+                  <option value="edad-asc">Más jovenes</option>
+                  <option value="edad-desc">Más mayores</option>
                 </select>
               </div>
             </div>
@@ -221,8 +221,8 @@ export default function MisMascotasPage() {
                   animal={m}
                   rolUsuario={rol}
                   userId={userId}
-                  onDeleted={(id) => removeMascotaFromList(id)}
-                  onUpdated={updateMascotaInList}
+                  onDeleted={(id) => removeMáscotaFromList(id)}
+                  onUpdated={updateMáscotaInList}
                   actions={{
                     //onEdit: handleEditAnimal,
                     onDelete: handleDeleteAnimal,

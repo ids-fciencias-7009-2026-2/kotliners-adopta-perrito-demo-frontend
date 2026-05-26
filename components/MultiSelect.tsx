@@ -6,7 +6,7 @@ import { X } from "lucide-react";
 interface MultiSelectProps {
   /** Opciones del catalogo disponibles */
   opciones: string[];
-  /** Valores seleccionados actualmente */
+  /** Valores selecciónados actualmente */
   values: string[];
   onChange: (values: string[]) => void;
   label?: string;
@@ -14,7 +14,7 @@ interface MultiSelectProps {
 }
 
 /**
- * Input de seleccion multiple con:
+ * Input de selección multiple con:
  * - Tags con boton × para quitar
  * - Dropdown con opciones filtradas del catalogo
  * - Opcion de agregar uno nuevo si no existe en el catalogo

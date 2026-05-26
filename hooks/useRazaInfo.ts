@@ -7,7 +7,7 @@ import { getToken } from "@/lib/session";
 type Estado = "cargando" | "ok" | "no_encontrado" | "error";
 
 /**
- * Hook que consulta el endpoint del backend para obtener informacion
+ * Hook que consulta el endpoint del backend para obtener información
  * de una raza ya traducida al espanol.
  *
  * @param especie "PERRO" o "GATO"

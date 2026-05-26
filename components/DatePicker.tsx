@@ -80,7 +80,7 @@ export default function DatePicker({ value, onChange, label, error, required = f
         onClick={() => setOpen((o) => !o)}
         className={`input input-bordered w-full text-left ${!display ? "text-base-content/40" : ""} ${error ? "input-error" : ""}`}
       >
-        {display || "Selecciona una fecha"}
+        {display || "Seleccióna una fecha"}
       </button>
 
       {open && (

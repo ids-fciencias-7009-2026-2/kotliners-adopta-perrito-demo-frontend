@@ -1,6 +1,6 @@
 import { PawPrint } from "lucide-react";
 
-/** Pie de pagina global. Se muestra en todas las vistas a traves del layout. */
+/** Pie de página global. Se muestra en todas las vistas a traves del layout. */
 export default function Footer() {
   return (
     <footer className="footer footer-center bg-base-300 text-base-content p-4 mt-auto">

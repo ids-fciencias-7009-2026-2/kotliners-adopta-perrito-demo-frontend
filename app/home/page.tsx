@@ -8,13 +8,13 @@ import Link from "next/link";
 
 const beneficiosAdoptante = [
   {
-    title: "Adopcion responsable",
-    desc: "Conoce toda la informacion antes de decidir.",
+    title: "Adopción responsable",
+    desc: "Conoce toda la información antes de decidir.",
     icon: <Heart size={28} className="text-primary" />,
   },
   {
     title: "Cerca de ti",
-    desc: "Mascotas ubicadas por codigo postal.",
+    desc: "Máscotas ubicadas por código postal.",
     icon: <MapPin size={28} className="text-primary" />,
   },
   {
@@ -32,17 +32,17 @@ const beneficiosAdoptante = [
 const beneficiosCuidador = [
   {
     title: "Registra tus mascotas",
-    desc: "Agrega la informacion de cada animal que tienes a tu cuidado.",
+    desc: "Agrega la información de cada animal que tienes a tu cuidado.",
     icon: <ClipboardList size={28} className="text-primary" />,
   },
   {
-    title: "Recibe notificaciones",
+    title: "Recibe notificaciónes",
     desc: "Te avisamos por correo cuando alguien muestra interes en tus mascotas.",
     icon: <Bell size={28} className="text-primary" />,
   },
   {
     title: "Gestiona el proceso",
-    desc: "Edita la informacion y marca cuando una mascota ya fue adoptada.",
+    desc: "Edita la información y marca cuando una mascota ya fue adoptada.",
     icon: <Star size={28} className="text-primary" />,
   },
   {
@@ -64,13 +64,13 @@ function HomeAdoptante({ nombre }: { nombre: string }) {
           Hola, {nombre}
         </h1>
         <p className="text-base-content/70 max-w-2xl mx-auto text-lg">
-          Aqui puedes explorar mascotas disponibles para adopcion cerca de ti.
+          Aquí puedes explorar mascotas disponibles para adopción cerca de ti.
           Cuando encuentres una que te guste, presiona <strong>Me interesa</strong> para
           que el cuidador se ponga en contacto contigo.
         </p>
         <p className="text-base-content/50 max-w-xl mx-auto text-sm mt-3">
-          Al dar <strong>Me interesa</strong> le enviamos un correo al cuidador con tu informacion de contacto
-          para que pueda comunicarse contigo. Si cambias de opinion y retiras tu interes, el cuidador tambien sera notificado.
+          Al dar <strong>Me interesa</strong> le enviamos un correo al cuidador con tu información de contacto
+          para que pueda comunicarse contigo. Si cambias de opinion y retiras tu interes, el cuidador también sera notificado.
         </p>
       </section>
 
@@ -89,7 +89,7 @@ function HomeAdoptante({ nombre }: { nombre: string }) {
       <section id="mapa" className="max-w-screen-2xl mx-auto px-6 py-8">
         <h2 className="text-3xl font-semibold mb-6 text-center text-primary flex items-center justify-center gap-2">
           <MapPin size={28} />
-          Mascotas cerca de ti
+          Máscotas cerca de ti
         </h2>
         <div className="bg-base-100 rounded-box shadow-xl p-4">
           <MapView />
@@ -128,8 +128,8 @@ function HomeCuidador({ nombre }: { nombre: string }) {
         </h1>
         <p className="text-base-content/70 max-w-2xl mx-auto text-lg">
           Colitas Felices te ayuda a encontrar hogares para las mascotas que cuidas.
-          Registra tus animales, recibe notificaciones de adoptantes interesados
-          y gestiona todo el proceso desde aqui.
+          Registra tus animales, recibe notificaciónes de adoptantes interesados
+          y gestiona todo el proceso desde aquí.
         </p>
       </section>
 
@@ -161,7 +161,7 @@ function HomeCuidador({ nombre }: { nombre: string }) {
   );
 }
 
-/** Pagina principal — renderiza vista segun el rol del usuario autenticado */
+/** Página principal — renderiza vista segun el rol del usuario autenticado */
 export default function HomePage() {
   const [rol, setRol] = useState<string | null>(null);
   const [nombre, setNombre] = useState("amigo");

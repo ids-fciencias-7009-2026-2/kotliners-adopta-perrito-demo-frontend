@@ -22,7 +22,7 @@ interface BotonInteresProps {
  * - Solo visible para usuarios con rol ADOPTANTE.
  * - Deshabilitado si el animal esta ADOPTADO o ya no existe.
  * - Alterna entre "Me interesa" y "En favoritos" llamando al backend.
- * - Muestra modal de confirmacion al registrar interes exitosamente.
+ * - Muestra modal de confirmación al registrar interes éxitosamente.
  */
 export default function BotonInteres({
   animalId,
@@ -81,7 +81,7 @@ export default function BotonInteres({
           setModalOpen(true);
         } else {
           const msg = res.error.toLowerCase();
-          if (msg.includes("animal no encontrado") || msg.includes("adoptado") || msg.includes("no esta disponible")) {
+          if (msg.includes("animal no encontrado") || msg.includes("adoptado") || msg.includes("no está disponible")) {
             setAnimalNoDisponible(true);
           } else if (msg.includes("ya manifestaste")) {
             setTieneInteres(true);
@@ -139,7 +139,7 @@ export default function BotonInteres({
             <div className="flex flex-col items-center gap-3 py-2">
               <CheckCircle size={48} className={modalTipo === "agregar" ? "text-success" : "text-warning"} />
               <h3 className="font-bold text-lg text-center">
-                {modalTipo === "agregar" ? "Interes registrado" : "Interes retirado"}
+                {modalTipo === "agregar" ? "Interés registrado" : "Interés retirado"}
               </h3>
               {modalTipo === "quitar" ? (
                 <p className="text-center text-base-content/70 text-sm">
