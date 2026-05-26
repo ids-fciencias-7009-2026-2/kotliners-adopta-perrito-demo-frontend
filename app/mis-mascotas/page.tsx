@@ -1,16 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, SlidersHorizontal, Plus, PawPrint, X } from "lucide-react";
+import { Search, SlidersHorizontal, Plus, PawPrint, X, ArrowUpDown } from "lucide-react";
 import Link from "next/link";
 import AnimalCard from "@/components/AnimalCard";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { eliminarAnimal, listarMisAnimales, listarHistorialAdoptados, type AnimalResponse } from "@/lib/apiClient";
 import { getToken } from "@/lib/session";
-import { useRouter } from "next/navigation";
 import { ROUTES } from "@/lib/routes";
 
-type Orden = "nombre-asc" | "nombre-desc" | "edad-asc" | "edad-desc";
+type CriterioOrden = "nombre" | "edad" | "fechaRegistro" | "interesados";
 
 function calcularEdadMeses(fechaNacimiento: string): number {
   const [y, m, d] = fechaNacimiento.split("-").map(Number);
@@ -18,17 +17,19 @@ function calcularEdadMeses(fechaNacimiento: string): number {
   const hoy = new Date();
   return (hoy.getFullYear() - y) * 12 + (hoy.getMonth() + 1 - m);
 }
-export default function MisMáscotasPage() {
-  const router = useRouter();
-  const [mascotas, setMáscotas] = useState<AnimalResponse[]>([]);
+
+export default function MisMascotasPage() {
+  const [mascotas, setMascotas] = useState<AnimalResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [búsqueda, setBúsqueda] = useState("");
+  const [busqueda, setBusqueda] = useState("");
   const [filtroEspecie, setFiltroEspecie] = useState("TODOS");
   const [filtroEstatus, setFiltroEstatus] = useState("TODOS");
   const [filtroSexo, setFiltroSexo] = useState("TODOS");
-  const [orden, setOrden] = useState<Orden>("nombre-asc");
+  const [filtroEsterilizado, setFiltroEsterilizado] = useState("TODOS");
+  const [criterio, setCriterio] = useState<CriterioOrden>("fechaRegistro");
+  const [ordenDesc, setOrdenDesc] = useState(true);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -47,76 +48,60 @@ export default function MisMáscotasPage() {
       const token = getToken();
       if (!token) return;
       const res = await listarMisAnimales(token);
-      if (res.ok) {
-        setMáscotas(res.data);
-      } else if (res.error !== "SESSION_EXPIRED") {
-        // Solo mostrar error si no es un problema de sesión
-        // Lista vacia no es un error
-        setError(res.error);
-      }
+      if (res.ok) setMascotas(res.data);
+      else if (res.error !== "SESSION_EXPIRED") setError(res.error);
       setLoading(false);
       setLoadingHistorial(true);
       const resHistorial = await listarHistorialAdoptados(token);
-      if (resHistorial.ok) {
-        setHistorialAdoptados(resHistorial.data);
-      }
+      if (resHistorial.ok) setHistorialAdoptados(resHistorial.data);
       setLoadingHistorial(false);
     }
     cargarDatos();
   }, []);
 
-  function removeMáscotaFromList(id: string) {
-    setMáscotas((prev) => prev.filter((m) => m.id !== id));
+  function removeMascotaFromList(id: string) {
+    setMascotas((prev) => prev.filter((m) => m.id !== id));
   }
 
-  function updateMáscotaInList(updatedAnimal: AnimalResponse) {
-    setMáscotas((prev) => prev.map((m) => (m.id === updatedAnimal.id ? updatedAnimal : m)));
-  }
-
-  function handleDeleteAnimal(id: string) {
-    setPendingDeleteId(id);
+  function updateMascotaInList(updatedAnimal: AnimalResponse) {
+    setMascotas((prev) => prev.map((m) => (m.id === updatedAnimal.id ? updatedAnimal : m)));
   }
 
   async function confirmDeleteAnimal() {
     if (!pendingDeleteId) return;
     const token = getToken();
-    if (!token) {
-      setPendingDeleteId(null);
-      return;
-    }
-
+    if (!token) { setPendingDeleteId(null); return; }
     setDeleting(true);
     const result = await eliminarAnimal(token, { animalId: pendingDeleteId });
     setDeleting(false);
-
-    if (result.ok) {
-      removeMáscotaFromList(pendingDeleteId);
-      setPendingDeleteId(null);
-    } else {
-      setError("No se pudo eliminar la mascota.");
-    }
+    if (result.ok) { removeMascotaFromList(pendingDeleteId); setPendingDeleteId(null); }
+    else setError("No se pudo eliminar la mascota.");
   }
 
   const filtradas = mascotas
     .filter((m) => {
-      const matchBúsqueda =
-        m.nombre.toLowerCase().includes(búsqueda.toLowerCase()) ||
-        (m.raza ?? "").toLowerCase().includes(búsqueda.toLowerCase());
+      const matchBusqueda =
+        m.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+        (m.raza ?? "").toLowerCase().includes(busqueda.toLowerCase());
       const matchEspecie = filtroEspecie === "TODOS" || m.especie.toUpperCase() === filtroEspecie;
       const matchEstatus = filtroEstatus === "TODOS" || m.estatus === filtroEstatus;
       const matchSexo = filtroSexo === "TODOS" || m.sexo === filtroSexo;
-      return matchBúsqueda && matchEspecie && matchEstatus && matchSexo;
+      const matchEsterilizado = filtroEsterilizado === "TODOS" ||
+        (filtroEsterilizado === "SI" ? m.esterilizado : !m.esterilizado);
+      return matchBusqueda && matchEspecie && matchEstatus && matchSexo && matchEsterilizado;
     })
     .sort((a, b) => {
-      if (orden === "nombre-asc") return a.nombre.localeCompare(b.nombre);
-      if (orden === "nombre-desc") return b.nombre.localeCompare(a.nombre);
-      if (orden === "edad-asc") return calcularEdadMeses(a.fechaNacimiento) - calcularEdadMeses(b.fechaNacimiento);
-      if (orden === "edad-desc") return calcularEdadMeses(b.fechaNacimiento) - calcularEdadMeses(a.fechaNacimiento);
-      return 0;
+      let cmp = 0;
+      if (criterio === "nombre") cmp = a.nombre.localeCompare(b.nombre);
+      else if (criterio === "edad") cmp = calcularEdadMeses(a.fechaNacimiento) - calcularEdadMeses(b.fechaNacimiento);
+      else if (criterio === "fechaRegistro") cmp = new Date(a.fechaRegistro).getTime() - new Date(b.fechaRegistro).getTime();
+      else if (criterio === "interesados") cmp = (a.numInteresados ?? 0) - (b.numInteresados ?? 0);
+      return ordenDesc ? -cmp : cmp;
     });
 
   const disponibles = mascotas.filter((m) => m.estatus === "DISPONIBLE").length;
   const adoptados = mascotas.filter((m) => m.estatus === "ADOPTADO").length;
+  const hayFiltros = filtroEspecie !== "TODOS" || filtroEstatus !== "TODOS" || filtroSexo !== "TODOS" || filtroEsterilizado !== "TODOS";
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
@@ -128,56 +113,49 @@ export default function MisMáscotasPage() {
     <main className="min-h-screen bg-base-200 p-6">
       <div className="max-w-screen-xl mx-auto">
 
-        {/* Encabezado */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
           <div>
             <h1 className="text-3xl font-bold text-primary flex items-center gap-2">
-              <PawPrint size={30} />
-              Mis mascotas
+              <PawPrint size={30} /> Mis mascotas
             </h1>
             <p className="text-base-content/60 text-sm mt-1">
               {disponibles} disponible{disponibles !== 1 ? "s" : ""} · {adoptados} adoptada{adoptados !== 1 ? "s" : ""}
             </p>
           </div>
           <Link href="/publicar" className="btn btn-primary gap-2">
-            <Plus size={18} />
-            Agregar mascota
+            <Plus size={18} /> Agregar mascota
           </Link>
         </div>
 
         {error && <div role="alert" className="alert alert-error mb-4"><span>{error}</span></div>}
 
-        {/* Barra de búsqueda y filtros */}
+        {/* Barra de busqueda y filtros */}
         <div className="bg-base-100 rounded-box shadow p-4 mb-6 flex flex-col gap-3">
           <div className="flex gap-2">
             <label className="input input-bordered flex items-center gap-2 flex-1">
               <Search size={16} className="text-base-content/40" />
-              <input
-                type="text"
-                placeholder="Buscar por nombre"
-                value={búsqueda}
-                onChange={(e) => setBúsqueda(e.target.value)}
-                className="grow"
-              />
-              {búsqueda && (
-                <button onClick={() => setBúsqueda("")}>
+              <input type="text" placeholder="Buscar por nombre o raza..."
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                className="grow" />
+              {busqueda && (
+                <button onClick={() => setBusqueda("")}>
                   <X size={14} className="text-base-content/40" />
                 </button>
               )}
             </label>
-            <button
-              onClick={() => setFiltersOpen(!filtersOpen)}
-              className={`btn btn-square btn-outline ${filtersOpen ? "btn-primary" : ""}`}
-            >
+            <button onClick={() => setFiltersOpen(!filtersOpen)}
+              className={`btn btn-square btn-outline ${filtersOpen || hayFiltros ? "btn-primary" : ""}`}>
               <SlidersHorizontal size={18} />
             </button>
           </div>
 
           {filtersOpen && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               <div className="form-control">
                 <label className="label py-0"><span className="label-text text-xs">Especie</span></label>
-                <select className="select select-bordered select-sm" value={filtroEspecie} onChange={(e) => setFiltroEspecie(e.target.value)}>
+                <select className="select select-bordered select-sm" value={filtroEspecie}
+                  onChange={(e) => setFiltroEspecie(e.target.value)}>
                   <option value="TODOS">Todas</option>
                   <option value="PERRO">Perro</option>
                   <option value="GATO">Gato</option>
@@ -185,7 +163,8 @@ export default function MisMáscotasPage() {
               </div>
               <div className="form-control">
                 <label className="label py-0"><span className="label-text text-xs">Sexo</span></label>
-                <select className="select select-bordered select-sm" value={filtroSexo} onChange={(e) => setFiltroSexo(e.target.value)}>
+                <select className="select select-bordered select-sm" value={filtroSexo}
+                  onChange={(e) => setFiltroSexo(e.target.value)}>
                   <option value="TODOS">Todos</option>
                   <option value="MACHO">Macho</option>
                   <option value="HEMBRA">Hembra</option>
@@ -193,26 +172,46 @@ export default function MisMáscotasPage() {
               </div>
               <div className="form-control">
                 <label className="label py-0"><span className="label-text text-xs">Estatus</span></label>
-                <select className="select select-bordered select-sm" value={filtroEstatus} onChange={(e) => setFiltroEstatus(e.target.value)}>
+                <select className="select select-bordered select-sm" value={filtroEstatus}
+                  onChange={(e) => setFiltroEstatus(e.target.value)}>
                   <option value="TODOS">Todos</option>
                   <option value="DISPONIBLE">Disponible</option>
                   <option value="ADOPTADO">Adoptado</option>
                 </select>
               </div>
               <div className="form-control">
-                <label className="label py-0"><span className="label-text text-xs">Ordenar por</span></label>
-                <select className="select select-bordered select-sm" value={orden} onChange={(e) => setOrden(e.target.value as Orden)}>
-                  <option value="nombre-asc">Nombre A-Z</option>
-                  <option value="nombre-desc">Nombre Z-A</option>
-                  <option value="edad-asc">Más jovenes</option>
-                  <option value="edad-desc">Más mayores</option>
+                <label className="label py-0"><span className="label-text text-xs">Esterilizado</span></label>
+                <select className="select select-bordered select-sm" value={filtroEsterilizado}
+                  onChange={(e) => setFiltroEsterilizado(e.target.value)}>
+                  <option value="TODOS">Todos</option>
+                  <option value="SI">Si</option>
+                  <option value="NO">No</option>
                 </select>
+              </div>
+              <div className="form-control">
+                <label className="label py-0"><span className="label-text text-xs">Ordenar por</span></label>
+                <div className="flex gap-1">
+                  <select className="select select-bordered select-sm flex-1" value={criterio}
+                    onChange={(e) => setCriterio(e.target.value as CriterioOrden)}>
+                    <option value="fechaRegistro">Mas reciente</option>
+                    <option value="nombre">Nombre</option>
+                    <option value="edad">Edad</option>
+                    <option value="interesados">Interesados</option>
+                  </select>
+                  <button type="button"
+                    title={ordenDesc ? "Descendente" : "Ascendente"}
+                    onClick={() => setOrdenDesc((v) => !v)}
+                    className="btn btn-sm btn-square btn-outline">
+                    <ArrowUpDown size={14} className={ordenDesc ? "text-primary" : "text-base-content/40"} />
+                  </button>
+                </div>
               </div>
             </div>
           )}
 
           <p className="text-xs text-base-content/50">
             {filtradas.length} mascota{filtradas.length !== 1 ? "s" : ""}
+            {hayFiltros ? " (con filtros)" : ""}
           </p>
         </div>
 
@@ -224,69 +223,51 @@ export default function MisMáscotasPage() {
           </div>
         ) : (
           <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filtradas.map((m) => {
-              return (
-                <AnimalCard.Compact
-                  key={m.id}
-                  animal={m}
-                  rolUsuario={rol}
-                  userId={userId}
-                  onDeleted={(id) => removeMáscotaFromList(id)}
-                  onUpdated={updateMáscotaInList}
-                  actions={{
-                    //onEdit: handleEditAnimal,
-                    onDelete: handleDeleteAnimal,
-                  }}
-                />
-              );
-            })}
+            {filtradas.map((m) => (
+              <AnimalCard.Compact
+                key={m.id}
+                animal={m}
+                rolUsuario={rol}
+                userId={userId}
+                onDeleted={removeMascotaFromList}
+                onUpdated={updateMascotaInList}
+                actions={{ onDelete: (id) => setPendingDeleteId(id) }}
+              />
+            ))}
           </div>
         )}
-      </div>
-            {/* Historial de adoptados */}
-            <div className="mt-10">
-              <h2 className="text-xl font-bold mb-4">
-                Historial de adoptados
-              </h2>
-              {loadingHistorial ? (
-                <p className="text-gray-400">Cargando...</p>
-              ) : historialAdoptados.length === 0 ? (
-                <p className="text-gray-400">
-                  Aun no tienes animales marcados como adoptados.
-                </p>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {historialAdoptados.map((animal) => (
-                    <div
-                      key={animal.id}
-                      className="card bg-base-200 shadow p-4"
-                    >
-                      {animal.fotoPortada && (
-                        <img
-                          src={animal.fotoPortada}
-                          alt={animal.nombre}
-                          className="rounded-lg w-full h-40 object-cover mb-3"
-                        />
-                      )}
-                      <h3 className="font-bold text-lg">
-                        {animal.nombre}
-                      </h3>
-                      <p className="text-sm text-gray-500">
-                        {animal.especie} · {animal.raza ?? "Raza desconocida"}
-                      </p>
-                      <span className="badge badge-success mt-2">
-                        Adoptado
-                      </span>
-                    </div>
-                  ))}
+
+        {/* Historial de adoptados */}
+        <div className="mt-10">
+          <h2 className="text-xl font-bold mb-4">Historial de adoptados</h2>
+          {loadingHistorial ? (
+            <p className="text-base-content/40">Cargando...</p>
+          ) : historialAdoptados.length === 0 ? (
+            <p className="text-base-content/40">Aun no tienes animales marcados como adoptados.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {historialAdoptados.map((animal) => (
+                <div key={animal.id} className="card bg-base-200 shadow p-4">
+                  {animal.fotoPortada && (
+                    <img src={animal.fotoPortada} alt={animal.nombre}
+                      className="rounded-lg w-full h-40 object-contain object-top mb-3" />
+                  )}
+                  <h3 className="font-bold text-lg">{animal.nombre}</h3>
+                  <p className="text-sm text-base-content/50">
+                    {animal.especie} · {animal.raza ?? "Raza desconocida"}
+                  </p>
+                  <span className="badge badge-success mt-2">Adoptado</span>
                 </div>
-              )}
+              ))}
             </div>
+          )}
+        </div>
+      </div>
 
       <ConfirmDialog
         open={pendingDeleteId !== null}
         title="Eliminar mascota"
-        message="Eliminar esta mascota permanentemente?"
+        message="Esta accion no se puede deshacer."
         confirmText="Eliminar"
         cancelText="Cancelar"
         loading={deleting}
