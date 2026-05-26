@@ -2,8 +2,8 @@
 const TOKEN_KEY = "user_token";
 
 /**
- * Obtiene el token de sesion almacenado en sessionStorage.
- * @returns El token si existe, null si no hay sesion activa o si se ejecuta fuera del navegador.
+ * Obtiene el token de sesión almacenado en sessionStorage.
+ * @returns El token si existe, null si no hay sesión activa o si se ejecuta fuera del navegador.
  */
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -11,7 +11,7 @@ export function getToken(): string | null {
 }
 
 /**
- * Guarda el token de sesion en sessionStorage.
+ * Guarda el token de sesión en sessionStorage.
  * @param token - Token a almacenar.
  */
 export function setToken(token: string): void {
@@ -19,7 +19,7 @@ export function setToken(token: string): void {
 }
 
 /**
- * Elimina el token de sesion de sessionStorage.
+ * Elimina el token de sesión de sessionStorage.
  */
 export function removeToken(): void {
   sessionStorage.removeItem(TOKEN_KEY);

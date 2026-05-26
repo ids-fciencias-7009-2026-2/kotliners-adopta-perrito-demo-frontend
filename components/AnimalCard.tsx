@@ -1,18 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
-import { Pencil, Trash2, CheckCircle, Syringe, AlertTriangle, ChevronLeft, ChevronRight, X, Expand, ZoomIn, Dog, Cat } from "lucide-react";
-import { AdvancedImage } from "@cloudinary/react";
-import { getOptimizedImage } from "@/lib/cloudinary";
+import { useState } from "react";
+import { Pencil, Trash2, CheckCircle, Syringe, AlertTriangle, Expand, X } from "lucide-react";
 import BotonInteres from "./BotonInteres";
 import BotonFlag from "./BotonFlag";
 import ConfirmDialog from "./ConfirmDialog";
-import MultiSelect from "./MultiSelect";
-import GaleriaUpload from "./GaleriaUpload";
+import { GaleriaFotos, FotoImg, IconoEspecie, calcularEdad } from "./animal/AnimalCardHelpers";
+import SeccionRaza from "./animal/SeccionRaza";
+import AnimalEditForm from "./animal/AnimalEditForm";
 import { useAnimalDetalle, useAnimalActions } from "@/hooks/useAnimalData";
-import { listarVacunas, listarPadecimientos } from "@/lib/apiClient";
-import { getToken } from "@/lib/session";
 import type { AnimalResponse, AnimalDetalleResponse } from "@/lib/apiClient";
 
 // ---------------------------------------------------------------------------
@@ -32,257 +28,11 @@ interface BaseProps {
   actions?: AnimalCardActions;
   onDeleted?: (id: string) => void;
   onUpdated?: (animal: AnimalResponse) => void;
-  /** Si true, permite quitar el interes aunque el animal este adoptado (para favoritos) */
   allowRemove?: boolean;
 }
 
 // ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/** Icono de especie — perro o gato */
-function IconoEspecie({ especie, size = 64 }: { especie: string; size?: number }) {
-  const esGato = especie.toLowerCase().includes("gato") || especie.toLowerCase().includes("cat");
-  return esGato
-    ? <Cat size={size} className="text-base-content/30" />
-    : <Dog size={size} className="text-base-content/30" />;
-}
-
-function calcularEdad(fechaNacimiento: string) {
-  const [y, m, d] = fechaNacimiento.split("-").map(Number);
-  if (!y || !m || !d) return "Edad desconocida";
-  const hoy = new Date();
-  const nacimiento = new Date(y, m - 1, d);
-  let anos = hoy.getFullYear() - nacimiento.getFullYear();
-  let meses = hoy.getMonth() - nacimiento.getMonth();
-  if (hoy.getDate() < nacimiento.getDate()) meses--;
-  if (meses < 0) { anos--; meses += 12; }
-  if (anos < 0) return "Recien nacido";
-  if (anos === 0 && meses <= 0) return "Recien nacido";
-  if (anos === 0) return meses === 1 ? "1 mes" : `${meses} meses`;
-  if (meses === 0) return anos === 1 ? "1 ano" : `${anos} años`;
-  return `${anos} ${anos === 1 ? "año" : "años"} y ${meses} ${meses === 1 ? "mes" : "meses"}`;
-}
-
-function FotoImg({ url, alt, className }: { url: string; alt: string; className?: string }) {
-  return url.includes("cloudinary.com")
-    ? <AdvancedImage cldImg={getOptimizedImage(url, 800, 600)} className={className} alt={alt} />
-    : <img src={url} alt={alt} className={className} />;
-}
-
-// ---------------------------------------------------------------------------
-// Lightbox — fullscreen con navegacion
-// ---------------------------------------------------------------------------
-
-function Lightbox({ fotos, startIdx, onClose }: { fotos: string[]; startIdx: number; onClose: () => void }) {
-  const [idx, setIdx] = useState(startIdx);
-
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-      if (e.key === "ArrowLeft") setIdx((i) => (i - 1 + fotos.length) % fotos.length);
-      if (e.key === "ArrowRight") setIdx((i) => (i + 1) % fotos.length);
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [fotos.length]);
-
-  return createPortal(
-    <div className="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center" onClick={onClose}>
-      <div className="relative max-w-5xl max-h-screen w-full h-full flex items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
-        <FotoImg url={fotos[idx]} alt={`Foto ${idx + 1}`} className="max-w-full max-h-full object-contain rounded-box" />
-
-        {fotos.length > 1 && (
-          <>
-            <button onClick={() => setIdx((i) => (i - 1 + fotos.length) % fotos.length)}
-              className="absolute left-2 btn btn-circle btn-ghost text-white bg-black/40 hover:bg-black/60">
-              <ChevronLeft size={24} />
-            </button>
-            <button onClick={() => setIdx((i) => (i + 1) % fotos.length)}
-              className="absolute right-2 btn btn-circle btn-ghost text-white bg-black/40 hover:bg-black/60">
-              <ChevronRight size={24} />
-            </button>
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-              {fotos.map((_, i) => (
-                <button key={i} onClick={() => setIdx(i)}
-                  className={`h-2 rounded-full transition-all ${i === idx ? "bg-white w-4" : "bg-white/40 w-2"}`} />
-              ))}
-            </div>
-          </>
-        )}
-
-        <button onClick={onClose} className="absolute top-2 right-2 btn btn-circle btn-ghost text-white bg-black/40 hover:bg-black/60">
-          <X size={20} />
-        </button>
-        <span className="absolute top-2 left-1/2 -translate-x-1/2 text-white/60 text-sm">
-          {idx + 1} / {fotos.length}
-        </span>
-      </div>
-    </div>,
-    document.body
-  );
-}
-
-// ---------------------------------------------------------------------------
-// GaleriaFotos — carrusel con lightbox
-// ---------------------------------------------------------------------------
-
-function GaleriaFotos({ fotos, nombre, especie }: { fotos: string[]; nombre: string; especie: string }) {
-  const [idx, setIdx] = useState(0);
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-
-  if (fotos.length === 0) {
-    return (
-      <div className="h-72 bg-base-200 flex items-center justify-center rounded-t-box">
-        <IconoEspecie especie={especie} size={80} />
-      </div>
-    );
-  }
-
-  return (
-    <>
-      <div className="relative h-72 bg-base-200 rounded-t-box overflow-hidden group cursor-zoom-in" onClick={() => setLightboxOpen(true)}>
-        <FotoImg url={fotos[idx]} alt={`${nombre} ${idx + 1}`} className="w-full h-full object-contain" />
-
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/10">
-          <ZoomIn size={32} className="text-white drop-shadow" />
-        </div>
-
-        {fotos.length > 1 && (
-          <>
-            <button onClick={(e) => { e.stopPropagation(); setIdx((i) => (i - 1 + fotos.length) % fotos.length); }}
-              className="absolute left-2 top-1/2 -translate-y-1/2 btn btn-circle btn-sm btn-ghost bg-base-100/70">
-              <ChevronLeft size={18} />
-            </button>
-            <button onClick={(e) => { e.stopPropagation(); setIdx((i) => (i + 1) % fotos.length); }}
-              className="absolute right-2 top-1/2 -translate-y-1/2 btn btn-circle btn-sm btn-ghost bg-base-100/70">
-              <ChevronRight size={18} />
-            </button>
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1" onClick={(e) => e.stopPropagation()}>
-              {fotos.map((_, i) => (
-                <button key={i} onClick={() => setIdx(i)}
-                  className={`h-2 rounded-full transition-all ${i === idx ? "bg-primary w-4" : "bg-base-100/70 w-2"}`} />
-              ))}
-            </div>
-          </>
-        )}
-      </div>
-
-      {lightboxOpen && <Lightbox fotos={fotos} startIdx={idx} onClose={() => setLightboxOpen(false)} />}
-    </>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// EditForm
-// ---------------------------------------------------------------------------
-
-interface EditFormProps {
-  animal: AnimalDetalleResponse;
-  saving: boolean;
-  error: string | null;
-  onSave: (data: Partial<AnimalDetalleResponse>) => void;
-  onCancel: () => void;
-}
-
-function EditForm({ animal, saving, error, onSave, onCancel }: EditFormProps) {
-  const [form, setForm] = useState({
-    nombre: animal.nombre,
-    especie: animal.especie.toLowerCase().includes("gato") ? "Gato" : "Perro",
-    raza: animal.raza ?? "",
-    fechaNacimiento: animal.fechaNacimiento,
-    sexo: animal.sexo as "MACHO" | "HEMBRA",
-    descripcion: animal.descripcion,
-    estatus: animal.estatus as "DISPONIBLE" | "ADOPTADO",
-    esterilizado: animal.esterilizado,
-    vacunas: animal.vacunas ?? [],
-    padecimientos: animal.padecimientos ?? [],
-    fotos: animal.fotos ?? [],
-  });
-  const [catVacunas, setCatVacunas] = useState<string[]>([]);
-  const [catPadecimientos, setCatPadecimientos] = useState<string[]>([]);
-
-  useEffect(() => {
-    const token = getToken();
-    if (!token) return;
-    Promise.all([listarVacunas(token), listarPadecimientos(token)]).then(([v, p]) => {
-      if (v.ok) setCatVacunas(v.data.map((x) => x.nombre));
-      if (p.ok) setCatPadecimientos(p.data.map((x) => x.nombre));
-    });
-  }, []);
-
-  const set = (key: string, value: unknown) => setForm((p) => ({ ...p, [key]: value }));
-
-  return (
-    <div className="p-6 space-y-4">
-      <h3 className="text-xl font-bold">Editar mascota</h3>
-      {error && <div role="alert" className="alert alert-error"><span>{error}</span></div>}
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="form-control sm:col-span-2">
-          <label className="label"><span className="label-text">Nombre</span></label>
-          <input className="input input-bordered w-full" value={form.nombre} onChange={(e) => set("nombre", e.target.value)} />
-        </div>
-        <div className="form-control">
-          <label className="label"><span className="label-text">Especie</span></label>
-          <select className="select select-bordered w-full" value={form.especie} onChange={(e) => set("especie", e.target.value)}>
-            <option value="Perro">Perro</option>
-            <option value="Gato">Gato</option>
-          </select>
-        </div>
-        <div className="form-control">
-          <label className="label"><span className="label-text">Raza</span></label>
-          <input className="input input-bordered w-full" value={form.raza} onChange={(e) => set("raza", e.target.value)} />
-        </div>
-        <div className="form-control">
-          <label className="label"><span className="label-text">Fecha de nacimiento</span></label>
-          <input type="date" className="input input-bordered w-full" value={form.fechaNacimiento} onChange={(e) => set("fechaNacimiento", e.target.value)} />
-        </div>
-        <div className="form-control">
-          <label className="label"><span className="label-text">Sexo</span></label>
-          <select className="select select-bordered w-full" value={form.sexo} onChange={(e) => set("sexo", e.target.value)}>
-            <option value="MACHO">Macho</option>
-            <option value="HEMBRA">Hembra</option>
-          </select>
-        </div>
-        <div className="form-control sm:col-span-2">
-          <label className="label"><span className="label-text">Descripcion</span></label>
-          <textarea className="textarea textarea-bordered w-full" rows={3} value={form.descripcion} onChange={(e) => set("descripcion", e.target.value)} />
-        </div>
-        <div className="form-control">
-          <label className="label"><span className="label-text">Estatus</span></label>
-          <select className="select select-bordered w-full" value={form.estatus} onChange={(e) => set("estatus", e.target.value)}>
-            <option value="DISPONIBLE">Disponible</option>
-            <option value="ADOPTADO">Adoptado</option>
-          </select>
-        </div>
-        <label className="label cursor-pointer justify-start gap-3 mt-6">
-          <input type="checkbox" className="checkbox" checked={form.esterilizado} onChange={(e) => set("esterilizado", e.target.checked)} />
-          <span className="label-text">Esterilizado</span>
-        </label>
-        <div className="sm:col-span-2 relative">
-          <MultiSelect label="Vacunas" opciones={catVacunas} values={form.vacunas} onChange={(v) => set("vacunas", v)} placeholder="Buscar vacuna o agregar nueva..." />
-        </div>
-        <div className="sm:col-span-2 relative">
-          <MultiSelect label="Condiciones medicas" opciones={catPadecimientos} values={form.padecimientos} onChange={(v) => set("padecimientos", v)} placeholder="Buscar condicion o agregar nueva..." />
-        </div>
-        <div className="sm:col-span-2">
-          <GaleriaUpload animalId={animal.id} fotos={form.fotos} onFotosChange={(f) => set("fotos", f)} />
-        </div>
-      </div>
-
-      <div className="flex justify-end gap-2 pt-2">
-        <button className="btn btn-ghost" onClick={onCancel} disabled={saving}>Cancelar</button>
-        <button className="btn btn-primary" onClick={() => onSave(form)} disabled={saving}>
-          {saving ? <span className="loading loading-spinner loading-sm" /> : "Guardar cambios"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// AnimalCard.Compact — thumbnail con primera foto si existe
+// AnimalCard.Compact
 // ---------------------------------------------------------------------------
 
 function Compact({ animal, rolUsuario, userId, tieneInteres = false, actions, onDeleted, onUpdated, allowRemove = false }: BaseProps & { animal: AnimalResponse }) {
@@ -302,11 +52,9 @@ function Compact({ animal, rolUsuario, userId, tieneInteres = false, actions, on
       <div className={`rounded-box overflow-hidden shadow-xl transition-all duration-300 ${esAdoptado ? "bg-base-200 opacity-60 grayscale" : "bg-base-100 hover:-translate-y-1 hover:shadow-primary/40"}`}>
         <button onClick={() => setModalOpen(true)} className="w-full">
           <div className="h-48 bg-base-200 flex items-center justify-center relative overflow-hidden">
-            {portada ? (
-              <FotoImg url={portada} alt={animalLocal.nombre} className="w-full h-full object-contain" />
-            ) : (
-              <IconoEspecie especie={animalLocal.especie} size={64} />
-            )}
+            {portada
+              ? <FotoImg url={portada} alt={animalLocal.nombre} className="w-full h-full object-contain object-top" />
+              : <IconoEspecie especie={animalLocal.especie} size={64} />}
             {esAdoptado && <span className="absolute top-2 right-2 badge badge-neutral">Adoptado</span>}
           </div>
         </button>
@@ -337,7 +85,6 @@ function Compact({ animal, rolUsuario, userId, tieneInteres = false, actions, on
               {(animalLocal.numInteresados ?? 0) === 1 ? "persona interesada" : "personas interesadas"}
             </p>
           )}
-
           <div className="mt-4">
             {esDueno ? (
               <div className="flex flex-wrap gap-2">
@@ -378,7 +125,6 @@ function Compact({ animal, rolUsuario, userId, tieneInteres = false, actions, on
             setAnimalLocal((prev) => ({
               ...updated,
               fotoPortada: detalle?.fotos?.[0] ?? updated.fotoPortada ?? null,
-              // Preservar numInteresados — no cambia al editar el animal
               numInteresados: (updated as any).numInteresados ?? (prev as any)?.numInteresados ?? 0,
             }));
             onUpdated?.(updated);
@@ -435,17 +181,19 @@ function Detail({ animal, rolUsuario, userId, tieneInteres = false, actions }: B
 
         <div>
           <h2 className="font-semibold mb-2 flex items-center gap-2"><Syringe size={16} className="text-primary" /> Vacunas</h2>
-          {animal.vacunas.length === 0 ? <p className="text-base-content/50 text-sm">Sin vacunas registradas</p> : (
-            <div className="flex flex-wrap gap-2">{animal.vacunas.map((v) => <span key={v} className="badge badge-success gap-1"><CheckCircle size={12} /> {v}</span>)}</div>
-          )}
+          {animal.vacunas.length === 0
+            ? <p className="text-base-content/50 text-sm">Sin vacunas registradas</p>
+            : <div className="flex flex-wrap gap-2">{animal.vacunas.map((v) => <span key={v} className="badge badge-success gap-1"><CheckCircle size={12} /> {v}</span>)}</div>}
         </div>
 
         <div>
           <h2 className="font-semibold mb-2 flex items-center gap-2"><AlertTriangle size={16} className="text-warning" /> Condiciones medicas</h2>
-          {animal.padecimientos.length === 0 ? <p className="text-base-content/50 text-sm">Sin condiciones registradas</p> : (
-            <div className="flex flex-wrap gap-2">{animal.padecimientos.map((p) => <span key={p} className="badge badge-warning gap-1">{p}</span>)}</div>
-          )}
+          {animal.padecimientos.length === 0
+            ? <p className="text-base-content/50 text-sm">Sin condiciones registradas</p>
+            : <div className="flex flex-wrap gap-2">{animal.padecimientos.map((p) => <span key={p} className="badge badge-warning gap-1">{p}</span>)}</div>}
         </div>
+
+        <SeccionRaza especie={animal.especie} razaId={animal.razaId ?? null} />
 
         <div className="divider my-0" />
 
@@ -495,7 +243,6 @@ function DetailModal({ animalId, rolUsuario, userId: userIdProp, onClose, onDele
           return {
             ...base,
             ...updated,
-            // Preservar numInteresados — actualizar el animal no cambia el conteo
             numInteresados: (base as any).numInteresados ?? (updated as any).numInteresados ?? 0,
             vacunas: fullData?.vacunas ?? base.vacunas,
             padecimientos: fullData?.padecimientos ?? base.padecimientos,
@@ -522,7 +269,7 @@ function DetailModal({ animalId, rolUsuario, userId: userIdProp, onClose, onDele
           <div className="p-8 text-center text-error">{error ?? "No se pudo cargar."}</div>
         ) : editMode ? (
           <div className="overflow-y-auto max-h-[85vh]">
-            <EditForm animal={animalData} saving={saving} error={saveError} onSave={handleSaveEdit} onCancel={() => setEditMode(false)} />
+            <AnimalEditForm animal={animalData} saving={saving} error={saveError} onSave={handleSaveEdit} onCancel={() => setEditMode(false)} />
           </div>
         ) : (
           <div className="overflow-y-auto max-h-[85vh]">

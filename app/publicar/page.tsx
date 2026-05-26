@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   publicarAnimal, actualizarVacunasAnimal, actualizarPadecimientosAnimal,
-  listarVacunas, listarPadecimientos, type CreateAnimalPayload
+  listarVacunas, listarPadecimientos, listarRazas,
+  type CreateAnimalPayload, type RazaResponse
 } from "@/lib/apiClient";
 import { getToken } from "@/lib/session";
 import { ROUTES } from "@/lib/routes";
@@ -23,14 +24,15 @@ export default function PublicarPage() {
   const [animalPublicadoId, setAnimalPublicadoId] = useState<string | null>(null);
   const [fotosAnimal, setFotosAnimal] = useState<string[]>([]);
 
-  const [form, setForm] = useState<CreateAnimalPayload>({
-    nombre: "", especie: "", raza: "", fechaNacimiento: "",
+  const [form, setForm] = useState<CreateAnimalPayload & { razaId: string }>({
+    nombre: "", especie: "", raza: "", razaId: "", fechaNacimiento: "",
     sexo: "MACHO", descripcion: "", esterilizado: false,
   });
   const [vacunas, setVacunas] = useState<string[]>([]);
   const [padecimientos, setPadecimientos] = useState<string[]>([]);
   const [catVacunas, setCatVacunas] = useState<string[]>([]);
   const [catPadecimientos, setCatPadecimientos] = useState<string[]>([]);
+  const [razasDisponibles, setRazasDisponibles] = useState<RazaResponse[]>([]);
 
   useEffect(() => {
     const token = getToken();
@@ -41,10 +43,28 @@ export default function PublicarPage() {
     });
   }, []);
 
+  // Cargar razas cuando cambia la especie
+  useEffect(() => {
+    if (!form.especie) { setRazasDisponibles([]); return; }
+    const token = getToken();
+    if (!token) return;
+    const especieUpper = form.especie.toUpperCase() === "GATO" ? "GATO" : "PERRO";
+    listarRazas(token, especieUpper).then((res) => {
+      if (res.ok) setRazasDisponibles(res.data);
+    });
+    setForm((p) => ({ ...p, razaId: "", raza: "" }));
+  }, [form.especie]);
+
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
     const { name, value, type } = e.target;
     setForm((prev) => ({ ...prev, [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value }));
     setErrors((prev) => ({ ...prev, [name]: "" }));
+  }
+
+  function handleRazaChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const razaId = e.target.value;
+    const raza = razasDisponibles.find((r) => r.id === razaId);
+    setForm((p) => ({ ...p, razaId, raza: raza?.nombreEs ?? "" }));
   }
 
   function validate(): boolean {
@@ -65,7 +85,11 @@ export default function PublicarPage() {
     const token = getToken();
     if (!token) { router.push(ROUTES.LOGIN); return; }
 
-    const payload: CreateAnimalPayload = { ...form, raza: form.raza?.trim() || undefined };
+    const payload: CreateAnimalPayload = {
+      ...form,
+      raza: form.raza?.trim() || undefined,
+      razaId: form.razaId || undefined,
+    };
     const result = await publicarAnimal(token, payload);
 
     if (result.ok) {
@@ -74,7 +98,6 @@ export default function PublicarPage() {
         padecimientos.length > 0 ? actualizarPadecimientosAnimal(token, result.data.id, padecimientos) : Promise.resolve(),
       ]);
       setLoading(false);
-      // Mostrar galeria de fotos antes de redirigir
       setAnimalPublicadoId(result.data.id);
     } else {
       setLoading(false);
@@ -148,9 +171,21 @@ export default function PublicarPage() {
             </div>
 
             <div className="form-control">
-              <label className="label" htmlFor="raza"><span className="label-text">Raza <span className="text-base-content/40 text-xs">(opcional)</span></span></label>
-              <input id="raza" name="raza" type="text" value={form.raza ?? ""} onChange={handleChange}
-                placeholder="Ej: Labrador" className="input input-bordered w-full" />
+              <label className="label" htmlFor="razaId">
+                <span className="label-text">Raza <span className="text-base-content/40 text-xs">(opcional)</span></span>
+              </label>
+              <select
+                id="razaId"
+                value={form.razaId}
+                onChange={handleRazaChange}
+                disabled={!form.especie || razasDisponibles.length === 0}
+                className="select select-bordered w-full"
+              >
+                <option value="">Sin raza / Mestizo</option>
+                {razasDisponibles.map((r) => (
+                  <option key={r.id} value={r.id}>{r.nombreEs}</option>
+                ))}
+              </select>
             </div>
 
             <div className="sm:col-span-2 relative">

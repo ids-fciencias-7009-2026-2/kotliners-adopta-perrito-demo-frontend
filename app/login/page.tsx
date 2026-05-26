@@ -9,7 +9,7 @@ import { login, getPerfil } from "@/api/authApi";
 import { ROUTES } from "@/lib/routes";
 import { PawPrint, LogIn } from "lucide-react";
 
-/** Pagina de inicio de sesion. Ruta publica: /login */
+/** Página de inicio de sesión. Ruta publica: /login */
 export default function LoginPage() {
   const router = useRouter();
   const [form, setForm] = useState({ username: "", password: "" });
@@ -27,9 +27,9 @@ export default function LoginPage() {
   function validate(): boolean {
     const newErrors: Record<string, string> = {};
     if (!form.username.trim()) newErrors.username = "El correo es obligatorio.";
-    else if (!/\S+@\S+\.\S+/.test(form.username)) newErrors.username = "Correo no valido.";
-    if (!form.password.trim()) newErrors.password = "La contrasena es obligatoria.";
-    else if (form.password.length < 8) newErrors.password = "Minimo 8 caracteres.";
+    else if (!/\S+@\S+\.\S+/.test(form.username)) newErrors.username = "Correo no válido.";
+    if (!form.password.trim()) newErrors.password = "La contraseña es obligatoria.";
+    else if (form.password.length < 8) newErrors.password = "Mínimo 8 caracteres.";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }
@@ -48,7 +48,7 @@ export default function LoginPage() {
       sessionStorage.setItem("usuario", JSON.stringify(perfilResponse.data));
       router.push(ROUTES.HOME);
     } catch {
-      setServerError("Credenciales incorrectas. Verifica tu correo y contrasena.");
+      setServerError("Credenciales incorrectas. Verifica tu correo y contraseña.");
     } finally {
       setLoading(false);
     }
@@ -63,7 +63,7 @@ export default function LoginPage() {
           <div className="flex flex-col items-center gap-2">
             <PawPrint size={48} className="text-primary" />
             <h1 className="card-title text-2xl">Bienvenido</h1>
-            <p className="text-base-content/60 text-sm text-center">Inicia sesion en Colitas Felices</p>
+            <p className="text-base-content/60 text-sm text-center">Inicia sesión en Colitas Felices</p>
           </div>
 
           <ErrorMessage message={serverError} />
@@ -73,7 +73,7 @@ export default function LoginPage() {
             {/* Campo correo */}
             <div className="form-control">
               <label className="label" htmlFor="username">
-                <span className="label-text">Correo electronico</span>
+                <span className="label-text">Correo electrónico</span>
               </label>
               <input
                 id="username"
@@ -91,10 +91,10 @@ export default function LoginPage() {
               )}
             </div>
 
-            {/* Campo contrasena */}
+            {/* Campo contraseña */}
             <PasswordField
               name="password"
-              label="Contrasena"
+              label="Contraseña"
               value={form.password}
               onChange={handleChange}
               error={errors.password}
@@ -102,13 +102,13 @@ export default function LoginPage() {
             />
 
             <button type="submit" disabled={loading} className="btn btn-primary w-full gap-2 mt-2">
-              {loading ? <span className="loading loading-spinner loading-sm" /> : <><LogIn size={18} /> Iniciar sesion</>}
+              {loading ? <span className="loading loading-spinner loading-sm" /> : <><LogIn size={18} /> Iniciar sesión</>}
             </button>
           </form>
 
           <div className="divider text-xs">No tienes cuenta?</div>
           <Link href={ROUTES.REGISTRO} className="btn btn-outline btn-secondary w-full btn-sm">
-            Registrate aqui
+            Regístrate aquí
           </Link>
         </div>
       </div>

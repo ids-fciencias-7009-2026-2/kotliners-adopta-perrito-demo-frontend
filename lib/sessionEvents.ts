@@ -1,6 +1,6 @@
 /**
- * Emisor de eventos de sesion basado en el patron observador.
- * Permite que cualquier parte de la app reaccione a cambios de sesion
+ * Emisor de eventos de sesión basado en el patron observador.
+ * Permite que cualquier parte de la app reaccione a cambios de sesión
  * sin necesidad de polling ni prop drilling.
  *
  * Uso:
@@ -18,7 +18,7 @@ const listeners: Map<SessionEvent, Set<Handler>> = new Map();
 
 const sessionEvents = {
     /**
-     * Registra un listener para un evento de sesion.
+     * Registra un listener para un evento de sesión.
      * @param event - Nombre del evento.
      * @param handler - Funcion a ejecutar cuando se emita el evento.
      */
@@ -30,7 +30,7 @@ const sessionEvents = {
     },
 
     /**
-     * Elimina un listener registrado para un evento de sesion.
+     * Elimina un listener registrado para un evento de sesión.
      * @param event - Nombre del evento.
      * @param handler - Funcion a eliminar.
      */
@@ -39,7 +39,7 @@ const sessionEvents = {
     },
 
     /**
-     * Emite un evento de sesion notificando a todos los listeners registrados.
+     * Emite un evento de sesión notificando a todos los listeners registrados.
      * @param event - Nombre del evento a emitir.
      */
     emit(event: SessionEvent): void {

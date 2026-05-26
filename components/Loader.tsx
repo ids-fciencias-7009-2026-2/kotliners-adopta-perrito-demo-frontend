@@ -1,7 +1,7 @@
 /**
  * Componente de carga que se muestra mientras se verifica el estado de autenticación del usuario.
  * 
- * Se utiliza en LayoutWrapper para evitar mostrar contenido protegido antes de redirigir.
+ * Se útiliza en LayoutWrapper para evitar mostrar contenido protegido antes de redirigir.
  */
 export default function Loader() {
     return (

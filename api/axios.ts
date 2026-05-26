@@ -7,7 +7,7 @@ const apiClient = axios.create({
   headers: { 'Content-Type': 'application/json' }
 })
 
-/** Interceptor de request: agrega el token de sesion en el header Authorization. */
+/** Interceptor de request: agrega el token de sesión en el header Authorization. */
 apiClient.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
     const token = sessionStorage.getItem('user_token')
@@ -21,7 +21,7 @@ apiClient.interceptors.request.use((config) => {
 /**
  * Interceptor de response: si el backend devuelve 401 o 403,
  * emite el evento "session:expired" usando el patron observador.
- * Los componentes suscritos reaccionan limpiando la sesion y redirigiendo.
+ * Los componentes suscritos reaccionan limpiando la sesión y redirigiendo.
  */
 apiClient.interceptors.response.use(
   (response) => response,

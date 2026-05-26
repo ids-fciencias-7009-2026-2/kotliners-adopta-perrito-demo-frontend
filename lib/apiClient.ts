@@ -113,6 +113,7 @@ export interface AnimalResponse {
   nombre: string;
   especie: string;
   raza: string | null;
+  razaId: string | null;
   fechaNacimiento: string;
   sexo: string;
   descripcion: string;
@@ -129,12 +130,14 @@ export interface AnimalDetalleResponse extends AnimalResponse {
   vacunas: string[];
   padecimientos: string[];
   numInteresados: number;
+  razaId: string | null;
 }
 
 export interface CreateAnimalPayload {
   nombre: string;
   especie: string;
   raza?: string;
+  razaId?: string;
   fechaNacimiento: string;
   sexo: "MACHO" | "HEMBRA";
   descripcion: string;
@@ -145,6 +148,7 @@ export interface UpdateAnimalPayload {
   nombre: string;
   especie: string;
   raza?: string;
+  razaId?: string;
   fechaNacimiento: string;
   sexo: "MACHO" | "HEMBRA";
   descripcion: string;
@@ -161,7 +165,7 @@ export interface DeleteAnimalPayload {
 // Helper interno
 // ---------------------------------------------------------------------------
 
-/** Convierte una respuesta Axios exitosa o un error en ApiResult */
+/** Convierte una respuesta Axios éxitosa o un error en ApiResult */
 async function call<T>(fn: () => Promise<{ data: T }>): Promise<ApiResult<T>> {
   try {
     const res = await fn();
@@ -175,7 +179,7 @@ async function call<T>(fn: () => Promise<{ data: T }>): Promise<ApiResult<T>> {
         ? typeof err.response.data === "string"
           ? err.response.data
           : JSON.stringify(err.response.data)
-        : "El servicio no esta disponible. Intenta mas tarde.";
+        : "El servicio no está disponible. Intenta mas tarde.";
     return { ok: false, error: msg };
   }
 }
@@ -260,13 +264,44 @@ export const eliminarFotoAnimal = (token: string, animalId: string, url: string)
 // Animales
 // ---------------------------------------------------------------------------
 
-export const listarAnimales = (token?: string) =>
-  call<AnimalResponse[]>(() =>
-    http.get("/api/animales", {
+export interface FiltrosAnimales {
+  especie?: string;
+  sexo?: string;
+  esterilizado?: boolean;
+  codigoPostal?: string;
+  vacuna?: string;
+  sinPadecimientos?: boolean;
+  soloVacunados?: boolean;
+  ordenar?: string;
+  ordenDesc?: boolean;
+  razaId?: string;
+  edadMinAnios?: number;
+  edadMaxAnios?: number;
+  distanciaKm?: number;
+}
+
+export const listarAnimales = (token?: string, filtros?: FiltrosAnimales) =>
+  call<AnimalResponse[]>(() => {
+    const params: Record<string, string> = {};
+    if (filtros?.especie) params.especie = filtros.especie;
+    if (filtros?.sexo) params.sexo = filtros.sexo;
+    if (filtros?.esterilizado !== undefined) params.esterilizado = String(filtros.esterilizado);
+    if (filtros?.codigoPostal) params.codigoPostal = filtros.codigoPostal;
+    if (filtros?.vacuna) params.vacuna = filtros.vacuna;
+    if (filtros?.sinPadecimientos) params.sinPadecimientos = "true";
+    if (filtros?.soloVacunados) params.soloVacunados = "true";
+    if (filtros?.ordenar) params.ordenar = filtros.ordenar;
+    if (filtros?.ordenDesc !== undefined) params.ordenDesc = String(filtros.ordenDesc);
+    if (filtros?.razaId) params.razaId = filtros.razaId;
+    if (filtros?.edadMinAnios !== undefined) params.edadMinAnios = String(filtros.edadMinAnios);
+    if (filtros?.edadMaxAnios !== undefined) params.edadMaxAnios = String(filtros.edadMaxAnios);
+    if (filtros?.distanciaKm !== undefined) params.distanciaKm = String(filtros.distanciaKm);
+    return http.get("/api/animales", {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
+      params,
       timeout: 5000,
-    })
-  );
+    });
+  });
 
 export const listarMisAnimales = (token: string) =>
   call<AnimalResponse[]>(() =>
@@ -307,6 +342,42 @@ export const marcarAnimalInapropiado = (animalId: string) =>
 // ---------------------------------------------------------------------------
 // Vacunas y padecimientos
 // ---------------------------------------------------------------------------
+
+export interface RazaCampoResponse {
+  etiqueta: string;
+  valor: string;
+  tipo: "TEXT" | "SCORE" | "BOOL";
+}
+
+export interface RazaInfoResponse {
+  nombre: string;
+  imagenUrl: string | null;
+  wikipediaUrl: string | null;
+  campos: RazaCampoResponse[];
+}
+
+export interface RazaResponse {
+  id: string;
+  especie: string;
+  nombreEs: string;
+  nombreEn: string;
+}
+
+export const listarRazas = (token: string, especie: string) =>
+  call<RazaResponse[]>(() =>
+    http.get("/api/razas", {
+      headers: { Authorization: `Bearer ${token}` },
+      params: { especie },
+    })
+  );
+
+export const obtenerRazaInfo = (token: string, razaId: string, especie: string) =>
+  call<RazaInfoResponse>(() =>
+    http.get("/api/razas/info", {
+      headers: { Authorization: `Bearer ${token}` },
+      params: { razaId, especie },
+    })
+  );
 
 export const listarVacunas = (token: string) =>
   call<{ id: string; nombre: string }[]>(() =>

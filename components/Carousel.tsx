@@ -30,7 +30,7 @@ export default function Carousel() {
           {/* Imagen */}
           <Image
             src={src}
-            alt="Mascota"
+            alt="Máscota"
             fill
             className="object-cover"
           />

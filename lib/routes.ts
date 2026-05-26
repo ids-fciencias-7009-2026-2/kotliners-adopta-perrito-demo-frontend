@@ -11,13 +11,13 @@ export const ROUTES = {
     ANIMAL: "/animal",
 } as const;
 
-/** Rutas publicas accesibles sin autenticacion. */
+/** Rutas publicas accesibles sin autenticación. */
 export const PUBLIC_ROUTES = [
     ROUTES.LOGIN,
     ROUTES.REGISTRO,
 ];
 
-/** Rutas protegidas que requieren autenticacion. */
+/** Rutas protegidas que requieren autenticación. */
 export const PROTECTED_ROUTES = [
     ROUTES.HOME,
     ROUTES.PROFILE,

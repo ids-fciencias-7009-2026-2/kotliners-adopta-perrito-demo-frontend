@@ -26,7 +26,7 @@ interface FieldProps {
 }
 
 /**
- * Campo de formulario reutilizable con label y mensaje de error DaisyUI.
+ * Campo de formulario reútilizable con label y mensaje de error DaisyUI.
  * Debe estar definido fuera del componente padre para evitar re-montajes.
  */
 function Field({ label, name, type = "text", placeholder, value, error, onChange }: FieldProps) {
@@ -54,10 +54,10 @@ function Field({ label, name, type = "text", placeholder, value, error, onChange
 }
 
 // ---------------------------------------------------------------------------
-// Pagina de registro
+// Página de registro
 // ---------------------------------------------------------------------------
 
-/** Pagina de registro de nuevos usuarios. Ruta publica: /registro */
+/** Página de registro de nuevos usuarios. Ruta publica: /registro */
 export default function RegistroPage() {
   const router = useRouter();
   const [form, setForm] = useState({
@@ -83,18 +83,18 @@ export default function RegistroPage() {
     const newErrors: Record<string, string> = {};
     if (!form.nombres.trim()) newErrors.nombres = "Obligatorio.";
 
-    // Validacion CURP — formato oficial mexicano
+    // Validación CURP — formato oficial mexicano
     const curpRegex = /^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/;
     if (!form.curp.trim()) {
       newErrors.curp = "Obligatorio.";
     } else if (!curpRegex.test(form.curp)) {
-      newErrors.curp = "CURP no valida. Formato: 4 letras, 6 digitos de fecha, H/M, 5 letras, 1 alfanumerico, 1 digito.";
+      newErrors.curp = "CURP no válida. Formato: 4 letras, 6 dígitos de fecha, H/M, 5 letras, 1 alfanumérico, 1 digito.";
     } else {
       // Extraer fecha de nacimiento del CURP (posiciones 4-9: AAMMDD)
       const anio = parseInt(form.curp.substring(4, 6), 10);
       const mes = parseInt(form.curp.substring(6, 8), 10);
       const dia = parseInt(form.curp.substring(8, 10), 10);
-      // Determinar siglo: si anio <= anio actual (2 digitos) asumimos 2000s, sino 1900s
+      // Determinar siglo: si anio <= anio actual (2 dígitos) asumimos 2000s, sino 1900s
       const anioActual2d = new Date().getFullYear() % 100;
       const anioCompleto = anio <= anioActual2d ? 2000 + anio : 1900 + anio;
       const fechaNac = new Date(anioCompleto, mes - 1, dia);
@@ -113,16 +113,16 @@ export default function RegistroPage() {
     if (!form.apellidoPaterno.trim()) newErrors.apellidoPaterno = "Obligatorio.";
     if (!form.apellidoMaterno.trim()) newErrors.apellidoMaterno = "Obligatorio.";
     if (!form.email.trim()) newErrors.email = "Obligatorio.";
-    else if (!form.email.match(/\S+@\S+\.\S+/)) newErrors.email = "Correo no valido.";
+    else if (!form.email.match(/\S+@\S+\.\S+/)) newErrors.email = "Correo no válido.";
     if (!form.codigoPostal.trim()) newErrors.codigoPostal = "Obligatorio.";
-    else if (!form.codigoPostal.match(/^\d{5}$/)) newErrors.codigoPostal = "5 digitos numericos.";
+    else if (!form.codigoPostal.match(/^\d{5}$/)) newErrors.codigoPostal = "5 dígitos numéricos.";
     if (!form.password.trim()) newErrors.password = "Obligatorio.";
-    else if (form.password.length < 8) newErrors.password = "Minimo 8 caracteres.";
+    else if (form.password.length < 8) newErrors.password = "Mínimo 8 caracteres.";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }
 
-  /** Envia el formulario al backend y redirige al login si el registro es exitoso. */
+  /** Envia el formulario al backend y redirige al login si el registro es éxitoso. */
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setServerError(null);
@@ -131,14 +131,22 @@ export default function RegistroPage() {
     try {
       await register(form);
       router.push(ROUTES.LOGIN);
-    } catch {
-      setServerError("Error al registrar. Verifica que los datos no esten duplicados.");
+    } catch (err: any) {
+      // Leer el mensaje de error del backend si existe
+      const backendMsg = err?.response?.data;
+      if (typeof backendMsg === "string" && backendMsg.trim()) {
+        setServerError(backendMsg);
+      } else if (err?.response?.status === 409 || err?.response?.status === 400) {
+        setServerError("El correo, usuario o CURP ya está registrado. Intenta con otros datos.");
+      } else {
+        setServerError("Error al registrar. Intenta de nuevo mas tarde.");
+      }
     } finally {
       setLoading(false);
     }
   }
 
-  // Indicador de fortaleza de contrasena
+  // Indicador de fortaleza de contraseña
   const pwdResult = form.password.length > 0 ? zxcvbn(form.password) : null;
   const pwdColors = ["progress-error", "progress-error", "progress-warning", "progress-warning", "progress-success"];
   const pwdLabels = ["Muy debil", "Debil", "Aceptable", "Buena", "Fuerte"];
@@ -153,7 +161,7 @@ export default function RegistroPage() {
           <div className="flex flex-col items-center gap-2">
             <PawPrint size={48} className="text-primary" />
             <h1 className="card-title text-2xl">Crear cuenta</h1>
-            <p className="text-base-content/60 text-sm text-center">Unete y ayuda a encontrar hogares felices</p>
+            <p className="text-base-content/60 text-sm text-center">Únete y ayuda a encontrar hogares felices</p>
           </div>
 
           <ErrorMessage message={serverError} />
@@ -165,8 +173,8 @@ export default function RegistroPage() {
             <Field label="Apellido materno" name="apellidoMaterno" value={form.apellidoMaterno} error={errors.apellidoMaterno} onChange={handleChange} />
             <Field label="CURP" name="curp" value={form.curp} error={errors.curp} onChange={handleChange} placeholder="18 caracteres" />
             <Field label="Usuario" name="username" value={form.username} error={errors.username} onChange={handleChange} />
-            <Field label="Correo electronico" name="email" type="email" value={form.email} error={errors.email} onChange={handleChange} placeholder="tu@correo.com" />
-            <Field label="Codigo postal" name="codigoPostal" value={form.codigoPostal} error={errors.codigoPostal} onChange={handleChange} placeholder="5 digitos" />
+            <Field label="Correo electrónico" name="email" type="email" value={form.email} error={errors.email} onChange={handleChange} placeholder="tu@correo.com" />
+            <Field label="Código postal" name="codigoPostal" value={form.codigoPostal} error={errors.codigoPostal} onChange={handleChange} placeholder="5 dígitos" />
 
             {/* Selector de rol */}
             <div className="form-control">
@@ -187,14 +195,14 @@ export default function RegistroPage() {
 
             <PasswordField
               name="password"
-              label="Contrasena"
+              label="Contraseña"
               value={form.password}
               onChange={handleChange}
               error={errors.password}
-              placeholder="Minimo 8 caracteres"
+              placeholder="Mínimo 8 caracteres"
             />
 
-            {/* Indicador de fortaleza de contrasena */}
+            {/* Indicador de fortaleza de contraseña */}
             {pwdResult && (
               <div className="sm:col-span-2 flex flex-col gap-2">
                 <progress
@@ -207,7 +215,7 @@ export default function RegistroPage() {
                 </p>
                 <ul className="text-xs text-base-content/60 flex flex-wrap gap-x-4 gap-y-1">
                   <li className={form.password.length >= 8 ? "text-success" : "text-error"}>
-                    {form.password.length >= 8 ? "✓" : "✗"} Minimo 8 caracteres
+                    {form.password.length >= 8 ? "✓" : "✗"} Mínimo 8 caracteres
                   </li>
                   <li className={/[A-Z]/.test(form.password) ? "text-success" : "text-error"}>
                     {/[A-Z]/.test(form.password) ? "✓" : "✗"} Una mayuscula
@@ -216,7 +224,7 @@ export default function RegistroPage() {
                     {/[a-z]/.test(form.password) ? "✓" : "✗"} Una minuscula
                   </li>
                   <li className={/[0-9]/.test(form.password) ? "text-success" : "text-error"}>
-                    {/[0-9]/.test(form.password) ? "✓" : "✗"} Un numero
+                    {/[0-9]/.test(form.password) ? "✓" : "✗"} Un número
                   </li>
                 </ul>
                 {pwdResult.feedback.warning && (
@@ -236,7 +244,7 @@ export default function RegistroPage() {
 
           <div className="divider text-xs">Ya tienes cuenta?</div>
           <Link href={ROUTES.LOGIN} className="btn btn-outline btn-secondary w-full btn-sm">
-            Iniciar sesion
+            Iniciar sesión
           </Link>
         </div>
       </div>

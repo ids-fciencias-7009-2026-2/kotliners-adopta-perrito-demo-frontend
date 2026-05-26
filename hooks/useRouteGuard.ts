@@ -8,27 +8,27 @@ import { obtenerPerfil } from "@/lib/apiClient";
 import sessionEvents from "@/lib/sessionEvents";
 
 /**
- * Hook que protege rutas segun el estado de autenticacion del usuario.
+ * Hook que protege rutas segun el estado de autenticación del usuario.
  * Inicia en estado "verificando" para evitar que se muestre contenido
- * protegido antes de confirmar la autenticacion.
+ * protegido antes de confirmar la autenticación.
  * @returns true mientras se verifica, false cuando termina.
  */
 export function useRouteGuard(): boolean {
     const router = useRouter();
     const pathname = usePathname();
 
-    // Siempre empieza verificando — evita flash de contenido sin sesion
+    // Siempre empieza verificando — evita flash de contenido sin sesión
     const [checking, setChecking] = useState(true);
     const lastValidatedPath = useRef<string | null>(null);
 
-    /** Limpia la sesion y redirige al login. */
+    /** Limpia la sesión y redirige al login. */
     function handleSessionExpired() {
         removeToken();
         sessionStorage.removeItem("usuario");
         router.replace(ROUTES.LOGIN);
     }
 
-    // Suscribirse al evento de sesion expirada
+    // Suscribirse al evento de sesión expirada
     useEffect(() => {
         sessionEvents.on("session:expired", handleSessionExpired);
         return () => sessionEvents.off("session:expired", handleSessionExpired);
@@ -42,7 +42,7 @@ export function useRouteGuard(): boolean {
         // Sin token en ruta protegida — redirigir inmediatamente sin llamar al backend
         if (isProtectedRoute && !token) {
             router.replace(ROUTES.LOGIN);
-            // Mantener checking=true hasta que la redireccion ocurra para no mostrar contenido
+            // Mantener checking=true hasta que la redirección ocurra para no mostrar contenido
             return;
         }
 
@@ -70,9 +70,8 @@ export function useRouteGuard(): boolean {
                 }
             }).catch(() => {
                 clearTimeout(timeoutId);
-                // Si el backend no responde, dejar pasar — no cerrar sesion
-                lastValidatedPath.current = pathname;
-                setChecking(false);
+                // Si el backend no responde o hay timeout, cerrar sesión por seguridad
+                handleSessionExpired();
             });
             return;
         }

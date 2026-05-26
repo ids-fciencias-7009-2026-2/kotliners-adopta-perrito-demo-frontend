@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { listarAnimales, listarIntereses, obtenerAnimal, type AnimalResponse, type AnimalDetalleResponse } from "@/lib/apiClient";
+import { listarAnimales, listarIntereses, obtenerAnimal, type AnimalResponse, type AnimalDetalleResponse, type FiltrosAnimales } from "@/lib/apiClient";
 import { getToken } from "@/lib/session";
 
 export interface InteresState {
@@ -10,7 +10,7 @@ export interface InteresState {
   remove: (id: string) => void;
 }
 
-export function useAnimalList() {
+export function useAnimalList(filtros?: FiltrosAnimales) {
   const [animals, setAnimals] = useState<AnimalResponse[]>([]);
   const [interesIds, setInteresIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -20,10 +20,14 @@ export function useAnimalList() {
     ? JSON.parse(sessionStorage.getItem("usuario") || "{}").rol as string | undefined
     : undefined;
 
+  // Serializar filtros para detectar cambios reales
+  const filtrosKey = JSON.stringify(filtros ?? {});
+
   useEffect(() => {
+    setLoading(true);
     const token = getToken() ?? undefined;
     Promise.all([
-      listarAnimales(token),
+      listarAnimales(token, filtros),
       token && rol === "ADOPTANTE"
         ? listarIntereses(token)
         : Promise.resolve({ ok: true as const, data: [] }),
@@ -33,7 +37,8 @@ export function useAnimalList() {
       if (interesesRes.ok) setInteresIds(new Set(interesesRes.data.map((i) => i.animalId)));
       setLoading(false);
     });
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtrosKey]);
 
   const interes: InteresState = {
     ids: interesIds,
@@ -68,7 +73,7 @@ export function useAnimalDetalle(id: string) {
         : Promise.resolve({ ok: true as const, data: [] }),
     ]).then(([animalRes, interesesRes]) => {
       if (animalRes.ok) setAnimal(animalRes.data);
-      else setError("No se pudo cargar la informacion del animal.");
+      else setError("No se pudo cargar la información del animal.");
       if (interesesRes.ok) setTieneInteres(interesesRes.data.some((i) => i.animalId === id));
       setLoading(false);
     });
@@ -156,6 +161,7 @@ export function useAnimalActions(
       nombre: formData.nombre!,
       especie: formData.especie!,
       raza: (formData.raza as string)?.trim() || undefined,
+      razaId: (formData as any).razaId || undefined,
       fechaNacimiento: formData.fechaNacimiento!,
       sexo: (formData.sexo as "MACHO" | "HEMBRA") ?? "MACHO",
       descripcion: formData.descripcion!,
