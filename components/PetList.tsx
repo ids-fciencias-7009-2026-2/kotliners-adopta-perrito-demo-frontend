@@ -29,7 +29,7 @@ export default function PetList() {
     return (
       <p className="text-center text-base-content/60 py-8">
         {rol === "CUIDADOR"
-          ? "Aun no tienes mascotas registradas. Usa el boton Publicar para agregar una."
+          ? "Aún no tienes mascotas registradas. Usa el botón Publicar para agregar una."
           : "Vuelve pronto, pronto habra mascotas disponibles para adoptar."}
       </p>
     );
