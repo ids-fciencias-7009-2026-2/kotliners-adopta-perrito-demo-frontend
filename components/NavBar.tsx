@@ -6,7 +6,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { logoutUsuario } from "@/lib/apiClient";
 import { getToken, removeToken } from "@/lib/session";
 import { ROUTES } from "@/lib/routes";
-import { PawPrint, Heart, LogOut, User, Menu, Search, Dog, Plus } from "lucide-react";
+import { PawPrint, Heart, LogOut, User, Menu, Search, Dog, Plus, Shield } from "lucide-react";
 import { AdvancedImage } from "@cloudinary/react";
 import { getProfileImage } from "@/lib/cloudinary";
 import AvatarCircle from "@/components/AvatarCircle";
@@ -62,7 +62,7 @@ export default function NavBar() {
   }
 
   return (
-    <div className="navbar bg-base-100 shadow-md px-4">
+    <div className="navbar bg-base-100 shadow-md px-4" role="navigation" aria-label="Navegación principal">
 
       {/* Logo */}
       <div className="navbar-start">
@@ -75,7 +75,7 @@ export default function NavBar() {
       {/* Menu central — solo desktop */}
       <div className="navbar-center hidden lg:flex">
         <ul className="menu menu-horizontal px-1 gap-1">
-          <li><Link href={ROUTES.HOME} className={activeClass(ROUTES.HOME)}>Inicio</Link></li>
+          {mounted && rol !== "ADMINISTRADOR" && <li><Link href={ROUTES.HOME} className={activeClass(ROUTES.HOME)}>Inicio</Link></li>}
           {mounted && rol === "CUIDADOR" ? (
             <>
               <li>
@@ -91,6 +91,13 @@ export default function NavBar() {
                 </Link>
               </li>
             </>
+          ) : mounted && rol === "ADMINISTRADOR" ? (
+            <li>
+              <Link href={ROUTES.ADMIN} className={`gap-1 ${activeClass(ROUTES.ADMIN)}`}>
+                <Shield size={16} />
+                Reportes
+              </Link>
+            </li>
           ) : (
             <>
               <li>
@@ -138,12 +145,14 @@ export default function NavBar() {
             <Menu size={20} />
           </label>
           <ul tabIndex={0} className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
-            <li><Link href={ROUTES.HOME} className={activeClass(ROUTES.HOME)}>Inicio</Link></li>
+            {rol !== "ADMINISTRADOR" && <li><Link href={ROUTES.HOME} className={activeClass(ROUTES.HOME)}>Inicio</Link></li>}
             {mounted && rol === "CUIDADOR" ? (
               <>
                 <li><Link href={ROUTES.MIS_MASCOTAS} className={activeClass(ROUTES.MIS_MASCOTAS)}>Mis mascotas</Link></li>
                 <li><Link href={ROUTES.PUBLICAR} className={activeClass(ROUTES.PUBLICAR)}>Publicar</Link></li>
               </>
+            ) : mounted && rol === "ADMINISTRADOR" ? (
+              <li><Link href={ROUTES.ADMIN} className={activeClass(ROUTES.ADMIN)}>Reportes</Link></li>
             ) : (
               <>
                 <li><Link href={ROUTES.EXPLORAR} className={activeClass(ROUTES.EXPLORAR)}>Explorar</Link></li>

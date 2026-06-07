@@ -28,6 +28,8 @@ function toAnimalResponse(a: AnimalInteresResponse): AnimalResponse {
     numInteresados: 0,
     latitud: null,
     longitud: null,
+    cuidadorUsername: null,
+    cuidadorFoto: null,
   };
 }
 
@@ -74,7 +76,7 @@ export default function FavoritosPage() {
         {animales.length === 0 ? (
           <div className="text-center py-16 text-base-content/60">
             <PawPrint size={64} className="mx-auto mb-4 opacity-40" />
-            <p className="mt-4 text-lg">Aun no tienes animales favoritos.</p>
+            <p className="mt-4 text-lg">Aún no tienes animales favoritos.</p>
             <button onClick={() => router.push(ROUTES.EXPLORAR)} className="btn btn-primary mt-6">
               Explorar animales
             </button>

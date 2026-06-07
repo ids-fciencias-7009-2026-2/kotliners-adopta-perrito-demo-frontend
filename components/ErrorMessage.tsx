@@ -8,7 +8,7 @@
 export default function ErrorMessage({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <div role="alert" className="alert alert-error">
+    <div role="alert" aria-live="assertive" className="alert alert-error">
       <span>{message}</span>
     </div>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import PetList from "@/components/PetList";
 import MapView from "@/components/MapView";
 import { PawPrint, MapPin, Zap, Heart, Dog, ClipboardList, Bell, Star } from "lucide-react";
@@ -47,7 +48,7 @@ const beneficiosCuidador = [
   },
   {
     title: "Impacto real",
-    desc: "Cada mascota que registras tiene mas oportunidad de encontrar un hogar.",
+    desc: "Cada mascota que registras tiene más oportunidad de encontrar un hogar.",
     icon: <PawPrint size={28} className="text-primary" />,
   },
 ];
@@ -166,11 +167,13 @@ export default function HomePage() {
   const [rol, setRol] = useState<string | null>(null);
   const [nombre, setNombre] = useState("amigo");
   const [mounted, setMounted] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     const data = sessionStorage.getItem("usuario");
     if (data) {
       const usuario = JSON.parse(data);
+      if (usuario.rol === "ADMINISTRADOR") { router.replace("/admin"); return; }
       setRol(usuario.rol ?? null);
       setNombre(usuario.nombres ?? "amigo");
     }

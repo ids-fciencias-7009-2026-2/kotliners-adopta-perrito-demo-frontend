@@ -128,7 +128,6 @@ export function useAnimalActions(
       sexo: animalData.sexo === "HEMBRA" ? "HEMBRA" : "MACHO",
       descripcion: animalData.descripcion,
       estatus: nextStatus,
-      inapropiado: false,
       esterilizado: animalData.esterilizado,
     });
     setSaving(false);
@@ -166,7 +165,6 @@ export function useAnimalActions(
       sexo: (formData.sexo as "MACHO" | "HEMBRA") ?? "MACHO",
       descripcion: formData.descripcion!,
       estatus: (formData.estatus as "DISPONIBLE" | "ADOPTADO") ?? "DISPONIBLE",
-      inapropiado: false,
       esterilizado: formData.esterilizado ?? false,
     });
     if (!result.ok) { setSaving(false); setSaveError(result.error); return; }

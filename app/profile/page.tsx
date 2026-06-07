@@ -219,7 +219,7 @@ export default function PerfilPage() {
             {/* Zona de eliminacion de cuenta */}
             <div className="mt-8 border-t border-red-200 pt-6">
               <p className="text-sm text-gray-500 mb-3">
-                Zona de peligro — esta accion no se puede deshacer.
+                Zona de peligro — esta acción no se puede deshacer.
               </p>
               {!confirmarEliminar ? (
                 <button
@@ -231,7 +231,7 @@ export default function PerfilPage() {
               ) : (
                 <div className="flex gap-3 items-center">
                   <p className="text-sm text-red-600 font-medium">
-                    ¿Seguro? Esta accion es permanente.
+                    ¿Seguro? Esta acción es permanente.
                   </p>
                   <button
                     onClick={handleEliminarCuenta}

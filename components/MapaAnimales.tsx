@@ -10,164 +10,150 @@ interface Props {
   onOpenModal: (id: string) => void;
 }
 
-// Centro de México como fallback
 const DEFAULT_CENTER: [number, number] = [23.6345, -102.5528];
 const DEFAULT_ZOOM = 5;
 
+function getL(): any {
+  return typeof window !== "undefined" ? (window as any).L : null;
+}
+
 export default function MapaAnimales({ animales, selectedId, onSelect, onOpenModal }: Props) {
   const mapRef = useRef<any>(null);
+  const clusterRef = useRef<any>(null);
   const markersRef = useRef<Record<string, any>>({});
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Animales con coordenadas válidas
-  const conCoords = animales.filter(
-    (a) => a.latitud != null && a.longitud != null
-  );
+  const conCoords = animales.filter((a) => a.latitud != null && a.longitud != null);
 
   useEffect(() => {
     if (typeof window === "undefined" || !containerRef.current) return;
 
-    // Importar Leaflet dinámicamente (solo en cliente)
-    import("leaflet").then((L) => {
-      // Corregir íconos por defecto de Leaflet con webpack/Next.js
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      delete (L.Icon.Default.prototype as any)._getIconUrl;
-      L.Icon.Default.mergeOptions({
-        iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-        iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-        shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-      });
+    // Esperar a que Leaflet cargue desde CDN
+    const waitForL = () => new Promise<void>((resolve) => {
+      if (getL()?.markerClusterGroup) { resolve(); return; }
+      const interval = setInterval(() => {
+        if (getL()?.markerClusterGroup) { clearInterval(interval); resolve(); }
+      }, 100);
+      setTimeout(() => { clearInterval(interval); resolve(); }, 3000);
+    });
 
-      // Inicializar mapa solo una vez
+    waitForL().then(() => {
+      const L = getL();
+      if (!L) return;
+
       if (!mapRef.current) {
         mapRef.current = L.map(containerRef.current!, {
           center: DEFAULT_CENTER,
           zoom: DEFAULT_ZOOM,
           zoomControl: true,
         });
-
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
           maxZoom: 19,
         }).addTo(mapRef.current);
       }
 
       const map = mapRef.current;
 
-      // Limpiar marcadores anteriores
-      Object.values(markersRef.current).forEach((m: any) => m.remove());
+      // Limpiar cluster anterior
+      if (clusterRef.current) map.removeLayer(clusterRef.current);
       markersRef.current = {};
 
-      if (conCoords.length === 0) return;
-
-      // Crear íconos personalizados
-      const iconNormal = L.divIcon({
-        className: "",
-        html: `<div style="
-          background:#f97316;border:2px solid white;border-radius:50% 50% 50% 0;
-          width:28px;height:28px;transform:rotate(-45deg);
-          box-shadow:0 2px 6px rgba(0,0,0,0.35);
-        "></div>`,
-        iconSize: [28, 28],
-        iconAnchor: [14, 28],
-        popupAnchor: [0, -30],
+      // Crear cluster group
+      const cluster = L.markerClusterGroup({
+        maxClusterRadius: 50,
+        spiderfyOnMaxZoom: false,
+        disableClusteringAtZoom: 16,
+        showCoverageOnHover: false,
+        zoomToBoundsOnClick: true,
+        iconCreateFunction: (c: any) => {
+          const count = c.getChildCount();
+          return L.divIcon({
+            className: "",
+            html: `<div style="background:#65c3c8;color:white;border:3px solid white;border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,0.3)">${count}</div>`,
+            iconSize: [44, 44],
+            iconAnchor: [22, 22],
+          });
+        },
       });
 
-      const iconSelected = L.divIcon({
-        className: "",
-        html: `<div style="
-          background:#7c3aed;border:2px solid white;border-radius:50% 50% 50% 0;
-          width:36px;height:36px;transform:rotate(-45deg);
-          box-shadow:0 2px 10px rgba(124,58,237,0.6);
-        "></div>`,
-        iconSize: [36, 36],
-        iconAnchor: [18, 36],
-        popupAnchor: [0, -38],
-      });
-
-      // Agregar marcadores
-      conCoords.forEach((animal) => {
+      conCoords.forEach((animal, idx) => {
         const isSelected = animal.id === selectedId;
-        const marker = L.marker(
-          [animal.latitud as number, animal.longitud as number],
-          { icon: isSelected ? iconSelected : iconNormal }
-        );
+        const foto = animal.fotoPortada;
+        // Tiny offset so markers at exact same coords don't stack at max zoom
+        const jitter = 0.0003;
+        const angle = (idx * 137.5) * (Math.PI / 180); // golden angle for even distribution
+        const lat = (animal.latitud as number) + jitter * Math.cos(angle);
+        const lng = (animal.longitud as number) + jitter * Math.sin(angle);
+        const icon = L.divIcon({
+          className: "",
+          html: foto
+            ? `<div style="width:${isSelected ? 48 : 38}px;height:${isSelected ? 48 : 38}px;border-radius:50%;border:3px solid ${isSelected ? '#7c3aed' : 'white'};overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.3)"><img src="${foto}" style="width:100%;height:100%;object-fit:cover"/></div>`
+            : `<div style="background:${isSelected ? '#7c3aed' : '#65c3c8'};border:2px solid white;border-radius:50% 50% 50% 0;width:${isSelected ? 36 : 28}px;height:${isSelected ? 36 : 28}px;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,0.35)"></div>`,
+          iconSize: isSelected ? [48, 48] : [38, 38],
+          iconAnchor: isSelected ? [24, 48] : [19, 38],
+          popupAnchor: [0, isSelected ? -48 : -38],
+        });
 
-        const especie = animal.especie.toLowerCase().includes("gato") ? "🐱" : "🐶";
+        const marker = L.marker([lat, lng], { icon });
         marker.bindPopup(`
-          <div style="min-width:160px;font-family:sans-serif">
-            <strong style="font-size:14px">${especie} ${animal.nombre}</strong><br/>
-            <span style="color:#666;font-size:12px">${animal.especie}${animal.raza ? " · " + animal.raza : ""}</span><br/>
-            <button
-              onclick="window.__mapaOpenModal && window.__mapaOpenModal('${animal.id}')"
-              style="margin-top:8px;padding:4px 10px;background:#f97316;color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px"
-            >Ver ficha</button>
-          </div>
-        `, { maxWidth: 220 });
-
+          <div style="min-width:150px;font-family:sans-serif">
+            <strong style="font-size:14px">${animal.nombre}</strong><br/>
+            <span style="color:#666;font-size:12px">${animal.raza || animal.especie}</span><br/>
+            <button onclick="window.__mapaOpenModal&&window.__mapaOpenModal('${animal.id}')"
+              style="margin-top:8px;padding:4px 10px;background:#65c3c8;color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px">Ver ficha</button>
+          </div>`, { maxWidth: 220 });
         marker.on("click", () => onSelect(animal.id));
-        marker.addTo(map);
+        cluster.addLayer(marker);
         markersRef.current[animal.id] = marker;
       });
 
-      // Ajustar vista para mostrar todos los marcadores
+      map.addLayer(cluster);
+      clusterRef.current = cluster;
+
       if (conCoords.length > 0) {
-        const bounds = L.latLngBounds(
-          conCoords.map((a) => [a.latitud as number, a.longitud as number])
-        );
+        const bounds = L.latLngBounds(conCoords.map((a) => [a.latitud as number, a.longitud as number]));
         map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
       }
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [animales]);
 
-  // Actualizar ícono del marcador seleccionado sin re-renderizar todo
+  // Actualizar ícono al seleccionar
   useEffect(() => {
-    if (!mapRef.current || typeof window === "undefined") return;
-    import("leaflet").then((L) => {
-      Object.entries(markersRef.current).forEach(([id, marker]: [string, any]) => {
-        const isSelected = id === selectedId;
-        const icon = L.divIcon({
-          className: "",
-          html: isSelected
-            ? `<div style="background:#7c3aed;border:2px solid white;border-radius:50% 50% 50% 0;width:36px;height:36px;transform:rotate(-45deg);box-shadow:0 2px 10px rgba(124,58,237,0.6)"></div>`
-            : `<div style="background:#f97316;border:2px solid white;border-radius:50% 50% 50% 0;width:28px;height:28px;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,0.35)"></div>`,
-          iconSize: isSelected ? [36, 36] : [28, 28],
-          iconAnchor: isSelected ? [18, 36] : [14, 28],
-          popupAnchor: [0, isSelected ? -38 : -30],
-        });
-        marker.setIcon(icon);
-        if (isSelected) {
-          mapRef.current.panTo(marker.getLatLng(), { animate: true });
-          marker.openPopup();
-        }
+    if (!mapRef.current) return;
+    const L = getL();
+    if (!L) return;
+    Object.entries(markersRef.current).forEach(([id, marker]: [string, any]) => {
+      const isSelected = id === selectedId;
+      const animal = conCoords.find((a) => a.id === id);
+      const foto = animal?.fotoPortada;
+      const icon = L.divIcon({
+        className: "",
+        html: foto
+          ? `<div style="width:${isSelected ? 48 : 38}px;height:${isSelected ? 48 : 38}px;border-radius:50%;border:3px solid ${isSelected ? '#7c3aed' : 'white'};overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.3)"><img src="${foto}" style="width:100%;height:100%;object-fit:cover"/></div>`
+          : `<div style="background:${isSelected ? '#7c3aed' : '#65c3c8'};border:2px solid white;border-radius:50% 50% 50% 0;width:${isSelected ? 36 : 28}px;height:${isSelected ? 36 : 28}px;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,0.35)"></div>`,
+        iconSize: isSelected ? [48, 48] : [38, 38],
+        iconAnchor: isSelected ? [24, 48] : [19, 38],
+        popupAnchor: [0, isSelected ? -48 : -38],
       });
+      marker.setIcon(icon);
+      if (isSelected) { mapRef.current.panTo(marker.getLatLng(), { animate: true }); marker.openPopup(); }
     });
   }, [selectedId]);
 
-  // Exponer callback para el botón del popup
   useEffect(() => {
     (window as any).__mapaOpenModal = onOpenModal;
     return () => { delete (window as any).__mapaOpenModal; };
   }, [onOpenModal]);
 
-  // Invalidar tamaño cuando el contenedor cambia
   useEffect(() => {
-    const observer = new ResizeObserver(() => {
-      mapRef.current?.invalidateSize();
-    });
+    const observer = new ResizeObserver(() => { mapRef.current?.invalidateSize(); });
     if (containerRef.current) observer.observe(containerRef.current);
     return () => observer.disconnect();
   }, []);
 
   return (
-    <div className="relative w-full h-full">
-      {/* Importar CSS de Leaflet */}
-      <link
-        rel="stylesheet"
-        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-      />
+    <div className="relative w-full h-full z-0">
       <div ref={containerRef} className="w-full h-full" />
       {conCoords.length === 0 && animales.length > 0 && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">

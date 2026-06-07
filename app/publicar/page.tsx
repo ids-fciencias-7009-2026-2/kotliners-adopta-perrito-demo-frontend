@@ -205,7 +205,7 @@ export default function PublicarPage() {
             <div className="form-control sm:col-span-2">
               <label className="label" htmlFor="descripcion"><span className="label-text">Descripcion <span className="text-error">*</span></span></label>
               <textarea id="descripcion" name="descripcion" value={form.descripcion} onChange={handleChange}
-                placeholder="Cuentanos sobre la mascota..." rows={3}
+                placeholder="Cuéntanos sobre la mascota..." rows={3}
                 className={`textarea textarea-bordered w-full ${errors.descripcion ? "textarea-error" : ""}`} />
               {errors.descripcion && <span className="label-text-alt text-error mt-1">{errors.descripcion}</span>}
             </div>

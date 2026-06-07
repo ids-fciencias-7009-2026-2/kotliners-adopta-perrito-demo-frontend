@@ -44,7 +44,7 @@ export type ApiResult<T> =
   | { ok: true; data: T }
   | { ok: false; error: string };
 
-export type Rol = "ADOPTANTE" | "CUIDADOR";
+export type Rol = "ADOPTANTE" | "CUIDADOR" | "ADMINISTRADOR";
 
 export interface Usuario {
   id: string | null;
@@ -125,6 +125,8 @@ export interface AnimalResponse {
   numInteresados: number;
   latitud: number | null;
   longitud: number | null;
+  cuidadorUsername: string | null;
+  cuidadorFoto: string | null;
 }
 
 export interface AnimalDetalleResponse extends AnimalResponse {
@@ -133,6 +135,8 @@ export interface AnimalDetalleResponse extends AnimalResponse {
   padecimientos: string[];
   numInteresados: number;
   razaId: string | null;
+  cuidadorUsername: string | null;
+  cuidadorFoto: string | null;
 }
 
 export interface CreateAnimalPayload {
@@ -155,7 +159,6 @@ export interface UpdateAnimalPayload {
   sexo: "MACHO" | "HEMBRA";
   descripcion: string;
   estatus: "DISPONIBLE" | "ADOPTADO";
-  inapropiado: boolean;
   esterilizado: boolean;
 }
 
@@ -181,7 +184,7 @@ async function call<T>(fn: () => Promise<{ data: T }>): Promise<ApiResult<T>> {
         ? typeof err.response.data === "string"
           ? err.response.data
           : JSON.stringify(err.response.data)
-        : "El servicio no está disponible. Intenta mas tarde.";
+        : "No se pudo conectar con el servidor. Verifica tu conexión a internet e intenta de nuevo.";
     return { ok: false, error: msg };
   }
 }
@@ -228,6 +231,21 @@ export const eliminarInteres = (token: string, animalId: string) =>
 export const listarIntereses = (token: string) =>
   call<AnimalInteresResponse[]>(() =>
     http.get("/api/usuarios/me/intereses", { headers: { Authorization: `Bearer ${token}` } })
+  );
+
+export interface InteresadoResponse {
+  animalId: string;
+  nombreAnimal: string;
+  adoptanteId: string;
+  nombreAdoptante: string;
+  emailAdoptante: string;
+  fotoAdoptante: string | null;
+  fechaInteres: string;
+}
+
+export const listarInteresadosPorAnimal = (token: string, animalId: string) =>
+  call<InteresadoResponse[]>(() =>
+    http.get(`/api/animales/${animalId}/interesados`, { headers: { Authorization: `Bearer ${token}` } })
   );
 
 // ---------------------------------------------------------------------------
@@ -335,11 +353,40 @@ export const eliminarAnimal = (token: string, body: DeleteAnimalPayload) =>
     })
   );
 
-// Endpoint para marcar un animal como inapropiado (solo para adoptantes)
-export const marcarAnimalInapropiado = (animalId: string) =>
+// Endpoint para reportar un animal como inapropiado (con motivo)
+export const marcarAnimalInapropiado = (animalId: string, motivo: string) =>
     call<void>(() =>
-        http.patch(`/api/animales/${animalId}/inapropiado`)
+        http.patch(`/api/animales/${animalId}/inapropiado`, { motivo })
     );
+
+// ---------------------------------------------------------------------------
+// Admin - Reportes
+// ---------------------------------------------------------------------------
+
+export interface ReporteResponse {
+  id: string;
+  usuarioId: string;
+  animalId: string;
+  motivo: string;
+  estado: "PENDIENTE" | "RESUELTO" | "DESESTIMADO";
+  fecha: string;
+  fechaResolucion: string | null;
+}
+
+export const listarReportesPendientes = () =>
+  call<ReporteResponse[]>(() => http.get("/api/reportes/pendientes"));
+
+export const checkReporte = (animalId: string) =>
+  call<{ reportado: boolean }>(() => http.get(`/api/reportes/check/${animalId}`));
+
+export const retirarReporte = (animalId: string) =>
+  call<{ mensaje: string }>(() => http.delete(`/api/reportes/${animalId}`));
+
+export const resolverReporte = (reporteId: string) =>
+  call<ReporteResponse>(() => http.post(`/api/reportes/${reporteId}/resolver`));
+
+export const desestimarReporte = (reporteId: string) =>
+  call<ReporteResponse>(() => http.post(`/api/reportes/${reporteId}/desestimar`));
 
 // ---------------------------------------------------------------------------
 // Vacunas y padecimientos

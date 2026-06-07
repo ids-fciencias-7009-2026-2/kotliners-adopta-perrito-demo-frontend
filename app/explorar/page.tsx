@@ -20,11 +20,11 @@ function calcularEdad(fechaNacimiento: string) {
   let meses = hoy.getMonth() - nacimiento.getMonth();
   if (hoy.getDate() < nacimiento.getDate()) meses--;
   if (meses < 0) { anos--; meses += 12; }
-  if (anos < 0) return "Recien nacido";
-  if (anos === 0 && meses <= 0) return "Recien nacido";
+  if (anos < 0) return "Recién nacido";
+  if (anos === 0 && meses <= 0) return "Recién nacido";
   if (anos === 0) return meses === 1 ? "1 mes" : `${meses} meses`;
-  if (meses === 0) return anos === 1 ? "1 ano" : `${anos} anos`;
-  return `${anos} ${anos === 1 ? "ano" : "anos"} y ${meses} ${meses === 1 ? "mes" : "meses"}`;
+  if (meses === 0) return anos === 1 ? "1 año" : `${anos} anos`;
+  return `${anos} ${anos === 1 ? "ano" : "años"} y ${meses} ${meses === 1 ? "mes" : "meses"}`;
 }
 
 interface FiltroForm {
@@ -201,7 +201,7 @@ export default function ExplorarPage() {
                 <div className="flex gap-1">
                   <select className="select select-bordered select-sm flex-1" value={filtroForm.ordenar}
                     onChange={(e) => setFiltroForm((f) => ({ ...f, ordenar: e.target.value }))}>
-                    <option value="">Mas reciente</option>
+                    <option value="">Más reciente</option>
                     <option value="nombre">Nombre</option>
                     <option value="fechaNacimiento">Edad</option>
                     <option value="distancia">Distancia</option>

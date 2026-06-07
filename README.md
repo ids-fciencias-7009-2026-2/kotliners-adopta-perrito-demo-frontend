@@ -1,6 +1,6 @@
-# Colitas Felices — Frontend
+# Colitas Felices - Frontend
 
-Frontend de la plataforma de adopcion de mascotas. Construido con Next.js 16, Tailwind CSS v3 y daisyUI 4.
+Frontend del proyecto Colitas Felices. Next.js 16, Tailwind CSS v3, daisyUI 4.
 
 ## Requisitos
 
@@ -50,3 +50,26 @@ La app estara disponible en `http://localhost:3000`.
 - **Tailwind v3** — usa `postcss.config.js` con `tailwindcss: {}`. NO usar `@tailwindcss/postcss` (eso es v4).
 - **daisyUI 4** — compatible con Tailwind v3. NO usar daisyUI 5 (requiere Tailwind v4).
 - El tema activo es `cupcake` — configurado en `tailwind.config.js` y `app/layout.tsx`.
+- **Leaflet y MarkerCluster** se cargan desde CDN (unpkg) en `app/layout.tsx`. No requieren instalación npm.
+
+## Rutas de la aplicación
+
+| Ruta | Acceso | Descripción |
+|------|--------|-------------|
+| `/login` | Pública | Inicio de sesión con 2FA |
+| `/registro` | Pública | Registro de cuenta |
+| `/recuperar` | Pública | Recuperar contraseña |
+| `/guia` | Pública | Guía informativa de la plataforma |
+| `/home` | Autenticado | Página principal |
+| `/explorar` | Adoptante | Mapa + lista de animales con filtros |
+| `/favoritos` | Adoptante | Animales en los que manifesté interés |
+| `/mis-mascotas` | Cuidador | Gestión de publicaciones + historial adoptados |
+| `/publicar` | Cuidador | Formulario de nueva publicación |
+| `/profile` | Autenticado | Perfil y eliminación de cuenta |
+| `/admin` | Administrador | Panel de reportes pendientes |
+
+## Roles
+
+- **ADOPTANTE**: Explora, filtra, manifiesta interés, reporta publicaciones
+- **CUIDADOR**: Publica, edita, elimina animales, ve interesados, marca adoptados
+- **ADMINISTRADOR**: Revisa reportes, elimina/desestima publicaciones
