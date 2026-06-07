@@ -1,157 +1,138 @@
 "use client";
 
-import { marcarAnimalInapropiado } from "@/lib/apiClient";
-
-import { 
-    Flag, 
-    AlertTriangle, 
-    CheckCircle, 
-    X 
-} from "lucide-react";
-
-import { useState } from "react";
+import { marcarAnimalInapropiado, checkReporte, retirarReporte } from "@/lib/apiClient";
+import { Flag, AlertTriangle, CheckCircle, X } from "lucide-react";
+import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 
-/**
- * Propiedades del modal de confirmación para el reporte de un animal.
- */
-interface FlagModalProps {
-    open: boolean;
-    nombreAnimal: string;
-    onClose: () => void;
+interface BotonFlagProps {
+  animalId: string;
+  nombreAnimal: string;
+  rolUsuario?: string;
 }
 
-/**
- * Modal de confirmación que se muestra al reportar un animal como inapropiado.
- */
-function FlagModal({ 
-    open, 
-    nombreAnimal, 
-    onClose 
-}: FlagModalProps) {
-    if (!open || typeof document === "undefined") return null;
-    return createPortal(
-        <div className="modal modal-open">
-            <div className="modal-box">
-                <button
-                    onClick={onClose}
-                    className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
-                >
-                    <X size={16} />
-                </button>
-                <div className="flex flex-col items-center gap-3 py-2">
-                    <CheckCircle size={48} className="text-warning" />
-                    <h3 className="font-bold text-lg text-center">
-                        Reporte enviado
-                    </h3>
-                    <p className="text-center text-base-content/70 text-sm">
-                        Gracias por reportar a{" "}
-                        <strong>{nombreAnimal ?? "esta mascota"}</strong>.
-                        El contenido será revisado.
-                    </p>
-                </div>
+export default function BotonFlag({ animalId, nombreAnimal, rolUsuario }: BotonFlagProps) {
+  const [loading, setLoading] = useState(false);
+  const [reportado, setReportado] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [motivo, setMotivo] = useState("");
 
-                <div className="modal-action">
-                    <button
-                        onClick={onClose}
-                        className="btn btn-primary w-full"
-                    >
-                        Entendido
-                    </button>
-                </div>
-            </div>
-            <div
-                className="modal-backdrop"
-                onClick={onClose}
+  if (rolUsuario === "CUIDADOR") return null;
+
+  useEffect(() => {
+    checkReporte(animalId).then((res) => {
+      if (res.ok && res.data.reportado) setReportado(true);
+    });
+  }, [animalId]);
+
+  async function handleSubmit() {
+    if (!motivo.trim()) return;
+    setLoading(true);
+    setError(null);
+    const res = await marcarAnimalInapropiado(animalId, motivo.trim());
+    if (res.ok) {
+      setReportado(true);
+      setModalOpen(false);
+      setSuccessOpen(true);
+    } else {
+      setError(res.error);
+    }
+    setLoading(false);
+  }
+
+  async function handleRetirar() {
+    setLoading(true);
+    setError(null);
+    const res = await retirarReporte(animalId);
+    if (res.ok) {
+      setReportado(false);
+    } else {
+      setError(res.error);
+    }
+    setLoading(false);
+  }
+
+  return (
+    <>
+      <div className="flex flex-col gap-1">
+        {reportado ? (
+          <button
+            onClick={handleRetirar}
+            disabled={loading}
+            className="btn btn-outline btn-success gap-2"
+          >
+            {loading ? <span className="loading loading-spinner loading-sm" /> : <><Flag size={18} /> Reportado</>}
+          </button>
+        ) : (
+          <button
+            onClick={() => setModalOpen(true)}
+            disabled={loading}
+            className="btn btn-outline btn-warning gap-2"
+          >
+            <Flag size={18} /> Reportar
+          </button>
+        )}
+        {error && (
+          <div className="flex items-center gap-1 text-error text-xs">
+            <AlertTriangle size={12} />
+            <span>{error}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Modal para pedir motivo */}
+      {modalOpen && typeof document !== "undefined" && createPortal(
+        <div className="modal modal-open">
+          <div className="modal-box">
+            <button onClick={() => setModalOpen(false)} className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
+              <X size={16} />
+            </button>
+            <h3 className="font-bold text-lg">Reportar publicación</h3>
+            <p className="text-sm text-base-content/70 mt-1">
+              ¿Por qué consideras que la publicación de <strong>{nombreAnimal}</strong> es inapropiada?
+            </p>
+            <textarea
+              className="textarea textarea-bordered w-full mt-3"
+              placeholder="Describe el motivo del reporte..."
+              rows={3}
+              value={motivo}
+              onChange={(e) => setMotivo(e.target.value)}
+              maxLength={500}
             />
+            {error && <p className="text-error text-xs mt-1">{error}</p>}
+            <div className="modal-action">
+              <button onClick={() => setModalOpen(false)} className="btn btn-ghost">Cancelar</button>
+              <button onClick={handleSubmit} disabled={loading || !motivo.trim()} className="btn btn-warning gap-2">
+                {loading ? <span className="loading loading-spinner loading-sm" /> : <><Flag size={16} /> Enviar reporte</>}
+              </button>
+            </div>
+          </div>
+          <div className="modal-backdrop" onClick={() => setModalOpen(false)} />
         </div>,
         document.body
-    );
-}
+      )}
 
-/**
- * Propiedades del componente BotonFlag
- */
-interface BotonFlagProps {
-    // ID del animal a reportar
-    animalId: string;
-    // Nombre del animal 
-    nombreAnimal: string;
-    // Rol del usuario 
-    rolUsuario?: string;
-}
-
-/**
- * Componente BotonFlag para reportar un animal como inapropiado.
- * @param animalId - ID del animal a reportar
- * @param nombreAnimal - Nombre del animal (para mostrar en el modal)
- * @param rolUsuario - Rol del usuario (oculta el boton a cuidadores)
- */
-export default function BotonFlag({
-    animalId,
-    nombreAnimal,
-    rolUsuario,
-    }: BotonFlagProps) {
-
-    const [loading, setLoading] = useState(false);
-    const [reportado, setReportado] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [modalOpen, setModalOpen] = useState(false);
-
-    if (rolUsuario === "CUIDADOR") 
-        return null;
-
-    async function handleFlag() {
-        setLoading(true);
-        setError(null);
-        try {
-            const res = await marcarAnimalInapropiado(animalId);
-            if (res.ok) {
-                setReportado(true);
-                setModalOpen(true);
-            } else {
-                setError(res.error);
-            }
-        } catch {
-        setError("No se pudo reportar el animal.");
-        } finally {
-        setLoading(false);
-        }
-    }
-
-    return (
-        <>
-        <div className="flex flex-col gap-1">
-            <button
-            onClick={handleFlag}
-            disabled={loading || reportado}
-            className={`btn  gap-2 ${
-                reportado ? "btn-success" : "btn-outline btn-warning"
-            }`}
-            >
-            {loading ? (
-                <span className="loading loading-spinner loading-sm" />
-            ) : (
-                <>
-                <Flag size={18} />
-                {reportado ? "Reportado" : "Reportar"}
-                </>
-            )}
-            </button>
-
-            {error && (
-            <div className="flex items-center gap-1 text-error text-xs">
-                <AlertTriangle size={12} />
-                <span>{error}</span>
+      {/* Modal de éxito */}
+      {successOpen && typeof document !== "undefined" && createPortal(
+        <div className="modal modal-open">
+          <div className="modal-box">
+            <div className="flex flex-col items-center gap-3 py-2">
+              <CheckCircle size={48} className="text-warning" />
+              <h3 className="font-bold text-lg text-center">Reporte enviado</h3>
+              <p className="text-center text-base-content/70 text-sm">
+                Gracias por reportar a <strong>{nombreAnimal}</strong>. El contenido será revisado.
+              </p>
             </div>
-            )}
-        </div>
-
-        <FlagModal
-            open={modalOpen}
-            nombreAnimal={nombreAnimal}
-            onClose={() => setModalOpen(false)}
-        />
-        </>
-    );
+            <div className="modal-action">
+              <button onClick={() => setSuccessOpen(false)} className="btn btn-primary w-full">Entendido</button>
+            </div>
+          </div>
+          <div className="modal-backdrop" onClick={() => setSuccessOpen(false)} />
+        </div>,
+        document.body
+      )}
+    </>
+  );
 }
