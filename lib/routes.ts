@@ -9,12 +9,15 @@ export const ROUTES = {
     MIS_MASCOTAS: "/mis-mascotas",
     PUBLICAR: "/publicar",
     ANIMAL: "/animal",
+    ADMIN: "/admin",
+    GUIA: "/guia",
 } as const;
 
 /** Rutas publicas accesibles sin autenticación. */
 export const PUBLIC_ROUTES = [
     ROUTES.LOGIN,
     ROUTES.REGISTRO,
+    "/recuperar",
 ];
 
 /** Rutas protegidas que requieren autenticación. */
@@ -26,4 +29,5 @@ export const PROTECTED_ROUTES = [
     ROUTES.MIS_MASCOTAS,
     ROUTES.PUBLICAR,
     ROUTES.ANIMAL,
+    ROUTES.ADMIN,
 ];

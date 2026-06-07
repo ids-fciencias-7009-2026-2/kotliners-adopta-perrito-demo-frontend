@@ -25,7 +25,6 @@ export default function MisMascotasPage() {
 
   const [busqueda, setBusqueda] = useState("");
   const [filtroEspecie, setFiltroEspecie] = useState("TODOS");
-  const [filtroEstatus, setFiltroEstatus] = useState("TODOS");
   const [filtroSexo, setFiltroSexo] = useState("TODOS");
   const [filtroEsterilizado, setFiltroEsterilizado] = useState("TODOS");
   const [criterio, setCriterio] = useState<CriterioOrden>("fechaRegistro");
@@ -48,7 +47,7 @@ export default function MisMascotasPage() {
       const token = getToken();
       if (!token) return;
       const res = await listarMisAnimales(token);
-      if (res.ok) setMascotas(res.data);
+      if (res.ok) setMascotas(res.data.filter((m) => m.estatus === "DISPONIBLE"));
       else if (res.error !== "SESSION_EXPIRED") setError(res.error);
       setLoading(false);
       setLoadingHistorial(true);
@@ -64,7 +63,17 @@ export default function MisMascotasPage() {
   }
 
   function updateMascotaInList(updatedAnimal: AnimalResponse) {
-    setMascotas((prev) => prev.map((m) => (m.id === updatedAnimal.id ? updatedAnimal : m)));
+    if (updatedAnimal.estatus === "ADOPTADO") {
+      // Preservar la foto del animal original
+      const original = mascotas.find((m) => m.id === updatedAnimal.id);
+      const conFoto = { ...updatedAnimal, fotoPortada: updatedAnimal.fotoPortada || original?.fotoPortada || null };
+      setMascotas((prev) => prev.filter((m) => m.id !== updatedAnimal.id));
+      setHistorialAdoptados((prev) => [conFoto, ...prev]);
+    } else {
+      const original = historialAdoptados.find((m) => m.id === updatedAnimal.id);
+      const conFoto = { ...updatedAnimal, fotoPortada: updatedAnimal.fotoPortada || original?.fotoPortada || null };
+      setMascotas((prev) => prev.map((m) => (m.id === updatedAnimal.id ? conFoto : m)));
+    }
   }
 
   async function confirmDeleteAnimal() {
@@ -84,11 +93,10 @@ export default function MisMascotasPage() {
         m.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
         (m.raza ?? "").toLowerCase().includes(busqueda.toLowerCase());
       const matchEspecie = filtroEspecie === "TODOS" || m.especie.toUpperCase() === filtroEspecie;
-      const matchEstatus = filtroEstatus === "TODOS" || m.estatus === filtroEstatus;
       const matchSexo = filtroSexo === "TODOS" || m.sexo === filtroSexo;
       const matchEsterilizado = filtroEsterilizado === "TODOS" ||
         (filtroEsterilizado === "SI" ? m.esterilizado : !m.esterilizado);
-      return matchBusqueda && matchEspecie && matchEstatus && matchSexo && matchEsterilizado;
+      return matchBusqueda && matchEspecie && matchSexo && matchEsterilizado;
     })
     .sort((a, b) => {
       let cmp = 0;
@@ -99,9 +107,9 @@ export default function MisMascotasPage() {
       return ordenDesc ? -cmp : cmp;
     });
 
-  const disponibles = mascotas.filter((m) => m.estatus === "DISPONIBLE").length;
-  const adoptados = mascotas.filter((m) => m.estatus === "ADOPTADO").length;
-  const hayFiltros = filtroEspecie !== "TODOS" || filtroEstatus !== "TODOS" || filtroSexo !== "TODOS" || filtroEsterilizado !== "TODOS";
+  const disponibles = mascotas.length;
+  const adoptados = historialAdoptados.length;
+  const hayFiltros = filtroEspecie !== "TODOS" || filtroSexo !== "TODOS" || filtroEsterilizado !== "TODOS";
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
@@ -151,7 +159,7 @@ export default function MisMascotasPage() {
           </div>
 
           {filtersOpen && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
               <div className="form-control">
                 <label className="label py-0"><span className="label-text text-xs">Especie</span></label>
                 <select className="select select-bordered select-sm" value={filtroEspecie}
@@ -171,15 +179,6 @@ export default function MisMascotasPage() {
                 </select>
               </div>
               <div className="form-control">
-                <label className="label py-0"><span className="label-text text-xs">Estatus</span></label>
-                <select className="select select-bordered select-sm" value={filtroEstatus}
-                  onChange={(e) => setFiltroEstatus(e.target.value)}>
-                  <option value="TODOS">Todos</option>
-                  <option value="DISPONIBLE">Disponible</option>
-                  <option value="ADOPTADO">Adoptado</option>
-                </select>
-              </div>
-              <div className="form-control">
                 <label className="label py-0"><span className="label-text text-xs">Esterilizado</span></label>
                 <select className="select select-bordered select-sm" value={filtroEsterilizado}
                   onChange={(e) => setFiltroEsterilizado(e.target.value)}>
@@ -193,7 +192,7 @@ export default function MisMascotasPage() {
                 <div className="flex gap-1">
                   <select className="select select-bordered select-sm flex-1" value={criterio}
                     onChange={(e) => setCriterio(e.target.value as CriterioOrden)}>
-                    <option value="fechaRegistro">Mas reciente</option>
+                    <option value="fechaRegistro">Más reciente</option>
                     <option value="nombre">Nombre</option>
                     <option value="edad">Edad</option>
                     <option value="interesados">Interesados</option>
@@ -219,7 +218,7 @@ export default function MisMascotasPage() {
         {filtradas.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-3 text-base-content/30">
             <PawPrint size={56} />
-            <p>{mascotas.length === 0 ? "Aun no tienes mascotas registradas." : "No hay mascotas con esos filtros."}</p>
+            <p>{mascotas.length === 0 ? "Aún no tienes mascotas registradas." : "No hay mascotas con esos filtros."}</p>
           </div>
         ) : (
           <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -243,21 +242,22 @@ export default function MisMascotasPage() {
           {loadingHistorial ? (
             <p className="text-base-content/40">Cargando...</p>
           ) : historialAdoptados.length === 0 ? (
-            <p className="text-base-content/40">Aun no tienes animales marcados como adoptados.</p>
+            <p className="text-base-content/40">Aún no tienes animales marcados como adoptados.</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {historialAdoptados.map((animal) => (
-                <div key={animal.id} className="card bg-base-200 shadow p-4">
-                  {animal.fotoPortada && (
-                    <img src={animal.fotoPortada} alt={animal.nombre}
-                      className="rounded-lg w-full h-40 object-contain object-top mb-3" />
-                  )}
-                  <h3 className="font-bold text-lg">{animal.nombre}</h3>
-                  <p className="text-sm text-base-content/50">
-                    {animal.especie} · {animal.raza ?? "Raza desconocida"}
-                  </p>
-                  <span className="badge badge-success mt-2">Adoptado</span>
-                </div>
+                <AnimalCard.Compact
+                  key={animal.id}
+                  animal={animal}
+                  rolUsuario={rol}
+                  userId={userId}
+                  onUpdated={(updated) => {
+                    if (updated.estatus === "DISPONIBLE") {
+                      setHistorialAdoptados((prev) => prev.filter((a) => a.id !== updated.id));
+                      setMascotas((prev) => [...prev, updated]);
+                    }
+                  }}
+                />
               ))}
             </div>
           )}
@@ -267,7 +267,7 @@ export default function MisMascotasPage() {
       <ConfirmDialog
         open={pendingDeleteId !== null}
         title="Eliminar mascota"
-        message="Esta accion no se puede deshacer."
+        message="Esta acción no se puede deshacer."
         confirmText="Eliminar"
         cancelText="Cancelar"
         loading={deleting}

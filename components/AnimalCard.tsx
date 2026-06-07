@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Pencil, Trash2, CheckCircle, Syringe, AlertTriangle, Expand, X } from "lucide-react";
 import BotonInteres from "./BotonInteres";
 import BotonFlag from "./BotonFlag";
@@ -35,10 +35,62 @@ interface BaseProps {
 // AnimalCard.Compact
 // ---------------------------------------------------------------------------
 
+function InteresadosModal({ animalId, nombreAnimal, onClose }: { animalId: string; nombreAnimal: string; onClose: () => void }) {
+  const [interesados, setInteresados] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const token = typeof window !== "undefined" ? sessionStorage.getItem("user_token") : null;
+    if (!token) return;
+    import("@/lib/apiClient").then(({ listarInteresadosPorAnimal }) => {
+      listarInteresadosPorAnimal(token, animalId).then((res) => {
+        if (res.ok) setInteresados(res.data);
+        setLoading(false);
+      });
+    });
+  }, [animalId]);
+
+  return (
+    <div className="modal modal-open">
+      <div className="modal-box max-w-md">
+        <button onClick={onClose} className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"><X size={16} /></button>
+        <h3 className="font-bold text-lg mb-3">Interesados en {nombreAnimal}</h3>
+        {loading ? (
+          <div className="flex justify-center py-4"><span className="loading loading-spinner" /></div>
+        ) : interesados.length === 0 ? (
+          <p className="text-base-content/50 text-sm">Nadie ha manifestado interés aún.</p>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {interesados.map((i) => (
+              <div key={i.adoptanteId} className="flex items-center gap-3">
+                {i.fotoAdoptante ? (
+                  <img src={i.fotoAdoptante} alt="" className="w-10 h-10 rounded-full object-cover" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">
+                    {i.nombreAdoptante.charAt(0)}
+                  </div>
+                )}
+                <div>
+                  <p className="font-medium text-sm">{i.nombreAdoptante}</p>
+                  <p className="text-xs text-base-content/40">{i.emailAdoptante}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="modal-backdrop" onClick={onClose} />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+
 function Compact({ animal, rolUsuario, userId, tieneInteres = false, actions, onDeleted, onUpdated, allowRemove = false }: BaseProps & { animal: AnimalResponse }) {
   const [animalLocal, setAnimalLocal] = useState(animal);
   const [modalOpen, setModalOpen] = useState(false);
   const [deleted, setDeleted] = useState(false);
+  const [showInteresados, setShowInteresados] = useState(false);
 
   const esDueno = rolUsuario === "CUIDADOR" && animalLocal.usuarioId === userId;
   const esAdoptado = animalLocal.estatus === "ADOPTADO";
@@ -49,7 +101,20 @@ function Compact({ animal, rolUsuario, userId, tieneInteres = false, actions, on
 
   return (
     <>
-      <div className={`rounded-box overflow-hidden shadow-xl transition-all duration-300 ${esAdoptado ? "bg-base-200 opacity-60 grayscale" : "bg-base-100 hover:-translate-y-1 hover:shadow-primary/40"}`}>
+      <div className={`rounded-box overflow-hidden shadow-xl transition-all duration-300 bg-base-100 hover:-translate-y-1 hover:shadow-primary/40`}>
+        {/* Cuidador info */}
+        {animalLocal.cuidadorUsername && !esDueno && (
+          <div className="flex items-center gap-2 px-4 py-2 border-b border-base-200">
+            {animalLocal.cuidadorFoto ? (
+              <img src={animalLocal.cuidadorFoto} alt="" className="w-6 h-6 rounded-full object-cover" />
+            ) : (
+              <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
+                {animalLocal.cuidadorUsername.charAt(0).toUpperCase()}
+              </div>
+            )}
+            <span className="text-xs text-base-content/60">@{animalLocal.cuidadorUsername}</span>
+          </div>
+        )}
         <button onClick={() => setModalOpen(true)} className="w-full">
           <div className="h-48 bg-base-200 flex items-center justify-center relative overflow-hidden">
             {portada
@@ -80,10 +145,13 @@ function Compact({ animal, rolUsuario, userId, tieneInteres = false, actions, on
             Publicado: {new Date(animalLocal.fechaRegistro).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" })}
           </p>
           {esDueno && (
-            <p className="text-base-content/50 text-xs mt-0.5 flex items-center gap-1">
+            <button
+              onClick={() => setShowInteresados(true)}
+              className="text-xs mt-0.5 flex items-center gap-1 hover:underline cursor-pointer text-base-content/50"
+            >
               <span className="font-medium text-primary">{animalLocal.numInteresados ?? 0}</span>
               {(animalLocal.numInteresados ?? 0) === 1 ? "persona interesada" : "personas interesadas"}
-            </p>
+            </button>
           )}
           <div className="mt-4">
             {esDueno ? (
@@ -122,13 +190,21 @@ function Compact({ animal, rolUsuario, userId, tieneInteres = false, actions, on
           onClose={() => setModalOpen(false)}
           onDeleted={(id) => { setDeleted(true); onDeleted?.(id); }}
           onUpdated={(updated, detalle) => {
-            setAnimalLocal((prev) => ({
+            const withFoto = {
               ...updated,
-              fotoPortada: detalle?.fotos?.[0] ?? updated.fotoPortada ?? null,
-              numInteresados: (updated as any).numInteresados ?? (prev as any)?.numInteresados ?? 0,
-            }));
-            onUpdated?.(updated);
+              fotoPortada: detalle?.fotos?.[0] ?? updated.fotoPortada ?? animalLocal.fotoPortada ?? null,
+              numInteresados: (updated as any).numInteresados ?? (animalLocal as any)?.numInteresados ?? 0,
+            };
+            setAnimalLocal(withFoto);
+            onUpdated?.(withFoto);
           }}
+        />
+      )}
+      {showInteresados && (
+        <InteresadosModal
+          animalId={animalLocal.id}
+          nombreAnimal={animalLocal.nombre}
+          onClose={() => setShowInteresados(false)}
         />
       )}
     </>
@@ -142,6 +218,7 @@ function Compact({ animal, rolUsuario, userId, tieneInteres = false, actions, on
 function Detail({ animal, rolUsuario, userId, tieneInteres = false, actions }: BaseProps & { animal: AnimalDetalleResponse }) {
   const esDueno = rolUsuario === "CUIDADOR" && animal.usuarioId === userId;
   const esAdoptado = animal.estatus === "ADOPTADO";
+  const [showInteresadosDetail, setShowInteresadosDetail] = useState(false);
 
   return (
     <div className="card bg-base-100 shadow-xl overflow-hidden">
@@ -152,6 +229,18 @@ function Detail({ animal, rolUsuario, userId, tieneInteres = false, actions }: B
 
       <div className="card-body gap-4">
         <div>
+          {!esDueno && (animal as any).cuidadorUsername && (
+            <div className="flex items-center gap-2 mb-2">
+              {(animal as any).cuidadorFoto ? (
+                <img src={(animal as any).cuidadorFoto} alt="" className="w-8 h-8 rounded-full object-cover" />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">
+                  {(animal as any).cuidadorUsername.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <span className="text-sm text-base-content/60">@{(animal as any).cuidadorUsername}</span>
+            </div>
+          )}
           <h1 className="text-3xl font-bold text-primary">{animal.nombre}</h1>
           <p className="text-base-content/60 mt-1">
             {animal.especie}{animal.raza ? ` · ${animal.raza}` : ""} · {calcularEdad(animal.fechaNacimiento)} · {animal.sexo === "MACHO" ? "Macho" : "Hembra"}
@@ -160,10 +249,16 @@ function Detail({ animal, rolUsuario, userId, tieneInteres = false, actions }: B
             Publicado: {new Date(animal.fechaRegistro).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })}
           </p>
           {esDueno && (
-            <p className="text-base-content/60 text-sm mt-1 flex items-center gap-1">
+            <button
+              onClick={() => setShowInteresadosDetail(true)}
+              className="text-base-content/60 text-sm mt-1 flex items-center gap-1 hover:underline cursor-pointer"
+            >
               <span className="font-semibold text-primary">{animal.numInteresados ?? 0}</span>
               {(animal.numInteresados ?? 0) === 1 ? "persona interesada" : "personas interesadas"}
-            </p>
+            </button>
+          )}
+          {showInteresadosDetail && (
+            <InteresadosModal animalId={animal.id} nombreAnimal={animal.nombre} onClose={() => setShowInteresadosDetail(false)} />
           )}
         </div>
 
@@ -215,13 +310,14 @@ function Detail({ animal, rolUsuario, userId, tieneInteres = false, actions }: B
 // AnimalCard.DetailModal
 // ---------------------------------------------------------------------------
 
-function DetailModal({ animalId, rolUsuario, userId: userIdProp, onClose, onDeleted, onUpdated }: {
+function DetailModal({ animalId, rolUsuario, userId: userIdProp, onClose, onDeleted, onUpdated, extraFooter }: {
   animalId: string;
   rolUsuario?: string;
   userId?: string;
   onClose: () => void;
   onDeleted?: (id: string) => void;
   onUpdated?: (animal: AnimalResponse, detalle?: AnimalDetalleResponse) => void;
+  extraFooter?: React.ReactNode;
 }) {
   const { animal, tieneInteres, loading, error } = useAnimalDetalle(animalId);
   const [editMode, setEditMode] = useState(false);
@@ -274,6 +370,7 @@ function DetailModal({ animalId, rolUsuario, userId: userIdProp, onClose, onDele
         ) : (
           <div className="overflow-y-auto max-h-[85vh]">
             <Detail animal={animalData} rolUsuario={rolUsuario} userId={userId} tieneInteres={tieneInteres} actions={actions} />
+            {extraFooter && <div className="p-4 border-t">{extraFooter}</div>}
           </div>
         )}
         <button onClick={onClose} className="absolute top-3 right-3 btn btn-circle btn-sm btn-ghost bg-base-100/80"><X size={16} /></button>
@@ -281,7 +378,7 @@ function DetailModal({ animalId, rolUsuario, userId: userIdProp, onClose, onDele
       <ConfirmDialog
         open={pendingDeleteId !== null}
         title="Eliminar mascota"
-        message="Esta accion no se puede deshacer."
+        message="Esta acción no se puede deshacer."
         confirmText="Eliminar"
         cancelText="Cancelar"
         loading={deleting}

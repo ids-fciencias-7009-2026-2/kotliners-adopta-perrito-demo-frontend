@@ -46,7 +46,7 @@ export default function BotonInteres({
     return (
       <div className="flex items-center gap-2 text-base-content/50 text-sm">
         <AlertCircle size={16} className="text-warning" />
-        <span>Animal no disponible</span>
+        <span>Animal adoptado</span>
       </div>
     );
   }
