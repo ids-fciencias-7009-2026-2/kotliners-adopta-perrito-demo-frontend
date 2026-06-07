@@ -104,10 +104,10 @@ export default function DatePicker({ value, onChange, label, error, required = f
         <div className="absolute top-full left-0 z-50 mt-1 bg-base-100 border border-base-300 rounded-box shadow-lg p-4">
           {/* Selectores de mes y año */}
           <div className="flex gap-2 mb-3">
-            <select value={viewMonth} onChange={handleMonthChange} className="select select-bordered select-xs flex-1">
+            <select value={viewMonth} onChange={(e) => { setViewMonth(parseInt(e.target.value)); e.target.blur(); }} className="select select-bordered select-xs flex-1">
               {MESES.map((m, i) => <option key={i} value={i}>{m}</option>)}
             </select>
-            <select value={viewYear} onChange={handleYearChange} className="select select-bordered select-xs">
+            <select value={viewYear} onChange={(e) => { setViewYear(parseInt(e.target.value)); e.target.blur(); }} className="select select-bordered select-xs">
               {Array.from({ length: maxYear - minYear + 1 }, (_, i) => maxYear - i).map((y) => (
                 <option key={y} value={y}>{y}</option>
               ))}
@@ -120,6 +120,7 @@ export default function DatePicker({ value, onChange, label, error, required = f
             value={value || undefined}
             focusedDate={focusedDate}
             max={maxDate}
+            locale="es-MX"
           >
             <button type="button" slot="previous" aria-label="Mes anterior" className="btn btn-xs btn-circle border-none bg-base-200 hover:bg-base-300 mx-1"
               onClick={() => { if (viewMonth === 0) { setViewMonth(11); setViewYear(viewYear - 1); } else setViewMonth(viewMonth - 1); }}>
