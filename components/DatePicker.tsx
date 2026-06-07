@@ -77,7 +77,7 @@ export default function DatePicker({ value, onChange, label, error, required = f
 
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={(e) => { e.preventDefault(); setOpen((o) => !o); }}
         className={`input input-bordered w-full text-left ${!display ? "text-base-content/40" : ""} ${error ? "input-error" : ""}`}
       >
         {display || "Seleccióna una fecha"}
@@ -87,16 +87,16 @@ export default function DatePicker({ value, onChange, label, error, required = f
         <div className="absolute top-full left-0 z-50 mt-1">
           <calendar-date
             ref={calendarRef}
-            class="cally bg-base-100 text-base-content border border-base-300 rounded-box shadow-lg"
+            class="cally bg-base-100 text-base-content border border-base-300 rounded-box shadow-lg p-4"
             value={value || undefined}
             max={maxAttr}
           >
-            <svg slot="previous" aria-label="Previous" className="fill-current size-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-              <path fill="currentColor" d="M15.75 19.5 8.25 12l7.5-7.5" />
-            </svg>
-            <svg slot="next" aria-label="Next" className="fill-current size-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-              <path fill="currentColor" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-            </svg>
+            <button type="button" slot="previous" aria-label="Mes anterior" className="btn btn-xs btn-circle border-none bg-base-200 hover:bg-base-300 mx-1">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <button type="button" slot="next" aria-label="Mes siguiente" className="btn btn-xs btn-circle border-none bg-base-200 hover:bg-base-300 mx-1">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+            </button>
             <calendar-month />
           </calendar-date>
         </div>

@@ -13,7 +13,7 @@ import type { NextRequest } from "next/server";
 const PROTECTED_PATHS = ["/home", "/profile", "/favoritos", "/explorar", "/mis-mascotas", "/publicar", "/admin"];
 const PUBLIC_PATHS = ["/login", "/registro"];
 
-export function middleware(request: NextRequest) {
+export default function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hasSession = request.cookies.get("user_session");
 

@@ -25,6 +25,24 @@ body {
   z-index: 400 !important;
 }
 
+/* Cally calendar styling */
+calendar-date {
+  --color-accent: #65c3c8;
+  --color-text-on-accent: white;
+}
+calendar-date::part(button) {
+  border-radius: 9999px;
+}
+calendar-date::part(selected) {
+  background: #65c3c8;
+  color: white;
+  border-radius: 9999px;
+}
+calendar-date::part(today) {
+  border: 2px solid #65c3c8;
+  border-radius: 9999px;
+}
+
 /* Skip link para lectores de pantalla */
 .sr-only-focusable:not(:focus) {
   position: absolute;
