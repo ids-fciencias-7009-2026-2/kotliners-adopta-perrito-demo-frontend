@@ -37,11 +37,18 @@ export interface ActualizarPerfilPayload {
 /**
  * Autentica al usuario con email y contraseña.
  * Endpoint: POST /usuarios/login
- * @param payload - Credenciales del usuario.
- * @returns Token de sesión si las credenciales son correctas.
+ * Ahora retorna { requiere2fa: true, email } si credenciales correctas.
  */
 export function login(payload: LoginPayload) {
-  return apiClient.post<{ token: string }>('/usuarios/login', payload)
+  return apiClient.post<{ requiere2fa: boolean; email: string }>('/usuarios/login', payload)
+}
+
+/**
+ * Verifica el código 2FA y obtiene el token de sesión.
+ * Endpoint: POST /usuarios/verificar-2fa
+ */
+export function verificar2fa(email: string, codigo: string) {
+  return apiClient.post<{ token: string }>('/usuarios/verificar-2fa', { email, codigo })
 }
 
 /**

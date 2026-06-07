@@ -81,14 +81,14 @@ export default function RegistroPage() {
   /** Valida todos los campos del formulario. Retorna true si son validos. */
   function validate(): boolean {
     const newErrors: Record<string, string> = {};
-    if (!form.nombres.trim()) newErrors.nombres = "Obligatorio.";
+    if (!form.nombres.trim()) newErrors.nombres = "Ingresa tu nombre completo.";
 
     // Validación CURP — formato oficial mexicano
     const curpRegex = /^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/;
     if (!form.curp.trim()) {
-      newErrors.curp = "Obligatorio.";
+      newErrors.curp = "Ingresa tu CURP para verificar tu identidad.";
     } else if (!curpRegex.test(form.curp)) {
-      newErrors.curp = "CURP no válida. Formato: 4 letras, 6 dígitos de fecha, H/M, 5 letras, 1 alfanumérico, 1 digito.";
+      newErrors.curp = "CURP no válida. Formato: 4 letras, 6 dígitos de fecha, H/M, 5 letras, 1 alfanumérico, 1 dígito.";
     } else {
       // Extraer fecha de nacimiento del CURP (posiciones 4-9: AAMMDD)
       const anio = parseInt(form.curp.substring(4, 6), 10);
@@ -109,15 +109,19 @@ export default function RegistroPage() {
       }
     }
 
-    if (!form.username.trim()) newErrors.username = "Obligatorio.";
-    if (!form.apellidoPaterno.trim()) newErrors.apellidoPaterno = "Obligatorio.";
-    if (!form.apellidoMaterno.trim()) newErrors.apellidoMaterno = "Obligatorio.";
-    if (!form.email.trim()) newErrors.email = "Obligatorio.";
-    else if (!form.email.match(/\S+@\S+\.\S+/)) newErrors.email = "Correo no válido.";
-    if (!form.codigoPostal.trim()) newErrors.codigoPostal = "Obligatorio.";
-    else if (!form.codigoPostal.match(/^\d{5}$/)) newErrors.codigoPostal = "5 dígitos numéricos.";
-    if (!form.password.trim()) newErrors.password = "Obligatorio.";
-    else if (form.password.length < 8) newErrors.password = "Mínimo 8 caracteres.";
+    if (!form.username.trim()) newErrors.username = "Elige un nombre de usuario para tu perfil.";
+    if (!form.apellidoPaterno.trim()) newErrors.apellidoPaterno = "Ingresa tu apellido paterno.";
+    if (!form.apellidoMaterno.trim()) newErrors.apellidoMaterno = "Ingresa tu apellido materno.";
+    if (!form.email.trim()) newErrors.email = "Ingresa tu correo electrónico para recibir notificaciones.";
+    else if (!form.email.match(/\S+@\S+\.\S+/)) newErrors.email = "El formato no es válido. Ejemplo: tu@correo.com";
+    if (!form.codigoPostal.trim()) newErrors.codigoPostal = "Ingresa tu código postal para ubicarte en el mapa.";
+    else if (!form.codigoPostal.match(/^\d{5}$/)) newErrors.codigoPostal = "El código postal debe tener exactamente 5 dígitos.";
+    if (!form.password.trim()) newErrors.password = "Crea una contraseña segura.";
+    else if (form.password.length < 8) newErrors.password = "La contraseña debe tener al menos 8 caracteres.";
+    else if (!/[A-Z]/.test(form.password)) newErrors.password = "Debe incluir al menos una letra mayúscula.";
+    else if (!/[a-z]/.test(form.password)) newErrors.password = "Debe incluir al menos una letra minúscula.";
+    else if (!/[0-9]/.test(form.password)) newErrors.password = "Debe incluir al menos un número.";
+    else if (!/[^A-Za-z0-9]/.test(form.password)) newErrors.password = "Debe incluir al menos un carácter especial (!@#$%...).";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }
@@ -139,7 +143,7 @@ export default function RegistroPage() {
       } else if (err?.response?.status === 409 || err?.response?.status === 400) {
         setServerError("El correo, usuario o CURP ya está registrado. Intenta con otros datos.");
       } else {
-        setServerError("Error al registrar. Intenta de nuevo mas tarde.");
+        setServerError("Error al registrar. Intenta de nuevo más tarde.");
       }
     } finally {
       setLoading(false);
@@ -218,13 +222,16 @@ export default function RegistroPage() {
                     {form.password.length >= 8 ? "✓" : "✗"} Mínimo 8 caracteres
                   </li>
                   <li className={/[A-Z]/.test(form.password) ? "text-success" : "text-error"}>
-                    {/[A-Z]/.test(form.password) ? "✓" : "✗"} Una mayuscula
+                    {/[A-Z]/.test(form.password) ? "✓" : "✗"} Una mayúscula
                   </li>
                   <li className={/[a-z]/.test(form.password) ? "text-success" : "text-error"}>
-                    {/[a-z]/.test(form.password) ? "✓" : "✗"} Una minuscula
+                    {/[a-z]/.test(form.password) ? "✓" : "✗"} Una minúscula
                   </li>
                   <li className={/[0-9]/.test(form.password) ? "text-success" : "text-error"}>
                     {/[0-9]/.test(form.password) ? "✓" : "✗"} Un número
+                  </li>
+                  <li className={/[^A-Za-z0-9]/.test(form.password) ? "text-success" : "text-error"}>
+                    {/[^A-Za-z0-9]/.test(form.password) ? "✓" : "✗"} Un carácter especial
                   </li>
                 </ul>
                 {pwdResult.feedback.warning && (
