@@ -1,4 +1,5 @@
 import { PawPrint } from "lucide-react";
+import Link from "next/link";
 
 /** Pie de página global. Se muestra en todas las vistas a traves del layout. */
 export default function Footer() {
@@ -7,6 +8,8 @@ export default function Footer() {
       <p className="flex items-center gap-2 text-sm">
         <PawPrint size={16} />
         Colitas Felices &copy; {new Date().getFullYear()} — Adoptando con amor
+        <span className="mx-1">·</span>
+        <Link href="/guia" className="link link-primary text-sm">¿Cómo funciona?</Link>
       </p>
     </footer>
   );
