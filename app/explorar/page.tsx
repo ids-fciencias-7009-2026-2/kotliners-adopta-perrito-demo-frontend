@@ -89,6 +89,7 @@ export default function ExplorarPage() {
   const [filtroForm, setFiltroForm] = useState<FiltroForm>(FILTRO_INICIAL);
   const [filtrosAplicados, setFiltrosAplicados] = useState<FiltrosAnimales>({});
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [mobileMap, setMobileMap] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [modalId, setModalId] = useState<string | null>(searchParams.get("animal"));
 
@@ -138,7 +139,7 @@ export default function ExplorarPage() {
   return (
     <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-base-200">
 
-      <div className="w-full lg:w-[440px] flex flex-col bg-base-100 shadow-xl z-10 overflow-hidden">
+      <div className={`w-full lg:w-[440px] flex flex-col bg-base-100 shadow-xl z-10 overflow-hidden ${mobileMap ? "hidden lg:flex" : ""}`}>
 
         <div className="p-4 border-b border-base-200 flex flex-col gap-3">
           <div className="flex gap-2">
@@ -389,7 +390,7 @@ export default function ExplorarPage() {
         )}
       </div>
 
-      {/* MAPA con OpenStreetMap */}
+      {/* MAPA con OpenStreetMap - desktop */}
       <div className="hidden lg:block flex-1 relative">
         <Suspense fallback={
           <div className="w-full h-full flex items-center justify-center bg-base-200">
@@ -404,6 +405,32 @@ export default function ExplorarPage() {
           />
         </Suspense>
       </div>
+
+      {/* MAPA mobile */}
+      {mobileMap && (
+        <div className="lg:hidden flex-1 relative">
+          <Suspense fallback={
+            <div className="w-full h-full flex items-center justify-center bg-base-200">
+              <span className="loading loading-spinner loading-lg text-primary" />
+            </div>
+          }>
+            <MapaAnimales
+              animales={filtrados}
+              selectedId={selectedId}
+              onSelect={(id) => setSelectedId(id === selectedId ? null : id)}
+              onOpenModal={(id) => setModalId(id)}
+            />
+          </Suspense>
+        </div>
+      )}
+
+      {/* Toggle mapa/lista en móvil */}
+      <button
+        onClick={() => setMobileMap(!mobileMap)}
+        className="lg:hidden fixed bottom-4 right-4 btn btn-primary btn-circle shadow-lg z-[500]"
+      >
+        {mobileMap ? <PawPrint size={20} /> : <Expand size={20} />}
+      </button>
 
       {modalId && (
         <AnimalCard.DetailModal animalId={modalId} rolUsuario={rolUsuario} onClose={() => setModalId(null)} />
