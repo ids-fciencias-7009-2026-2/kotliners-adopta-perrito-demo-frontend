@@ -39,7 +39,8 @@ export default function MapaAnimales({ animales, selectedId, onSelect, onOpenMod
 
     waitForL().then(() => {
       const L = getL();
-      if (!L || !L.markerClusterGroup) return;
+      if (!L) return;
+      const hasCluster = typeof L.markerClusterGroup === "function";
 
       if (!mapRef.current) {
         mapRef.current = L.map(containerRef.current!, {
@@ -59,8 +60,8 @@ export default function MapaAnimales({ animales, selectedId, onSelect, onOpenMod
       if (clusterRef.current) map.removeLayer(clusterRef.current);
       markersRef.current = {};
 
-      // Crear cluster group
-      const cluster = L.markerClusterGroup({
+      // Crear cluster group (si el plugin está disponible)
+      const cluster = hasCluster ? L.markerClusterGroup({
         maxClusterRadius: 50,
         spiderfyOnMaxZoom: false,
         disableClusteringAtZoom: 16,
@@ -75,7 +76,7 @@ export default function MapaAnimales({ animales, selectedId, onSelect, onOpenMod
             iconAnchor: [22, 22],
           });
         },
-      });
+      }) : null;
 
       conCoords.forEach((animal, idx) => {
         const isSelected = animal.id === selectedId;
@@ -104,11 +105,11 @@ export default function MapaAnimales({ animales, selectedId, onSelect, onOpenMod
               style="margin-top:8px;padding:4px 10px;background:#65c3c8;color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px">Ver ficha</button>
           </div>`, { maxWidth: 220 });
         marker.on("click", () => onSelect(animal.id));
-        cluster.addLayer(marker);
+        cluster ? cluster.addLayer(marker) : marker.addTo(map);
         markersRef.current[animal.id] = marker;
       });
 
-      map.addLayer(cluster);
+      if (cluster) map.addLayer(cluster);
       clusterRef.current = cluster;
 
       if (conCoords.length > 0) {
