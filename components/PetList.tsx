@@ -9,7 +9,7 @@ import type { FiltrosAnimales } from "@/lib/apiClient";
 /**
  * Lista de animales con panel de filtros opcional.
  */
-export default function PetList({ showFilters = true }: { showFilters?: boolean }) {
+export default function PetList({ showFilters = true, maxItems }: { showFilters?: boolean; maxItems?: number }) {
   const [filtros, setFiltros] = useState<FiltrosAnimales>({});
   const [busqueda, setBusqueda] = useState("");
 
@@ -29,6 +29,8 @@ export default function PetList({ showFilters = true }: { showFilters?: boolean 
       )
     : animals;
 
+  const mostrados = maxItems ? filtrados.slice(0, maxItems) : filtrados;
+
   const handleFiltrosChange = useCallback((f: FiltrosAnimales) => setFiltros(f), []);
   const handleBusquedaChange = useCallback((b: string) => setBusqueda(b), []);
 
@@ -42,7 +44,7 @@ export default function PetList({ showFilters = true }: { showFilters?: boolean 
         </div>
       ) : error ? (
         <p className="text-center text-error py-8">{error}</p>
-      ) : filtrados.length === 0 ? (
+      ) : mostrados.length === 0 ? (
         <p className="text-center text-base-content/60 py-8">
           {rol === "CUIDADOR"
             ? "Aún no tienes mascotas registradas. Usa el botón Publicar para agregar una."
@@ -50,7 +52,7 @@ export default function PetList({ showFilters = true }: { showFilters?: boolean 
         </p>
       ) : (
         <div className="grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filtrados.map((animal) => (
+          {mostrados.map((animal) => (
             <AnimalCard.Compact
               key={animal.id}
               animal={animal}

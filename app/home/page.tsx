@@ -109,7 +109,7 @@ function HomeAdoptante({ nombre }: { nombre: string }) {
             Ver en mapa
           </a>
         </div>
-        <PetList />
+        <PetList maxItems={8} />
       </section>
 
     </main>
@@ -155,7 +155,7 @@ function HomeCuidador({ nombre }: { nombre: string }) {
           <a href="/mis-mascotas" className="btn btn-outline btn-primary btn-sm gap-2">
             Ver todas
           </a>        </div>
-        <PetList showFilters={false} />
+        <PetList showFilters={false} maxItems={8} />
       </section>
 
     </main>
