@@ -95,11 +95,11 @@ export default function MapaAnimales({ animales, selectedId, onSelect, onOpenMod
         const icon = L.divIcon({
           className: "",
           html: foto
-            ? `<div style="width:${isSelected ? 48 : 38}px;height:${isSelected ? 48 : 38}px;border-radius:50%;border:3px solid ${isSelected ? '#7c3aed' : 'white'};overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.3)"><img src="${foto}" style="width:100%;height:100%;object-fit:cover"/></div>`
-            : `<div style="background:${isSelected ? '#7c3aed' : '#65c3c8'};border:2px solid white;border-radius:50% 50% 50% 0;width:${isSelected ? 36 : 28}px;height:${isSelected ? 36 : 28}px;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,0.35)"></div>`,
-          iconSize: isSelected ? [48, 48] : [38, 38],
-          iconAnchor: isSelected ? [24, 48] : [19, 38],
-          popupAnchor: [0, isSelected ? -48 : -38],
+            ? `<div style="width:38px;height:38px;border-radius:50%;border:3px solid ${isSelected ? '#7c3aed' : 'white'};overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.3)"><img src="${foto}" style="width:100%;height:100%;object-fit:cover"/></div>`
+            : `<div style="background:${isSelected ? '#7c3aed' : '#65c3c8'};border:2px solid white;border-radius:50% 50% 50% 0;width:28px;height:28px;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,0.35)"></div>`,
+          iconSize: [38, 38],
+          iconAnchor: [19, 38],
+          popupAnchor: [0, -38],
         });
 
         const marker = L.marker([lat, lng], { icon });
@@ -149,11 +149,11 @@ export default function MapaAnimales({ animales, selectedId, onSelect, onOpenMod
       const icon = L.divIcon({
         className: "",
         html: foto
-          ? `<div style="width:${isSelected ? 48 : 38}px;height:${isSelected ? 48 : 38}px;border-radius:50%;border:3px solid ${isSelected ? '#7c3aed' : 'white'};overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.3)"><img src="${foto}" style="width:100%;height:100%;object-fit:cover"/></div>`
-          : `<div style="background:${isSelected ? '#7c3aed' : '#65c3c8'};border:2px solid white;border-radius:50% 50% 50% 0;width:${isSelected ? 36 : 28}px;height:${isSelected ? 36 : 28}px;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,0.35)"></div>`,
-        iconSize: isSelected ? [48, 48] : [38, 38],
-        iconAnchor: isSelected ? [24, 48] : [19, 38],
-        popupAnchor: [0, isSelected ? -48 : -38],
+          ? `<div style="width:38px;height:38px;border-radius:50%;border:3px solid ${isSelected ? '#7c3aed' : 'white'};overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.3)"><img src="${foto}" style="width:100%;height:100%;object-fit:cover"/></div>`
+          : `<div style="background:${isSelected ? '#7c3aed' : '#65c3c8'};border:2px solid white;border-radius:50% 50% 50% 0;width:28px;height:28px;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,0.35)"></div>`,
+        iconSize: [38, 38],
+        iconAnchor: [19, 38],
+        popupAnchor: [0, -38],
       });
       marker.setIcon(icon);
       if (isSelected) { mapRef.current.panTo(marker.getLatLng(), { animate: true }); marker.openPopup(); }
