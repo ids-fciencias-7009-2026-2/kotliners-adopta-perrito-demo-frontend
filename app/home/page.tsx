@@ -155,7 +155,7 @@ function HomeCuidador({ nombre }: { nombre: string }) {
           <a href="/mis-mascotas" className="btn btn-outline btn-primary btn-sm gap-2">
             Ver todas
           </a>        </div>
-        <PetList />
+        <PetList showFilters={false} />
       </section>
 
     </main>

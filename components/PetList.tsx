@@ -7,9 +7,9 @@ import { useAnimalList } from "@/hooks/useAnimalData";
 import type { FiltrosAnimales } from "@/lib/apiClient";
 
 /**
- * Lista de animales con panel de filtros completo (mismo que /explorar).
+ * Lista de animales con panel de filtros opcional.
  */
-export default function PetList() {
+export default function PetList({ showFilters = true }: { showFilters?: boolean }) {
   const [filtros, setFiltros] = useState<FiltrosAnimales>({});
   const [busqueda, setBusqueda] = useState("");
 
@@ -34,7 +34,7 @@ export default function PetList() {
 
   return (
     <div>
-      <FiltrosPanel onFiltrosChange={handleFiltrosChange} onBusquedaChange={handleBusquedaChange} />
+      {showFilters && <FiltrosPanel onFiltrosChange={handleFiltrosChange} onBusquedaChange={handleBusquedaChange} />}
 
       {loading ? (
         <div className="flex justify-center py-16">
