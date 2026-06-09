@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { PawPrint, KeyRound, Mail } from "lucide-react";
 import PasswordField from "@/components/PasswordField";
+import PasswordStrength from "@/components/PasswordStrength";
 import ErrorMessage from "@/components/ErrorMessage";
 import Link from "next/link";
 import axios from "@/api/axios";
@@ -134,6 +135,7 @@ function RestablecerForm({ token }: { token: string }) {
           <ErrorMessage message={error} />
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             <PasswordField name="password" label="Nueva contraseña" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Mínimo 8 caracteres" />
+            <PasswordStrength password={password} />
             <PasswordField name="confirmPassword" label="Confirmar contraseña" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Repite la contraseña" />
             <button type="submit" disabled={loading} className="btn btn-primary w-full">
               {loading ? <span className="loading loading-spinner loading-sm" /> : "Guardar contraseña"}

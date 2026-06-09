@@ -5,28 +5,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ErrorMessage from "@/components/ErrorMessage";
 import PasswordField from "@/components/PasswordField";
+import PasswordStrength from "@/components/PasswordStrength";
 import { register } from "@/api/authApi";
 import { ROUTES } from "@/lib/routes";
 import { PawPrint, UserPlus } from "lucide-react";
-import zxcvbn from "zxcvbn";
-
-const zxcvbnWarnings: Record<string, string> = {
-  "Straight rows of keys are easy to guess": "Las filas de teclas seguidas son fáciles de adivinar",
-  "Short keyboard patterns are easy to guess": "Los patrones cortos de teclado son fáciles de adivinar",
-  "Use a longer keyboard pattern with more turns": "Usa un patrón de teclado más largo con más giros",
-  "Repeats like \"aaa\" are easy to guess": "Las repeticiones como \"aaa\" son fáciles de adivinar",
-  "Repeats like \"abcabcabc\" are only slightly harder to guess than \"abc\"": "Las repeticiones como \"abcabcabc\" son solo un poco más difíciles que \"abc\"",
-  "Sequences like abc or 6543 are easy to guess": "Las secuencias como abc o 6543 son fáciles de adivinar",
-  "Recent years are easy to guess": "Los años recientes son fáciles de adivinar",
-  "Dates are often easy to guess": "Las fechas suelen ser fáciles de adivinar",
-  "This is a top-10 common password": "Esta es una de las 10 contraseñas más comunes",
-  "This is a top-100 common password": "Esta es una de las 100 contraseñas más comunes",
-  "This is a very common password": "Esta es una contraseña muy común",
-  "This is similar to a commonly used password": "Es similar a una contraseña de uso común",
-  "A word by itself is easy to guess": "Una palabra sola es fácil de adivinar",
-  "Names and surnames by themselves are easy to guess": "Los nombres y apellidos solos son fáciles de adivinar",
-  "Common names and surnames are easy to guess": "Los nombres y apellidos comunes son fáciles de adivinar",
-};
 
 // ---------------------------------------------------------------------------
 // Componente Field — definido FUERA del componente padre para evitar
@@ -169,12 +151,6 @@ export default function RegistroPage() {
     }
   }
 
-  // Indicador de fortaleza de contraseña
-  const pwdResult = form.password.length > 0 ? zxcvbn(form.password) : null;
-  const pwdColors = ["progress-error", "progress-error", "progress-warning", "progress-warning", "progress-success"];
-  const pwdLabels = ["Muy débil", "Débil", "Aceptable", "Buena", "Fuerte"];
-  const pwdLabelColors = ["text-error", "text-error", "text-warning", "text-warning", "text-success"];
-
   return (
     <div className="min-h-screen bg-base-200 flex items-center justify-center px-4 py-8">
       <div className="card w-full max-w-lg bg-base-100 shadow-xl">
@@ -235,36 +211,9 @@ export default function RegistroPage() {
             />
 
             {/* Indicador de fortaleza de contraseña */}
-            {pwdResult && (
-              <div className="sm:col-span-2 flex flex-col gap-2">
-                <progress
-                  className={`progress w-full ${pwdColors[pwdResult.score]}`}
-                  value={pwdResult.score + 1}
-                  max={5}
-                />
-                <p className={`text-xs font-semibold ${pwdLabelColors[pwdResult.score]}`}>
-                  {pwdLabels[pwdResult.score]}
-                </p>
-                <ul className="text-xs text-base-content/60 flex flex-wrap gap-x-4 gap-y-1">
-                  <li className={form.password.length >= 8 ? "text-success" : "text-error"}>
-                    {form.password.length >= 8 ? "✓" : "✗"} Mínimo 8 caracteres
-                  </li>
-                  <li className={/[A-Z]/.test(form.password) ? "text-success" : "text-error"}>
-                    {/[A-Z]/.test(form.password) ? "✓" : "✗"} Una mayúscula
-                  </li>
-                  <li className={/[a-z]/.test(form.password) ? "text-success" : "text-error"}>
-                    {/[a-z]/.test(form.password) ? "✓" : "✗"} Una minúscula
-                  </li>
-                  <li className={/[0-9]/.test(form.password) ? "text-success" : "text-error"}>
-                    {/[0-9]/.test(form.password) ? "✓" : "✗"} Un número
-                  </li>
-                  <li className={/[^A-Za-z0-9]/.test(form.password) ? "text-success" : "text-error"}>
-                    {/[^A-Za-z0-9]/.test(form.password) ? "✓" : "✗"} Un carácter especial
-                  </li>
-                </ul>
-                {pwdResult.feedback.warning && (
-                  <p className="text-xs text-warning">{zxcvbnWarnings[pwdResult.feedback.warning] ?? pwdResult.feedback.warning}</p>
-                )}
+            {form.password && (
+              <div className="sm:col-span-2">
+                <PasswordStrength password={form.password} />
               </div>
             )}
 
