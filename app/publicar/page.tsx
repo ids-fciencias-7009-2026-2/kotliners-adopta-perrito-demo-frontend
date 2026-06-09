@@ -50,7 +50,7 @@ export default function PublicarPage() {
     if (!token) return;
     const especieUpper = form.especie.toUpperCase() === "GATO" ? "GATO" : "PERRO";
     listarRazas(token, especieUpper).then((res) => {
-      if (res.ok) setRazasDisponibles(res.data);
+      if (res.ok) setRazasDisponibles(res.data.sort((a, b) => a.nombreEs.localeCompare(b.nombreEs)));
     });
     setForm((p) => ({ ...p, razaId: "", raza: "" }));
   }, [form.especie]);

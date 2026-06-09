@@ -1,14 +1,15 @@
 "use client";
+"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ErrorMessage from "@/components/ErrorMessage";
 import PasswordField from "@/components/PasswordField";
+import PasswordStrength from "@/components/PasswordStrength";
 import { register } from "@/api/authApi";
 import { ROUTES } from "@/lib/routes";
 import { PawPrint, UserPlus } from "lucide-react";
-import zxcvbn from "zxcvbn";
 
 // ---------------------------------------------------------------------------
 // Componente Field — definido FUERA del componente padre para evitar
@@ -63,7 +64,7 @@ export default function RegistroPage() {
   const [form, setForm] = useState({
     nombres: "", curp: "", username: "", apellidoPaterno: "",
     apellidoMaterno: "", email: "", codigoPostal: "", password: "",
-    rol: "ADOPTANTE",
+    confirmPassword: "", rol: "ADOPTANTE",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState<string | null>(null);
@@ -72,8 +73,8 @@ export default function RegistroPage() {
   /** Actualiza el campo del formulario y limpia su error. */
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = e.target;
-    // CURP siempre en mayusculas
-    const finalValue = name === "curp" ? value.toUpperCase() : value;
+    // CURP siempre en mayusculas, email siempre en minusculas
+    const finalValue = name === "curp" ? value.toUpperCase() : name === "email" ? value.toLowerCase() : value;
     setForm((prev) => ({ ...prev, [name]: finalValue }));
     setErrors((prev) => ({ ...prev, [name]: "" }));
   }
@@ -122,6 +123,7 @@ export default function RegistroPage() {
     else if (!/[a-z]/.test(form.password)) newErrors.password = "Debe incluir al menos una letra minúscula.";
     else if (!/[0-9]/.test(form.password)) newErrors.password = "Debe incluir al menos un número.";
     else if (!/[^A-Za-z0-9]/.test(form.password)) newErrors.password = "Debe incluir al menos un carácter especial (!@#$%...).";
+    if (form.password && form.confirmPassword !== form.password) newErrors.confirmPassword = "Las contraseñas no coinciden.";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }
@@ -150,12 +152,6 @@ export default function RegistroPage() {
     }
   }
 
-  // Indicador de fortaleza de contraseña
-  const pwdResult = form.password.length > 0 ? zxcvbn(form.password) : null;
-  const pwdColors = ["progress-error", "progress-error", "progress-warning", "progress-warning", "progress-success"];
-  const pwdLabels = ["Muy debil", "Debil", "Aceptable", "Buena", "Fuerte"];
-  const pwdLabelColors = ["text-error", "text-error", "text-warning", "text-warning", "text-success"];
-
   return (
     <div className="min-h-screen bg-base-200 flex items-center justify-center px-4 py-8">
       <div className="card w-full max-w-lg bg-base-100 shadow-xl">
@@ -165,7 +161,7 @@ export default function RegistroPage() {
           <div className="flex flex-col items-center gap-2">
             <PawPrint size={48} className="text-primary" />
             <h1 className="card-title text-2xl">Crear cuenta</h1>
-            <p className="text-base-content/60 text-sm text-center">Únete y ayuda a encontrar hogares felices</p>
+            <p className="text-base-content/60 text-sm text-center">Regístrate para adoptar o publicar mascotas</p>
           </div>
 
           <ErrorMessage message={serverError} />
@@ -206,37 +202,19 @@ export default function RegistroPage() {
               placeholder="Mínimo 8 caracteres"
             />
 
+            <PasswordField
+              name="confirmPassword"
+              label="Repetir contraseña"
+              value={form.confirmPassword}
+              onChange={handleChange}
+              error={errors.confirmPassword}
+              placeholder="Repite tu contraseña"
+            />
+
             {/* Indicador de fortaleza de contraseña */}
-            {pwdResult && (
-              <div className="sm:col-span-2 flex flex-col gap-2">
-                <progress
-                  className={`progress w-full ${pwdColors[pwdResult.score]}`}
-                  value={pwdResult.score + 1}
-                  max={5}
-                />
-                <p className={`text-xs font-semibold ${pwdLabelColors[pwdResult.score]}`}>
-                  {pwdLabels[pwdResult.score]}
-                </p>
-                <ul className="text-xs text-base-content/60 flex flex-wrap gap-x-4 gap-y-1">
-                  <li className={form.password.length >= 8 ? "text-success" : "text-error"}>
-                    {form.password.length >= 8 ? "✓" : "✗"} Mínimo 8 caracteres
-                  </li>
-                  <li className={/[A-Z]/.test(form.password) ? "text-success" : "text-error"}>
-                    {/[A-Z]/.test(form.password) ? "✓" : "✗"} Una mayúscula
-                  </li>
-                  <li className={/[a-z]/.test(form.password) ? "text-success" : "text-error"}>
-                    {/[a-z]/.test(form.password) ? "✓" : "✗"} Una minúscula
-                  </li>
-                  <li className={/[0-9]/.test(form.password) ? "text-success" : "text-error"}>
-                    {/[0-9]/.test(form.password) ? "✓" : "✗"} Un número
-                  </li>
-                  <li className={/[^A-Za-z0-9]/.test(form.password) ? "text-success" : "text-error"}>
-                    {/[^A-Za-z0-9]/.test(form.password) ? "✓" : "✗"} Un carácter especial
-                  </li>
-                </ul>
-                {pwdResult.feedback.warning && (
-                  <p className="text-xs text-warning">{pwdResult.feedback.warning}</p>
-                )}
+            {form.password && (
+              <div className="sm:col-span-2">
+                <PasswordStrength password={form.password} />
               </div>
             )}
 

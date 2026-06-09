@@ -28,39 +28,50 @@ export default function MapaAnimales({ animales, selectedId, onSelect, onOpenMod
   useEffect(() => {
     if (typeof window === "undefined" || !containerRef.current) return;
 
-    // Esperar a que Leaflet cargue desde CDN
-    const waitForL = () => new Promise<void>((resolve) => {
-      if (getL()?.markerClusterGroup) { resolve(); return; }
-      const interval = setInterval(() => {
-        if (getL()?.markerClusterGroup) { clearInterval(interval); resolve(); }
-      }, 100);
-      setTimeout(() => { clearInterval(interval); resolve(); }, 3000);
-    });
+    const L = (window as any).L;
+    if (!L) return;
 
-    waitForL().then(() => {
-      const L = getL();
-      if (!L) return;
+    let retryTimeout: any = null;
 
-      if (!mapRef.current) {
-        mapRef.current = L.map(containerRef.current!, {
-          center: DEFAULT_CENTER,
-          zoom: DEFAULT_ZOOM,
-          zoomControl: true,
-        });
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-          maxZoom: 19,
-        }).addTo(mapRef.current);
-      }
+    // Asegurar que el plugin de cluster esté disponible
+    const ensureCluster = (): Promise<void> => {
+      if (typeof L.markerClusterGroup === "function") return Promise.resolve();
+      return new Promise((resolve) => {
+        const script = document.createElement("script");
+        script.src = "https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js";
+        script.onload = () => resolve();
+        script.onerror = () => resolve();
+        document.head.appendChild(script);
+      });
+    };
 
+    ensureCluster().then(() => {
+
+    if (!mapRef.current) {
+      mapRef.current = L.map(containerRef.current, {
+        center: DEFAULT_CENTER,
+        zoom: DEFAULT_ZOOM,
+        zoomControl: true,
+      });
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom: 19,
+      }).addTo(mapRef.current);
+    }
+
+    const buildMarkers = () => {
       const map = mapRef.current;
+      if (!map) return;
+      const hasCluster = typeof L.markerClusterGroup === "function";
 
-      // Limpiar cluster anterior
+      // Limpiar marcadores anteriores
       if (clusterRef.current) map.removeLayer(clusterRef.current);
+      Object.values(markersRef.current).forEach((m: any) => map.removeLayer(m));
       markersRef.current = {};
+      clusterRef.current = null;
 
-      // Crear cluster group
-      const cluster = L.markerClusterGroup({
+      // Crear cluster group (si el plugin está disponible)
+      const cluster = hasCluster ? L.markerClusterGroup({
         maxClusterRadius: 50,
         spiderfyOnMaxZoom: false,
         disableClusteringAtZoom: 16,
@@ -75,7 +86,7 @@ export default function MapaAnimales({ animales, selectedId, onSelect, onOpenMod
             iconAnchor: [22, 22],
           });
         },
-      });
+      }) : null;
 
       conCoords.forEach((animal, idx) => {
         const isSelected = animal.id === selectedId;
@@ -88,11 +99,11 @@ export default function MapaAnimales({ animales, selectedId, onSelect, onOpenMod
         const icon = L.divIcon({
           className: "",
           html: foto
-            ? `<div style="width:${isSelected ? 48 : 38}px;height:${isSelected ? 48 : 38}px;border-radius:50%;border:3px solid ${isSelected ? '#7c3aed' : 'white'};overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.3)"><img src="${foto}" style="width:100%;height:100%;object-fit:cover"/></div>`
-            : `<div style="background:${isSelected ? '#7c3aed' : '#65c3c8'};border:2px solid white;border-radius:50% 50% 50% 0;width:${isSelected ? 36 : 28}px;height:${isSelected ? 36 : 28}px;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,0.35)"></div>`,
-          iconSize: isSelected ? [48, 48] : [38, 38],
-          iconAnchor: isSelected ? [24, 48] : [19, 38],
-          popupAnchor: [0, isSelected ? -48 : -38],
+            ? `<div style="width:38px;height:38px;border-radius:50%;border:3px solid ${isSelected ? '#7c3aed' : 'white'};overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.3)"><img src="${foto}" style="width:100%;height:100%;object-fit:cover"/></div>`
+            : `<div style="background:${isSelected ? '#7c3aed' : '#65c3c8'};border:2px solid white;border-radius:50% 50% 50% 0;width:28px;height:28px;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,0.35)"></div>`,
+          iconSize: [38, 38],
+          iconAnchor: [19, 38],
+          popupAnchor: [0, -38],
         });
 
         const marker = L.marker([lat, lng], { icon });
@@ -104,17 +115,20 @@ export default function MapaAnimales({ animales, selectedId, onSelect, onOpenMod
               style="margin-top:8px;padding:4px 10px;background:#65c3c8;color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px">Ver ficha</button>
           </div>`, { maxWidth: 220 });
         marker.on("click", () => onSelect(animal.id));
-        cluster.addLayer(marker);
+        cluster ? cluster.addLayer(marker) : marker.addTo(map);
         markersRef.current[animal.id] = marker;
       });
 
-      map.addLayer(cluster);
+      if (cluster) map.addLayer(cluster);
       clusterRef.current = cluster;
 
       if (conCoords.length > 0) {
         const bounds = L.latLngBounds(conCoords.map((a) => [a.latitud as number, a.longitud as number]));
         map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
       }
+    };
+
+    buildMarkers();
     });
   }, [animales]);
 
@@ -130,11 +144,11 @@ export default function MapaAnimales({ animales, selectedId, onSelect, onOpenMod
       const icon = L.divIcon({
         className: "",
         html: foto
-          ? `<div style="width:${isSelected ? 48 : 38}px;height:${isSelected ? 48 : 38}px;border-radius:50%;border:3px solid ${isSelected ? '#7c3aed' : 'white'};overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.3)"><img src="${foto}" style="width:100%;height:100%;object-fit:cover"/></div>`
-          : `<div style="background:${isSelected ? '#7c3aed' : '#65c3c8'};border:2px solid white;border-radius:50% 50% 50% 0;width:${isSelected ? 36 : 28}px;height:${isSelected ? 36 : 28}px;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,0.35)"></div>`,
-        iconSize: isSelected ? [48, 48] : [38, 38],
-        iconAnchor: isSelected ? [24, 48] : [19, 38],
-        popupAnchor: [0, isSelected ? -48 : -38],
+          ? `<div style="width:38px;height:38px;border-radius:50%;border:3px solid ${isSelected ? '#7c3aed' : 'white'};overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.3)"><img src="${foto}" style="width:100%;height:100%;object-fit:cover"/></div>`
+          : `<div style="background:${isSelected ? '#7c3aed' : '#65c3c8'};border:2px solid white;border-radius:50% 50% 50% 0;width:28px;height:28px;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,0.35)"></div>`,
+        iconSize: [38, 38],
+        iconAnchor: [19, 38],
+        popupAnchor: [0, -38],
       });
       marker.setIcon(icon);
       if (isSelected) { mapRef.current.panTo(marker.getLatLng(), { animate: true }); marker.openPopup(); }
