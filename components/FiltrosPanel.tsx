@@ -180,12 +180,13 @@ export default function FiltrosPanel({ onFiltrosChange, onBusquedaChange }: Filt
                 <option value="fechaNacimiento">Edad</option>
                 <option value="distancia">Distancia</option>
               </select>
-              <button type="button"
-                title={filtroForm.ordenDesc ? "Descendente" : "Ascendente"}
-                onClick={() => setFiltroForm((f) => ({ ...f, ordenDesc: !f.ordenDesc }))}
-                className="btn btn-sm btn-square btn-outline">
-                <ArrowUpDown size={14} className={filtroForm.ordenDesc ? "text-primary" : "text-base-content/40"} />
-              </button>
+              <div className="tooltip" data-tip={filtroForm.ordenDesc ? "Orden descendente (click para ascendente)" : "Orden ascendente (click para descendente)"}>
+                <button type="button"
+                  onClick={() => setFiltroForm((f) => ({ ...f, ordenDesc: !f.ordenDesc }))}
+                  className="btn btn-sm btn-square btn-outline">
+                  <ArrowUpDown size={14} className={filtroForm.ordenDesc ? "text-primary" : "text-base-content/40"} />
+                </button>
+              </div>
             </div>
           </div>
 
