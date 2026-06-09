@@ -30,9 +30,9 @@ export default function MapaAnimales({ animales, selectedId, onSelect, onOpenMod
 
     // Esperar a que Leaflet cargue desde CDN
     const waitForL = () => new Promise<void>((resolve) => {
-      if (getL()?.markerClusterGroup) { resolve(); return; }
+      if (getL()?.map) { resolve(); return; }
       const interval = setInterval(() => {
-        if (getL()?.markerClusterGroup) { clearInterval(interval); resolve(); }
+        if (getL()?.map) { clearInterval(interval); resolve(); }
       }, 100);
       setTimeout(() => { clearInterval(interval); resolve(); }, 5000);
     });
