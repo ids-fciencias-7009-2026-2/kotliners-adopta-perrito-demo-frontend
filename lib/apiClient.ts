@@ -183,7 +183,7 @@ async function call<T>(fn: () => Promise<{ data: T }>): Promise<ApiResult<T>> {
       err?.response?.data
         ? typeof err.response.data === "string"
           ? err.response.data
-          : JSON.stringify(err.response.data)
+          : err.response.data.error ?? err.response.data.mensaje ?? JSON.stringify(err.response.data)
         : "No se pudo conectar con el servidor. Verifica tu conexión a internet e intenta de nuevo.";
     return { ok: false, error: msg };
   }
