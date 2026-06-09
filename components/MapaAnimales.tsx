@@ -113,15 +113,15 @@ export default function MapaAnimales({ animales, selectedId, onSelect, onOpenMod
         map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
       }
 
-        // Si no había cluster, reintentar en 1s por si el plugin carga después
-        if (!hasCluster) {
-          retryTimeout = setTimeout(() => {
-            if (typeof L.markerClusterGroup === "function") buildMarkers();
-          }, 1500);
-        }
-      };
+      // Si no había cluster, reintentar por si el plugin carga después
+      if (!hasCluster) {
+        retryTimeout = setTimeout(() => {
+          if (typeof L.markerClusterGroup === "function") buildMarkers();
+        }, 1500);
+      }
+    };
 
-      buildMarkers();
+    buildMarkers();
 
     return () => { if (retryTimeout) clearTimeout(retryTimeout); };
   }, [animales]);
