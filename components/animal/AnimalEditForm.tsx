@@ -47,6 +47,8 @@ export default function AnimalEditForm({ animal, saving, error, onSave, onCancel
     });
   }, []);
 
+  const especieInicial = animal.especie.toLowerCase().includes("gato") ? "Gato" : "Perro";
+
   useEffect(() => {
     const token = getToken();
     if (!token) return;
@@ -54,7 +56,9 @@ export default function AnimalEditForm({ animal, saving, error, onSave, onCancel
     listarRazas(token, especieUpper).then((res) => {
       if (res.ok) setRazasDisponibles(res.data.map((r) => ({ id: r.id, nombreEs: r.nombreEs })).sort((a, b) => a.nombreEs.localeCompare(b.nombreEs)));
     });
-    setForm((p) => ({ ...p, razaId: "", raza: "" }));
+    if (form.especie !== especieInicial) {
+      setForm((p) => ({ ...p, razaId: "", raza: "" }));
+    }
   }, [form.especie]);
 
   const set = (key: string, value: unknown) => setForm((p) => ({ ...p, [key]: value }));
