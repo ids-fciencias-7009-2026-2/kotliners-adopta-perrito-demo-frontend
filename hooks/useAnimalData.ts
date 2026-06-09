@@ -124,6 +124,7 @@ export function useAnimalActions(
       nombre: animalData.nombre,
       especie: animalData.especie,
       raza: animalData.raza ?? undefined,
+      razaId: (animalData as any).razaId ?? undefined,
       fechaNacimiento: animalData.fechaNacimiento,
       sexo: animalData.sexo === "HEMBRA" ? "HEMBRA" : "MACHO",
       descripcion: animalData.descripcion,
