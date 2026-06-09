@@ -87,3 +87,11 @@ export function logout() {
 export function actualizarPerfil(payload: ActualizarPerfilPayload) {
   return apiClient.put('/usuarios', payload)
 }
+
+/**
+ * Verifica el correo electrónico con el token enviado al usuario.
+ * Endpoint: GET /usuarios/verificar-correo?token=xxx
+ */
+export function verificarCorreo(token: string) {
+  return apiClient.get('/usuarios/verificar-correo', { params: { token } })
+}

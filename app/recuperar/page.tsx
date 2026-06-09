@@ -70,7 +70,7 @@ function SolicitarForm() {
               type="email"
               placeholder="tu@correo.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => setEmail(e.target.value.toLowerCase())}
               className="input input-bordered w-full"
               required
             />

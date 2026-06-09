@@ -10,6 +10,24 @@ import { ROUTES } from "@/lib/routes";
 import { PawPrint, UserPlus } from "lucide-react";
 import zxcvbn from "zxcvbn";
 
+const zxcvbnWarnings: Record<string, string> = {
+  "Straight rows of keys are easy to guess": "Las filas de teclas seguidas son fáciles de adivinar",
+  "Short keyboard patterns are easy to guess": "Los patrones cortos de teclado son fáciles de adivinar",
+  "Use a longer keyboard pattern with more turns": "Usa un patrón de teclado más largo con más giros",
+  "Repeats like \"aaa\" are easy to guess": "Las repeticiones como \"aaa\" son fáciles de adivinar",
+  "Repeats like \"abcabcabc\" are only slightly harder to guess than \"abc\"": "Las repeticiones como \"abcabcabc\" son solo un poco más difíciles que \"abc\"",
+  "Sequences like abc or 6543 are easy to guess": "Las secuencias como abc o 6543 son fáciles de adivinar",
+  "Recent years are easy to guess": "Los años recientes son fáciles de adivinar",
+  "Dates are often easy to guess": "Las fechas suelen ser fáciles de adivinar",
+  "This is a top-10 common password": "Esta es una de las 10 contraseñas más comunes",
+  "This is a top-100 common password": "Esta es una de las 100 contraseñas más comunes",
+  "This is a very common password": "Esta es una contraseña muy común",
+  "This is similar to a commonly used password": "Es similar a una contraseña de uso común",
+  "A word by itself is easy to guess": "Una palabra sola es fácil de adivinar",
+  "Names and surnames by themselves are easy to guess": "Los nombres y apellidos solos son fáciles de adivinar",
+  "Common names and surnames are easy to guess": "Los nombres y apellidos comunes son fáciles de adivinar",
+};
+
 // ---------------------------------------------------------------------------
 // Componente Field — definido FUERA del componente padre para evitar
 // que React lo desmonte/remonte en cada render y el input pierda el foco.
@@ -72,8 +90,8 @@ export default function RegistroPage() {
   /** Actualiza el campo del formulario y limpia su error. */
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = e.target;
-    // CURP siempre en mayusculas
-    const finalValue = name === "curp" ? value.toUpperCase() : value;
+    // CURP siempre en mayusculas, email siempre en minusculas
+    const finalValue = name === "curp" ? value.toUpperCase() : name === "email" ? value.toLowerCase() : value;
     setForm((prev) => ({ ...prev, [name]: finalValue }));
     setErrors((prev) => ({ ...prev, [name]: "" }));
   }
@@ -153,7 +171,7 @@ export default function RegistroPage() {
   // Indicador de fortaleza de contraseña
   const pwdResult = form.password.length > 0 ? zxcvbn(form.password) : null;
   const pwdColors = ["progress-error", "progress-error", "progress-warning", "progress-warning", "progress-success"];
-  const pwdLabels = ["Muy debil", "Debil", "Aceptable", "Buena", "Fuerte"];
+  const pwdLabels = ["Muy débil", "Débil", "Aceptable", "Buena", "Fuerte"];
   const pwdLabelColors = ["text-error", "text-error", "text-warning", "text-warning", "text-success"];
 
   return (
@@ -235,7 +253,7 @@ export default function RegistroPage() {
                   </li>
                 </ul>
                 {pwdResult.feedback.warning && (
-                  <p className="text-xs text-warning">{pwdResult.feedback.warning}</p>
+                  <p className="text-xs text-warning">{zxcvbnWarnings[pwdResult.feedback.warning] ?? pwdResult.feedback.warning}</p>
                 )}
               </div>
             )}

@@ -1,16 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import ErrorMessage from "@/components/ErrorMessage";
 import PasswordField from "@/components/PasswordField";
-import { login, verificar2fa, getPerfil } from "@/api/authApi";
+import { login, verificar2fa, getPerfil, verificarCorreo } from "@/api/authApi";
 import { ROUTES } from "@/lib/routes";
-import { PawPrint, LogIn, ShieldCheck } from "lucide-react";
+import { PawPrint, LogIn, ShieldCheck, CheckCircle } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [verificado, setVerificado] = useState(false);
   const [form, setForm] = useState({ username: "", password: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState<string | null>(null);
@@ -21,9 +23,19 @@ export default function LoginPage() {
   const [email2fa, setEmail2fa] = useState("");
   const [codigo, setCodigo] = useState("");
 
+  // Verificar correo si viene con ?verificar=TOKEN
+  useEffect(() => {
+    const token = searchParams.get("verificar");
+    if (!token) return;
+    verificarCorreo(token)
+      .then(() => { setVerificado(true); setServerError(null); })
+      .catch(() => { if (!verificado) setServerError("El enlace de verificación es inválido o ya expiró."); });
+  }, [searchParams]);
+
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-    setErrors((prev) => ({ ...prev, [e.target.name]: "" }));
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: name === "username" ? value.toLowerCase() : value }));
+    setErrors((prev) => ({ ...prev, [name]: "" }));
   }
 
   function validate(): boolean {
@@ -101,6 +113,13 @@ export default function LoginPage() {
               </div>
 
               <ErrorMessage message={serverError} />
+
+              {verificado && (
+                <div className="alert alert-success text-sm">
+                  <CheckCircle size={16} />
+                  <span>Correo verificado. Ya puedes iniciar sesión.</span>
+                </div>
+              )}
 
               <form onSubmit={handleSubmit} className="flex flex-col gap-3" noValidate>
                 <div className="form-control">
