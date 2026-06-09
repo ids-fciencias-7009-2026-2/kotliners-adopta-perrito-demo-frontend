@@ -28,43 +28,33 @@ export default function MapaAnimales({ animales, selectedId, onSelect, onOpenMod
   useEffect(() => {
     if (typeof window === "undefined" || !containerRef.current) return;
 
-    // Esperar a que Leaflet cargue desde CDN
-    const waitForL = () => new Promise<void>((resolve) => {
-      if (getL()?.map) { resolve(); return; }
-      const interval = setInterval(() => {
-        if (getL()?.map) { clearInterval(interval); resolve(); }
-      }, 100);
-      setTimeout(() => { clearInterval(interval); resolve(); }, 5000);
-    });
+    const L = (window as any).L;
+    if (!L) return;
 
     let retryTimeout: any = null;
 
-    waitForL().then(() => {
-      const L = getL();
-      if (!L) return;
+    if (!mapRef.current) {
+      mapRef.current = L.map(containerRef.current, {
+        center: DEFAULT_CENTER,
+        zoom: DEFAULT_ZOOM,
+        zoomControl: true,
+      });
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom: 19,
+      }).addTo(mapRef.current);
+    }
 
-      if (!mapRef.current) {
-        mapRef.current = L.map(containerRef.current!, {
-          center: DEFAULT_CENTER,
-          zoom: DEFAULT_ZOOM,
-          zoomControl: true,
-        });
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-          maxZoom: 19,
-        }).addTo(mapRef.current);
-      }
+    const buildMarkers = () => {
+      const map = mapRef.current;
+      if (!map) return;
+      const hasCluster = typeof L.markerClusterGroup === "function";
 
-      const buildMarkers = () => {
-        const map = mapRef.current;
-        if (!map) return;
-        const hasCluster = typeof L.markerClusterGroup === "function";
-
-        // Limpiar marcadores anteriores
-        if (clusterRef.current) map.removeLayer(clusterRef.current);
-        Object.values(markersRef.current).forEach((m: any) => map.removeLayer(m));
-        markersRef.current = {};
-        clusterRef.current = null;
+      // Limpiar marcadores anteriores
+      if (clusterRef.current) map.removeLayer(clusterRef.current);
+      Object.values(markersRef.current).forEach((m: any) => map.removeLayer(m));
+      markersRef.current = {};
+      clusterRef.current = null;
 
       // Crear cluster group (si el plugin está disponible)
       const cluster = hasCluster ? L.markerClusterGroup({
@@ -132,7 +122,6 @@ export default function MapaAnimales({ animales, selectedId, onSelect, onOpenMod
       };
 
       buildMarkers();
-    });
 
     return () => { if (retryTimeout) clearTimeout(retryTimeout); };
   }, [animales]);
