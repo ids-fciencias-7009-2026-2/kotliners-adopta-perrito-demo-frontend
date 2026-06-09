@@ -52,7 +52,7 @@ export default function AnimalEditForm({ animal, saving, error, onSave, onCancel
     if (!token) return;
     const especieUpper = form.especie.toUpperCase() === "GATO" ? "GATO" : "PERRO";
     listarRazas(token, especieUpper).then((res) => {
-      if (res.ok) setRazasDisponibles(res.data.map((r) => ({ id: r.id, nombreEs: r.nombreEs })));
+      if (res.ok) setRazasDisponibles(res.data.map((r) => ({ id: r.id, nombreEs: r.nombreEs })).sort((a, b) => a.nombreEs.localeCompare(b.nombreEs)));
     });
     setForm((p) => ({ ...p, razaId: "", raza: "" }));
   }, [form.especie]);

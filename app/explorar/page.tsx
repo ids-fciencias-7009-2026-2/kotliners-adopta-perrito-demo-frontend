@@ -106,7 +106,7 @@ export default function ExplorarPage() {
     const token = getToken();
     if (!token) return;
     listarRazas(token, filtroForm.especie.toUpperCase()).then((res) => {
-      if (res.ok) setRazasDisponibles(res.data);
+      if (res.ok) setRazasDisponibles(res.data.sort((a, b) => a.nombreEs.localeCompare(b.nombreEs)));
     });
     setFiltroForm((f) => ({ ...f, razaId: "" }));
     setFiltrosAplicados((prev) => ({ ...prev, razaId: undefined }));
