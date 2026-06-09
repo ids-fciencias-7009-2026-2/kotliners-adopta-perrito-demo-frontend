@@ -34,12 +34,12 @@ export default function MapaAnimales({ animales, selectedId, onSelect, onOpenMod
       const interval = setInterval(() => {
         if (getL()?.markerClusterGroup) { clearInterval(interval); resolve(); }
       }, 100);
-      setTimeout(() => { clearInterval(interval); resolve(); }, 3000);
+      setTimeout(() => { clearInterval(interval); resolve(); }, 5000);
     });
 
     waitForL().then(() => {
       const L = getL();
-      if (!L) return;
+      if (!L || !L.markerClusterGroup) return;
 
       if (!mapRef.current) {
         mapRef.current = L.map(containerRef.current!, {
