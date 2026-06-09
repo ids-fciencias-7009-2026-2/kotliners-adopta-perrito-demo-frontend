@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import ErrorMessage from "@/components/ErrorMessage";
@@ -24,12 +24,14 @@ export default function LoginPage() {
   const [codigo, setCodigo] = useState("");
 
   // Verificar correo si viene con ?verificar=TOKEN
+  const verificarLlamado = useRef(false);
   useEffect(() => {
     const token = searchParams.get("verificar");
-    if (!token) return;
+    if (!token || verificarLlamado.current) return;
+    verificarLlamado.current = true;
     verificarCorreo(token)
       .then(() => { setVerificado(true); setServerError(null); })
-      .catch(() => { if (!verificado) setServerError("El enlace de verificación es inválido o ya expiró."); });
+      .catch(() => setServerError("El enlace de verificación es inválido o ya expiró."));
   }, [searchParams]);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {

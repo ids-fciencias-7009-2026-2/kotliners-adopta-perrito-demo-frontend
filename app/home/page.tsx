@@ -25,7 +25,7 @@ const beneficiosAdoptante = [
   },
   {
     title: "Impacto real",
-    desc: "Cambias una vida para siempre.",
+    desc: "Dale un hogar a quien lo necesita.",
     icon: <PawPrint size={28} className="text-primary" />,
   },
 ];

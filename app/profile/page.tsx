@@ -219,7 +219,7 @@ export default function PerfilPage() {
             {/* Zona de eliminacion de cuenta */}
             <div className="mt-8 border-t border-red-200 pt-6">
               <p className="text-sm text-gray-500 mb-3">
-                Zona de peligro — esta acción no se puede deshacer.
+                Eliminar cuenta — esta acción no se puede deshacer.
               </p>
               {!confirmarEliminar ? (
                 <button

@@ -183,7 +183,7 @@ export default function RegistroPage() {
           <div className="flex flex-col items-center gap-2">
             <PawPrint size={48} className="text-primary" />
             <h1 className="card-title text-2xl">Crear cuenta</h1>
-            <p className="text-base-content/60 text-sm text-center">Únete y ayuda a encontrar hogares felices</p>
+            <p className="text-base-content/60 text-sm text-center">Regístrate para adoptar o publicar mascotas</p>
           </div>
 
           <ErrorMessage message={serverError} />
