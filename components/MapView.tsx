@@ -26,12 +26,14 @@ export default function MapView() {
   }, []);
 
   useEffect(() => {
-    if (!mapRef.current || mapInstance.current || animales.length === 0) return;
+    if (!mapRef.current || mapInstance.current) return;
+    if (animales.length === 0) return;
 
     import("leaflet").then((L) => {
       import("leaflet/dist/leaflet.css");
 
-      const map = L.map(mapRef.current!, { zoomControl: false }).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+      if (!mapRef.current) return;
+      const map = L.map(mapRef.current, { zoomControl: false }).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
       mapInstance.current = map;
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
