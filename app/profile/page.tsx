@@ -139,7 +139,7 @@ export default function PerfilPage() {
             </div>
 
             {/* Alertas */}
-            {error && <div role="alert" className="alert alert-error"><span>{error}</span></div>}
+            {error && <div role="alert" className="alert alert-error text-sm"><span>{error}</span></div>}
             {success && <div role="alert" className="alert alert-success"><span>{success}</span></div>}
 
             {/* Avatar */}
