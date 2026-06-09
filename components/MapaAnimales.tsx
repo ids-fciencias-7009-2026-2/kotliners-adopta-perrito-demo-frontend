@@ -33,6 +33,20 @@ export default function MapaAnimales({ animales, selectedId, onSelect, onOpenMod
 
     let retryTimeout: any = null;
 
+    // Asegurar que el plugin de cluster esté disponible
+    const ensureCluster = (): Promise<void> => {
+      if (typeof L.markerClusterGroup === "function") return Promise.resolve();
+      return new Promise((resolve) => {
+        const script = document.createElement("script");
+        script.src = "https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js";
+        script.onload = () => resolve();
+        script.onerror = () => resolve();
+        document.head.appendChild(script);
+      });
+    };
+
+    ensureCluster().then(() => {
+
     if (!mapRef.current) {
       mapRef.current = L.map(containerRef.current, {
         center: DEFAULT_CENTER,
@@ -112,18 +126,10 @@ export default function MapaAnimales({ animales, selectedId, onSelect, onOpenMod
         const bounds = L.latLngBounds(conCoords.map((a) => [a.latitud as number, a.longitud as number]));
         map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
       }
-
-      // Si no había cluster, reintentar por si el plugin carga después
-      if (!hasCluster) {
-        retryTimeout = setTimeout(() => {
-          if (typeof L.markerClusterGroup === "function") buildMarkers();
-        }, 1500);
-      }
     };
 
     buildMarkers();
-
-    return () => { if (retryTimeout) clearTimeout(retryTimeout); };
+    });
   }, [animales]);
 
   // Actualizar ícono al seleccionar
