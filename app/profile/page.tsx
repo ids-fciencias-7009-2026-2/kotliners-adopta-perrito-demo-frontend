@@ -80,13 +80,16 @@ export default function PerfilPage() {
         fotoPerfil: form.fotoPerfil ?? undefined,
       });
       if (!res.ok) { setError(res.error); return; }
+      const emailCambio = usuario?.email !== form.email;
       sessionStorage.setItem("usuario", JSON.stringify(res.data));
       window.dispatchEvent(new Event("perfil:actualizado"));
       setUsuario(res.data);
       setForm({ ...res.data, fotoPerfil: res.data.fotoPerfil ?? null });
-      setSuccess("Perfil actualizado correctamente");
+      setSuccess(emailCambio
+        ? "Perfil actualizado. El cambio de correo no será efectivo hasta que confirmes desde tu nuevo correo."
+        : "Perfil actualizado correctamente");
       setEditing(false);
-      setTimeout(() => setSuccess(null), 3000);
+      if (!emailCambio) setTimeout(() => setSuccess(null), 3000);
     } catch {
       setError("Error inesperado");
     } finally {
