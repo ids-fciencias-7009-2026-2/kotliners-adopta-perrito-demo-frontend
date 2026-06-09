@@ -53,6 +53,7 @@ export default function LoginPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setServerError(null);
+    setVerificado(false);
     if (!validate()) return;
     setLoading(true);
     try {
