@@ -56,8 +56,9 @@ export default function MapaAnimales({ animales, selectedId, onSelect, onOpenMod
 
       const map = mapRef.current;
 
-      // Limpiar cluster anterior
+      // Limpiar marcadores anteriores
       if (clusterRef.current) map.removeLayer(clusterRef.current);
+      Object.values(markersRef.current).forEach((m: any) => map.removeLayer(m));
       markersRef.current = {};
 
       // Crear cluster group (si el plugin está disponible)
