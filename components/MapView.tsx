@@ -53,7 +53,7 @@ export default function MapView() {
           radius: 6, fillColor: "#65c3c8", fillOpacity: 0.8, color: "#fff", weight: 1,
         }).addTo(map);
 
-        marker.on("click", () => router.push("/explorar"));
+        marker.on("click", () => router.push(`/explorar?animal=${a.id}`));
       });
 
       if (bounds.length > 0) {

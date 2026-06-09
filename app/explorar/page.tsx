@@ -1,6 +1,8 @@
 "use client";
+"use client";
 
 import { useState, useCallback, useEffect, lazy, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import AnimalCard from "@/components/AnimalCard";
 import RangeSlider from "@/components/RangeSlider";
 import { useAnimalList } from "@/hooks/useAnimalData";
@@ -83,11 +85,12 @@ function toFiltrosBackend(form: FiltroForm): FiltrosAnimales {
 }
 
 export default function ExplorarPage() {
+  const searchParams = useSearchParams();
   const [filtroForm, setFiltroForm] = useState<FiltroForm>(FILTRO_INICIAL);
   const [filtrosAplicados, setFiltrosAplicados] = useState<FiltrosAnimales>({});
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [modalId, setModalId] = useState<string | null>(null);
+  const [modalId, setModalId] = useState<string | null>(searchParams.get("animal"));
 
   const { animals: animales, loading, error, rol: rolUsuario } = useAnimalList(filtrosAplicados);
 
