@@ -81,7 +81,7 @@ export default function RegistroPage() {
   const [form, setForm] = useState({
     nombres: "", curp: "", username: "", apellidoPaterno: "",
     apellidoMaterno: "", email: "", codigoPostal: "", password: "",
-    rol: "ADOPTANTE",
+    confirmPassword: "", rol: "ADOPTANTE",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState<string | null>(null);
@@ -140,6 +140,7 @@ export default function RegistroPage() {
     else if (!/[a-z]/.test(form.password)) newErrors.password = "Debe incluir al menos una letra minúscula.";
     else if (!/[0-9]/.test(form.password)) newErrors.password = "Debe incluir al menos un número.";
     else if (!/[^A-Za-z0-9]/.test(form.password)) newErrors.password = "Debe incluir al menos un carácter especial (!@#$%...).";
+    if (form.password && form.confirmPassword !== form.password) newErrors.confirmPassword = "Las contraseñas no coinciden.";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }
@@ -222,6 +223,15 @@ export default function RegistroPage() {
               onChange={handleChange}
               error={errors.password}
               placeholder="Mínimo 8 caracteres"
+            />
+
+            <PasswordField
+              name="confirmPassword"
+              label="Repetir contraseña"
+              value={form.confirmPassword}
+              onChange={handleChange}
+              error={errors.confirmPassword}
+              placeholder="Repite tu contraseña"
             />
 
             {/* Indicador de fortaleza de contraseña */}
