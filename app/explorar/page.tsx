@@ -206,7 +206,7 @@ export default function ExplorarPage() {
                     <option value="fechaNacimiento">Edad</option>
                     <option value="distancia">Distancia</option>
                   </select>
-                  <div className="tooltip" data-tip={filtroForm.ordenDesc ? "Orden descendente (click para ascendente)" : "Orden ascendente (click para descendente)"}>
+                  <div className="tooltip" data-tip={filtroForm.ordenDesc ? "Descendente" : "Ascendente"}>
                     <button type="button"
                       onClick={() => setFiltroForm((f) => ({ ...f, ordenDesc: !f.ordenDesc }))}
                       className="btn btn-sm btn-square btn-outline">
