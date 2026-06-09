@@ -37,10 +37,11 @@ export default function MapaAnimales({ animales, selectedId, onSelect, onOpenMod
       setTimeout(() => { clearInterval(interval); resolve(); }, 5000);
     });
 
+    let retryTimeout: any = null;
+
     waitForL().then(() => {
       const L = getL();
       if (!L) return;
-      const hasCluster = typeof L.markerClusterGroup === "function";
 
       if (!mapRef.current) {
         mapRef.current = L.map(containerRef.current!, {
@@ -54,12 +55,16 @@ export default function MapaAnimales({ animales, selectedId, onSelect, onOpenMod
         }).addTo(mapRef.current);
       }
 
-      const map = mapRef.current;
+      const buildMarkers = () => {
+        const map = mapRef.current;
+        if (!map) return;
+        const hasCluster = typeof L.markerClusterGroup === "function";
 
-      // Limpiar marcadores anteriores
-      if (clusterRef.current) map.removeLayer(clusterRef.current);
-      Object.values(markersRef.current).forEach((m: any) => map.removeLayer(m));
-      markersRef.current = {};
+        // Limpiar marcadores anteriores
+        if (clusterRef.current) map.removeLayer(clusterRef.current);
+        Object.values(markersRef.current).forEach((m: any) => map.removeLayer(m));
+        markersRef.current = {};
+        clusterRef.current = null;
 
       // Crear cluster group (si el plugin está disponible)
       const cluster = hasCluster ? L.markerClusterGroup({
@@ -117,7 +122,19 @@ export default function MapaAnimales({ animales, selectedId, onSelect, onOpenMod
         const bounds = L.latLngBounds(conCoords.map((a) => [a.latitud as number, a.longitud as number]));
         map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
       }
+
+        // Si no había cluster, reintentar en 1s por si el plugin carga después
+        if (!hasCluster) {
+          retryTimeout = setTimeout(() => {
+            if (typeof L.markerClusterGroup === "function") buildMarkers();
+          }, 1500);
+        }
+      };
+
+      buildMarkers();
     });
+
+    return () => { if (retryTimeout) clearTimeout(retryTimeout); };
   }, [animales]);
 
   // Actualizar ícono al seleccionar
