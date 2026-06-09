@@ -1,6 +1,7 @@
 "use client";
 
 import zxcvbn from "zxcvbn";
+import { Check, X } from "lucide-react";
 
 const warnings: Record<string, string> = {
   "Straight rows of keys are easy to guess": "Las filas de teclas seguidas son fáciles de adivinar",
@@ -34,20 +35,20 @@ export default function PasswordStrength({ password }: { password: string }) {
       <progress className={`progress w-full ${colors[result.score]}`} value={result.score + 1} max={5} />
       <p className={`text-xs font-semibold ${labelColors[result.score]}`}>{labels[result.score]}</p>
       <ul className="text-xs text-base-content/60 flex flex-wrap gap-x-4 gap-y-1">
-        <li className={password.length >= 8 ? "text-success" : "text-error"}>
-          {password.length >= 8 ? "✓" : "✗"} Mínimo 8 caracteres
+        <li className={`flex items-center gap-1 ${password.length >= 8 ? "text-success" : "text-error"}`}>
+          {password.length >= 8 ? <Check size={12} /> : <X size={12} />} Mínimo 8 caracteres
         </li>
-        <li className={/[A-Z]/.test(password) ? "text-success" : "text-error"}>
-          {/[A-Z]/.test(password) ? "✓" : "✗"} Una mayúscula
+        <li className={`flex items-center gap-1 ${/[A-Z]/.test(password) ? "text-success" : "text-error"}`}>
+          {/[A-Z]/.test(password) ? <Check size={12} /> : <X size={12} />} Una mayúscula
         </li>
-        <li className={/[a-z]/.test(password) ? "text-success" : "text-error"}>
-          {/[a-z]/.test(password) ? "✓" : "✗"} Una minúscula
+        <li className={`flex items-center gap-1 ${/[a-z]/.test(password) ? "text-success" : "text-error"}`}>
+          {/[a-z]/.test(password) ? <Check size={12} /> : <X size={12} />} Una minúscula
         </li>
-        <li className={/[0-9]/.test(password) ? "text-success" : "text-error"}>
-          {/[0-9]/.test(password) ? "✓" : "✗"} Un número
+        <li className={`flex items-center gap-1 ${/[0-9]/.test(password) ? "text-success" : "text-error"}`}>
+          {/[0-9]/.test(password) ? <Check size={12} /> : <X size={12} />} Un número
         </li>
-        <li className={/[^A-Za-z0-9]/.test(password) ? "text-success" : "text-error"}>
-          {/[^A-Za-z0-9]/.test(password) ? "✓" : "✗"} Un carácter especial
+        <li className={`flex items-center gap-1 ${/[^A-Za-z0-9]/.test(password) ? "text-success" : "text-error"}`}>
+          {/[^A-Za-z0-9]/.test(password) ? <Check size={12} /> : <X size={12} />} Un carácter especial
         </li>
       </ul>
       {result.feedback.warning && (
