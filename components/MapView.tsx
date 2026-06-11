@@ -29,39 +29,48 @@ export default function MapView() {
     if (!mapRef.current || mapInstance.current) return;
     if (animales.length === 0) return;
 
+    let cancelled = false;
+
     import("leaflet").then((L) => {
       import("leaflet/dist/leaflet.css");
 
-      if (!mapRef.current || mapInstance.current) return;
-      const map = L.map(mapRef.current, { zoomControl: false }).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
-      mapInstance.current = map;
+      if (cancelled || !mapRef.current || mapInstance.current) return;
 
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "&copy; OpenStreetMap",
-      }).addTo(map);
+      // Esperar a que el contenedor tenga dimensiones reales
+      setTimeout(() => {
+        if (cancelled || !mapRef.current || mapInstance.current) return;
 
-      const bounds: [number, number][] = [];
+        const map = L.map(mapRef.current, { zoomControl: false }).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+        mapInstance.current = map;
 
-      animales.forEach((a) => {
-        if (!a.latitud || !a.longitud) return;
-        const lat = parseFloat(String(a.latitud));
-        const lng = parseFloat(String(a.longitud));
-        if (isNaN(lat) || isNaN(lng)) return;
-        bounds.push([lat, lng]);
-
-        const marker = L.circleMarker([lat, lng], {
-          radius: 6, fillColor: "#65c3c8", fillOpacity: 0.8, color: "#fff", weight: 1,
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: "&copy; OpenStreetMap",
         }).addTo(map);
 
-        marker.on("click", () => router.push(`/explorar?animal=${a.id}`));
-      });
+        const bounds: [number, number][] = [];
 
-      if (bounds.length > 0) {
-        map.fitBounds(bounds, { padding: [30, 30], maxZoom: 12 });
-      }
+        animales.forEach((a) => {
+          if (!a.latitud || !a.longitud) return;
+          const lat = parseFloat(String(a.latitud));
+          const lng = parseFloat(String(a.longitud));
+          if (isNaN(lat) || isNaN(lng)) return;
+          bounds.push([lat, lng]);
+
+          const marker = L.circleMarker([lat, lng], {
+            radius: 6, fillColor: "#65c3c8", fillOpacity: 0.8, color: "#fff", weight: 1,
+          }).addTo(map);
+
+          marker.on("click", () => router.push(`/explorar?animal=${a.id}`));
+        });
+
+        if (bounds.length > 0) {
+          map.fitBounds(bounds, { padding: [30, 30], maxZoom: 12, animate: false });
+        }
+      }, 100);
     });
 
     return () => {
+      cancelled = true;
       if (mapInstance.current) {
         mapInstance.current.remove();
         mapInstance.current = null;

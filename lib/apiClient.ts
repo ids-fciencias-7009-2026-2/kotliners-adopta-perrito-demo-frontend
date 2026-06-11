@@ -127,6 +127,7 @@ export interface AnimalResponse {
   longitud: number | null;
   cuidadorUsername: string | null;
   cuidadorFoto: string | null;
+  codigoPostal: string | null;
 }
 
 export interface AnimalDetalleResponse extends AnimalResponse {
