@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import MultiSelect from "@/components/MultiSelect";
 import GaleriaUpload from "@/components/GaleriaUpload";
+import DatePicker from "@/components/DatePicker";
 import { listarVacunas, listarPadecimientos, listarRazas } from "@/lib/apiClient";
 import { getToken } from "@/lib/session";
 import type { AnimalDetalleResponse } from "@/lib/apiClient";
@@ -98,8 +99,7 @@ export default function AnimalEditForm({ animal, saving, error, onSave, onCancel
           </select>
         </div>
         <div className="form-control">
-          <label className="label"><span className="label-text">Fecha de nacimiento</span></label>
-          <input type="date" className="input input-bordered w-full" value={form.fechaNacimiento} onChange={(e) => set("fechaNacimiento", e.target.value)} />
+          <DatePicker label="Fecha de nacimiento" value={form.fechaNacimiento} onChange={(v) => set("fechaNacimiento", v)} />
         </div>
         <div className="form-control">
           <label className="label"><span className="label-text">Sexo</span></label>

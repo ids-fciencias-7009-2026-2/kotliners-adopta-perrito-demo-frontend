@@ -80,7 +80,12 @@ export default function AdminPage() {
     acc[r.animalId].push(r);
     return acc;
   }, {} as Record<string, ReporteResponse[]>);
-  const agrupados = Object.entries(grouped).sort(([, a], [, b]) => b.length - a.length);
+  const agrupados = Object.entries(grouped).sort(([, a], [, b]) => {
+    if (b.length !== a.length) return b.length - a.length;
+    const fechaA = Math.max(...a.map((r) => new Date(r.fecha).getTime()));
+    const fechaB = Math.max(...b.map((r) => new Date(r.fecha).getTime()));
+    return fechaB - fechaA;
+  });
 
   return (
     <div className="min-h-screen bg-base-200 p-4 md:p-8">
@@ -121,6 +126,7 @@ export default function AdminPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <span className="badge badge-error">{reportesAnimal.length} reporte{reportesAnimal.length > 1 ? "s" : ""}</span>
+                        <span className="font-semibold text-sm">{reportesAnimal[0].nombreAnimal ?? "Animal"}</span>
                         <button
                           onClick={() => setAnimalPreview(animalId)}
                           className="link link-primary text-xs"
@@ -187,20 +193,20 @@ export default function AdminPage() {
           rolUsuario="ADMINISTRADOR"
           onClose={() => setAnimalPreview(null)}
           extraFooter={
-            <div className="flex gap-2 justify-end">
+            <>
               <button
                 onClick={() => { setAnimalPreview(null); const r = reportes.find((x) => x.animalId === animalPreview); if (r) setConfirmAction({ id: r.id, type: "resolver" }); }}
-                className="btn btn-error btn-sm gap-1"
+                className="btn btn-error gap-2"
               >
-                <Trash2 size={14} /> Eliminar publicación
+                <Trash2 size={16} /> Eliminar publicación
               </button>
               <button
                 onClick={() => { setAnimalPreview(null); const r = reportes.find((x) => x.animalId === animalPreview); if (r) setConfirmAction({ id: r.id, type: "desestimar" }); }}
-                className="btn btn-ghost btn-sm gap-1"
+                className="btn btn-outline gap-2"
               >
-                <XCircle size={14} /> Desestimar
+                <XCircle size={16} /> Desestimar
               </button>
-            </div>
+            </>
           }
         />
       )}

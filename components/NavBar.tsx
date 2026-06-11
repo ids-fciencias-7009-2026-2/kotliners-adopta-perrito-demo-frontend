@@ -12,7 +12,7 @@ import { getProfileImage } from "@/lib/cloudinary";
 import AvatarCircle from "@/components/AvatarCircle";
 
 /** Barra de navegacion principal. Solo visible en rutas protegidas. */
-export default function NavBar() {
+export default function NavBar({ minimal = false }: { minimal?: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
   const [usuario, setUsuario] = useState<any>(null);
@@ -71,6 +71,8 @@ export default function NavBar() {
           Colitas Felices
         </Link>
       </div>
+
+      {minimal ? <div className="navbar-end" /> : (<>
 
       {/* Menu central — solo desktop */}
       <div className="navbar-center hidden lg:flex">
@@ -162,6 +164,7 @@ export default function NavBar() {
           </ul>
         </div>
       </div>
+      </>)}
     </div>
   );
 }

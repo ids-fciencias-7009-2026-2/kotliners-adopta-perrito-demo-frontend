@@ -43,7 +43,7 @@ La app estara disponible en `http://localhost:3000`.
 | @cloudinary/react | 1.14.4 | Imagenes optimizadas |
 | @cloudinary/url-gen | 1.22.0 | Transformaciones Cloudinary |
 | axios | ^1.15.0 | HTTP client |
-| zxcvbn | 4.4.2 | Validacion de contrasenas |
+| zxcvbn | 4.4.2 | Validacion de contraseñas |
 
 ## Notas importantes
 

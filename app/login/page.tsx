@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import ErrorMessage from "@/components/ErrorMessage";
 import PasswordField from "@/components/PasswordField";
-import { login, verificar2fa, getPerfil, verificarCorreo } from "@/api/authApi";
+import { login, verificar2fa, getPerfil, verificarCorreo, reenviarVerificacion } from "@/api/authApi";
 import { ROUTES } from "@/lib/routes";
 import { PawPrint, LogIn, ShieldCheck, CheckCircle } from "lucide-react";
 
@@ -66,7 +66,7 @@ export default function LoginPage() {
       const status = err?.response?.status;
       const msg = err?.response?.data;
       if (status === 423) setServerError("Tu cuenta está bloqueada temporalmente por múltiples intentos fallidos. Intenta en 15 minutos.");
-      else if (status === 403) setServerError("Debes verificar tu correo antes de iniciar sesión. Revisa tu bandeja de entrada.");
+      else if (status === 403) { setServerError("CORREO_NO_VERIFICADO"); }
       else setServerError(typeof msg === "string" ? msg : "No pudimos iniciar sesión. Verifica tu correo y contraseña.");
     } finally {
       setLoading(false);
@@ -88,6 +88,7 @@ export default function LoginPage() {
       document.cookie = "user_session=1; path=/; SameSite=Strict";
       const perfilResponse = await getPerfil();
       sessionStorage.setItem("usuario", JSON.stringify(perfilResponse.data));
+      window.dispatchEvent(new Event("perfil:actualizado"));
       const destino = perfilResponse.data.rol === "ADMINISTRADOR" ? ROUTES.ADMIN : ROUTES.HOME;
       router.push(destino);
     } catch (err: any) {
@@ -115,7 +116,21 @@ export default function LoginPage() {
                 <p className="text-base-content/60 text-sm text-center">Inicia sesión en Colitas Felices</p>
               </div>
 
-              <ErrorMessage message={serverError} />
+              <ErrorMessage message={serverError === "CORREO_NO_VERIFICADO" ? null : serverError} />
+
+              {serverError === "CORREO_NO_VERIFICADO" && (
+                <div role="alert" className="alert alert-error text-sm">
+                  <span>Debes verificar tu correo antes de iniciar sesión.{" "}
+                    <button type="button" className="link underline hover:opacity-70" onClick={async (e) => {
+                      const btn = e.currentTarget;
+                      btn.textContent = "Enviando...";
+                      btn.disabled = true;
+                      await reenviarVerificacion(form.username);
+                      setServerError("Te reenviamos el correo de verificación. Revisa tu bandeja.");
+                    }}>Reenviar código</button>
+                  </span>
+                </div>
+              )}
 
               {verificado && (
                 <div className="alert alert-success text-sm">

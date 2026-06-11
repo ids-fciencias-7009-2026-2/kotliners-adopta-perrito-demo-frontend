@@ -19,7 +19,7 @@ apiClient.interceptors.request.use((config) => {
 })
 
 /**
- * Interceptor de response: si el backend devuelve 401 o 403,
+ * Interceptor de response: si el backend devuelve 401,
  * emite el evento "session:expired" usando el patron observador.
  * Los componentes suscritos reaccionan limpiando la sesión y redirigiendo.
  */
@@ -28,7 +28,7 @@ apiClient.interceptors.response.use(
   (error) => {
     if (typeof window !== 'undefined') {
       const status = error?.response?.status
-      if (status === 401 || status === 403) {
+      if (status === 401) {
         sessionEvents.emit('session:expired')
       }
     }

@@ -50,8 +50,9 @@ export default function FavoritosPage() {
     listarIntereses(token).then((res) => {
       if (!res.ok) setError(res.error);
       else {
-        setAnimales(res.data);
-        setInteresIds(new Set(res.data.map((a) => a.animalId)));
+        const sorted = res.data.sort((a, b) => new Date(b.fechaInteres).getTime() - new Date(a.fechaInteres).getTime());
+        setAnimales(sorted);
+        setInteresIds(new Set(sorted.map((a) => a.animalId)));
       }
       setLoading(false);
     });
@@ -90,6 +91,12 @@ export default function FavoritosPage() {
                   rolUsuario={rolUsuario}
                   tieneInteres={interesIds.has(animal.animalId)}
                   allowRemove={true}
+                  onInteresChange={(id, tiene) => {
+                    if (!tiene) {
+                      setAnimales((prev) => prev.filter((a) => a.animalId !== id));
+                      setInteresIds((prev) => { const s = new Set(prev); s.delete(id); return s; });
+                    }
+                  }}
                 />
                 {/* Fecha de interes debajo de la tarjeta */}
                 <p className="text-xs text-base-content/40 text-center">

@@ -46,9 +46,20 @@ export function useRouteGuard(): boolean {
             return;
         }
 
-        // Con token en ruta publica — redirigir al home
+        // Con token en ruta publica — validar y redirigir al home solo si es válido
         if (isPublicRoute && !!token) {
-            router.replace(ROUTES.HOME);
+            obtenerPerfil(token).then((res) => {
+                if (res.ok) {
+                    router.replace(ROUTES.HOME);
+                } else {
+                    // Token inválido — limpiar y dejar al usuario en la ruta pública
+                    removeToken();
+                    sessionStorage.removeItem("usuario");
+                    setChecking(false);
+                }
+            }).catch(() => {
+                setChecking(false);
+            });
             return;
         }
 
@@ -65,6 +76,18 @@ export function useRouteGuard(): boolean {
                 if (!res.ok) {
                     handleSessionExpired();
                 } else {
+                    // Restricción por rol
+                    const rol = res.data.rol;
+                    const adminOnly = [ROUTES.ADMIN];
+                    const noAdmin = [ROUTES.EXPLORAR, ROUTES.FAVORITOS, ROUTES.MIS_MASCOTAS, ROUTES.PUBLICAR, ROUTES.HOME];
+                    if (rol === "ADMINISTRADOR" && noAdmin.some((r) => pathname.startsWith(r))) {
+                        router.replace(ROUTES.ADMIN);
+                        return;
+                    }
+                    if (rol !== "ADMINISTRADOR" && adminOnly.some((r) => pathname.startsWith(r))) {
+                        router.replace(ROUTES.HOME);
+                        return;
+                    }
                     lastValidatedPath.current = pathname;
                     setChecking(false);
                 }
