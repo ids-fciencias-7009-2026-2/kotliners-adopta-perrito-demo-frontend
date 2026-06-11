@@ -140,6 +140,11 @@ function Compact({ animal, rolUsuario, userId, tieneInteres = false, actions, on
           <p className="text-base-content/60 text-sm mt-1">
             {animalLocal.especie}{animalLocal.raza ? ` · ${animalLocal.raza}` : ""} · {edad}
           </p>
+          {animalLocal.codigoPostal && (
+            <p className="text-base-content/40 text-xs mt-0.5">
+              CP: {animalLocal.codigoPostal}
+            </p>
+          )}
           <p className="text-base-content/40 text-xs mt-0.5">
             Nacimiento: {new Date(animalLocal.fechaNacimiento + "T12:00:00").toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" })}
           </p>
@@ -251,6 +256,11 @@ function Detail({ animal, rolUsuario, userId, tieneInteres = false, actions, ext
           <p className="text-base-content/40 text-xs mt-1">
             Publicado: {new Date(animal.fechaRegistro).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })}
           </p>
+          {animal.codigoPostal && (
+            <p className="text-base-content/40 text-xs mt-1">
+              CP: {animal.codigoPostal}
+            </p>
+          )}
           {esDueno && (
             <button
               onClick={() => setShowInteresadosDetail(true)}
