@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { AdvancedImage } from "@cloudinary/react";
 import { getOptimizedImage } from "@/lib/cloudinary";
 import { subirFotoAnimal, eliminarFotoAnimal } from "@/lib/apiClient";
@@ -11,6 +11,7 @@ interface GaleriaUploadProps {
   animalId: string;
   fotos: string[];
   onFotosChange: (fotos: string[]) => void;
+  onUploadingChange?: (uploading: boolean) => void;
 }
 
 /**
@@ -19,10 +20,14 @@ interface GaleriaUploadProps {
  * - Permite subir nuevas fotos (multiples a la vez)
  * - Permite eliminar fotos existentes
  */
-export default function GaleriaUpload({ animalId, fotos, onFotosChange }: GaleriaUploadProps) {
+export default function GaleriaUpload({ animalId, fotos, onFotosChange, onUploadingChange }: GaleriaUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deletingUrl, setDeletingUrl] = useState<string | null>(null);
+
+  // Ref para siempre tener el valor actual de fotos en callbacks async
+  const fotosRef = useRef(fotos);
+  useEffect(() => { fotosRef.current = fotos; }, [fotos]);
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
@@ -32,21 +37,24 @@ export default function GaleriaUpload({ animalId, fotos, onFotosChange }: Galeri
 
     setUploading(true);
     setError(null);
+    onUploadingChange?.(true);
 
     const nuevasUrls: string[] = [];
     for (const file of files) {
       const res = await subirFotoAnimal(token, animalId, file);
       if (res.ok) {
         nuevasUrls.push(res.data.url);
-      } else {
+      } else if (res.error !== "SESSION_EXPIRED") {
         setError(`Error al subir ${file.name}: ${res.error}`);
       }
     }
 
     if (nuevasUrls.length > 0) {
-      onFotosChange([...fotos, ...nuevasUrls]);
+      // Usar fotosRef.current para obtener el estado más reciente
+      onFotosChange([...fotosRef.current, ...nuevasUrls]);
     }
     setUploading(false);
+    onUploadingChange?.(false);
     // Reset input
     e.target.value = "";
   }
@@ -57,9 +65,14 @@ export default function GaleriaUpload({ animalId, fotos, onFotosChange }: Galeri
     setDeletingUrl(url);
     const res = await eliminarFotoAnimal(token, animalId, url);
     if (res.ok) {
-      onFotosChange(fotos.filter((f) => f !== url));
-    } else {
-      setError(res.error);
+      onFotosChange(fotosRef.current.filter((f) => f !== url));
+    } else if (res.error !== "SESSION_EXPIRED") {
+      // Si la foto ya no existe en el backend, quitarla del estado local también
+      if (res.error.includes("no encontr") || res.error.includes("no existe")) {
+        onFotosChange(fotosRef.current.filter((f) => f !== url));
+      } else {
+        setError(res.error);
+      }
     }
     setDeletingUrl(null);
   }

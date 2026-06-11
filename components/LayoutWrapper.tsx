@@ -24,11 +24,11 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     const checkingAuth = useRouteGuard();
     if (!mounted || checkingAuth) return <Loader />;
 
-    const hideNavbar = pathname === "/login" || pathname === "/registro";
+    const minimalNavbar = pathname === "/login" || pathname === "/registro" || pathname === "/recuperar";
 
     return (
         <>
-        {!hideNavbar && <NavBar />}
+        <NavBar minimal={minimalNavbar} />
         {children}
         </>
     );

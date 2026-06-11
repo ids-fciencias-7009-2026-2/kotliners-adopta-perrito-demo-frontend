@@ -29,6 +29,7 @@ interface BaseProps {
   onDeleted?: (id: string) => void;
   onUpdated?: (animal: AnimalResponse) => void;
   allowRemove?: boolean;
+  onInteresChange?: (animalId: string, tieneInteres: boolean) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -44,7 +45,7 @@ function InteresadosModal({ animalId, nombreAnimal, onClose }: { animalId: strin
     if (!token) return;
     import("@/lib/apiClient").then(({ listarInteresadosPorAnimal }) => {
       listarInteresadosPorAnimal(token, animalId).then((res) => {
-        if (res.ok) setInteresados(res.data);
+        if (res.ok) setInteresados(res.data.sort((a: any, b: any) => new Date(a.fechaInteres).getTime() - new Date(b.fechaInteres).getTime()));
         setLoading(false);
       });
     });
@@ -73,6 +74,7 @@ function InteresadosModal({ animalId, nombreAnimal, onClose }: { animalId: strin
                 <div>
                   <p className="font-medium text-sm">{i.nombreAdoptante}</p>
                   <p className="text-xs text-base-content/40">{i.emailAdoptante}</p>
+                  <p className="text-xs text-base-content/40">Interesado desde: {new Date(i.fechaInteres).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" })}</p>
                 </div>
               </div>
             ))}
@@ -86,7 +88,7 @@ function InteresadosModal({ animalId, nombreAnimal, onClose }: { animalId: strin
 
 // ---------------------------------------------------------------------------
 
-function Compact({ animal, rolUsuario, userId, tieneInteres = false, actions, onDeleted, onUpdated, allowRemove = false }: BaseProps & { animal: AnimalResponse }) {
+function Compact({ animal, rolUsuario, userId, tieneInteres = false, actions, onDeleted, onUpdated, allowRemove = false, onInteresChange }: BaseProps & { animal: AnimalResponse }) {
   const [animalLocal, setAnimalLocal] = useState(animal);
   const [modalOpen, setModalOpen] = useState(false);
   const [deleted, setDeleted] = useState(false);
@@ -169,6 +171,7 @@ function Compact({ animal, rolUsuario, userId, tieneInteres = false, actions, on
                         estatus={animalLocal.estatus}
                         rolUsuario={rolUsuario}
                         allowRemove={allowRemove}
+                        onInteresChange={(tiene) => onInteresChange?.(animalLocal.id, tiene)}
                     />
 
                     <BotonFlag
@@ -192,7 +195,7 @@ function Compact({ animal, rolUsuario, userId, tieneInteres = false, actions, on
           onUpdated={(updated, detalle) => {
             const withFoto = {
               ...updated,
-              fotoPortada: detalle?.fotos?.[0] ?? updated.fotoPortada ?? animalLocal.fotoPortada ?? null,
+              fotoPortada: detalle?.fotos?.length ? detalle.fotos[0] : (detalle ? null : updated.fotoPortada ?? animalLocal.fotoPortada ?? null),
               numInteresados: (updated as any).numInteresados ?? (animalLocal as any)?.numInteresados ?? 0,
             };
             setAnimalLocal(withFoto);
@@ -215,7 +218,7 @@ function Compact({ animal, rolUsuario, userId, tieneInteres = false, actions, on
 // AnimalCard.Detail
 // ---------------------------------------------------------------------------
 
-function Detail({ animal, rolUsuario, userId, tieneInteres = false, actions }: BaseProps & { animal: AnimalDetalleResponse }) {
+function Detail({ animal, rolUsuario, userId, tieneInteres = false, actions, extraActions }: BaseProps & { animal: AnimalDetalleResponse; extraActions?: React.ReactNode }) {
   const esDueno = rolUsuario === "CUIDADOR" && animal.usuarioId === userId;
   const esAdoptado = animal.estatus === "ADOPTADO";
   const [showInteresadosDetail, setShowInteresadosDetail] = useState(false);
@@ -298,6 +301,10 @@ function Detail({ animal, rolUsuario, userId, tieneInteres = false, actions }: B
             {actions?.onToggleAdoptado && <button onClick={() => actions.onToggleAdoptado!(animal.id)} className={`btn gap-2 ${esAdoptado ? "btn-outline" : "btn-success"}`}><CheckCircle size={16} />{esAdoptado ? "Desmarcar adoptado" : "Marcar como adoptado"}</button>}
             {actions?.onDelete && <button onClick={() => actions.onDelete!(animal.id)} className="btn btn-error gap-2"><Trash2 size={16} /> Eliminar</button>}
           </div>
+        ) : extraActions ? (
+          <div className="flex flex-wrap gap-2">
+            {extraActions}
+          </div>
         ) : (
           <BotonInteres animalId={animal.id} nombreAnimal={animal.nombre} tieneInteres={tieneInteres} estatus={animal.estatus} rolUsuario={rolUsuario} />
         )}
@@ -369,8 +376,7 @@ function DetailModal({ animalId, rolUsuario, userId: userIdProp, onClose, onDele
           </div>
         ) : (
           <div className="overflow-y-auto max-h-[85vh]">
-            <Detail animal={animalData} rolUsuario={rolUsuario} userId={userId} tieneInteres={tieneInteres} actions={actions} />
-            {extraFooter && <div className="p-4 border-t">{extraFooter}</div>}
+            <Detail animal={animalData} rolUsuario={rolUsuario} userId={userId} tieneInteres={tieneInteres} actions={actions} extraActions={extraFooter} />
           </div>
         )}
         <button onClick={onClose} className="absolute top-3 right-3 btn btn-circle btn-sm btn-ghost bg-base-100/80"><X size={16} /></button>

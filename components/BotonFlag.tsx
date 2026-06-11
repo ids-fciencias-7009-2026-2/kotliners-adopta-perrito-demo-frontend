@@ -19,13 +19,14 @@ export default function BotonFlag({ animalId, nombreAnimal, rolUsuario }: BotonF
   const [successOpen, setSuccessOpen] = useState(false);
   const [motivo, setMotivo] = useState("");
 
-  if (rolUsuario === "CUIDADOR") return null;
-
   useEffect(() => {
+    if (rolUsuario === "CUIDADOR" || rolUsuario === "ADMINISTRADOR") return;
     checkReporte(animalId).then((res) => {
       if (res.ok && res.data.reportado) setReportado(true);
     });
-  }, [animalId]);
+  }, [animalId, rolUsuario]);
+
+  if (rolUsuario === "CUIDADOR" || rolUsuario === "ADMINISTRADOR") return null;
 
   async function handleSubmit() {
     if (!motivo.trim()) return;
@@ -37,7 +38,13 @@ export default function BotonFlag({ animalId, nombreAnimal, rolUsuario }: BotonF
       setModalOpen(false);
       setSuccessOpen(true);
     } else {
-      setError(res.error);
+      const msg = res.error.toLowerCase();
+      if (msg.includes("no existe") || msg.includes("eliminad")) {
+        setModalOpen(false);
+        setError("Esta publicación ya no existe.");
+      } else {
+        setError(res.error);
+      }
     }
     setLoading(false);
   }
@@ -49,7 +56,13 @@ export default function BotonFlag({ animalId, nombreAnimal, rolUsuario }: BotonF
     if (res.ok) {
       setReportado(false);
     } else {
-      setError(res.error);
+      // Si el reporte ya no existe (admin lo resolvió/desestimó), simplemente actualizar UI
+      const msg = res.error.toLowerCase();
+      if (msg.includes("no tienes") || msg.includes("no encontr") || msg.includes("no existe")) {
+        setReportado(false);
+      } else {
+        setError(res.error);
+      }
     }
     setLoading(false);
   }

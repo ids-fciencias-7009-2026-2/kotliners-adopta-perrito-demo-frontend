@@ -24,12 +24,12 @@ http.interceptors.request.use((config) => {
   return config;
 });
 
-/** Interceptor de response: emite session:expired en 401/403 */
+/** Interceptor de response: emite session:expired en 401 */
 http.interceptors.response.use(
   (res) => res,
   (error) => {
     const status = error?.response?.status;
-    if ((status === 401 || status === 403) && typeof window !== "undefined") {
+    if (status === 401 && typeof window !== "undefined") {
       sessionEvents.emit("session:expired");
     }
     return Promise.reject(error);
@@ -176,14 +176,14 @@ async function call<T>(fn: () => Promise<{ data: T }>): Promise<ApiResult<T>> {
     const res = await fn();
     return { ok: true, data: res.data };
   } catch (err: any) {
-    if (err?.response?.status === 401 || err?.response?.status === 403) {
+    if (err?.response?.status === 401) {
       return { ok: false, error: "SESSION_EXPIRED" };
     }
     const msg =
       err?.response?.data
         ? typeof err.response.data === "string"
           ? err.response.data
-          : err.response.data.error ?? err.response.data.mensaje ?? JSON.stringify(err.response.data)
+          : err.response.data.error ?? err.response.data.mensaje ?? "Ocurrió un error inesperado. Intenta de nuevo."
         : "No se pudo conectar con el servidor. Verifica tu conexión a internet e intenta de nuevo.";
     return { ok: false, error: msg };
   }
@@ -371,6 +371,7 @@ export interface ReporteResponse {
   estado: "PENDIENTE" | "RESUELTO" | "DESESTIMADO";
   fecha: string;
   fechaResolucion: string | null;
+  nombreAnimal?: string;
 }
 
 export const listarReportesPendientes = () =>
