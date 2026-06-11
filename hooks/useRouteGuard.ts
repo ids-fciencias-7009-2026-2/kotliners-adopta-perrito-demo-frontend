@@ -76,6 +76,18 @@ export function useRouteGuard(): boolean {
                 if (!res.ok) {
                     handleSessionExpired();
                 } else {
+                    // Restricción por rol
+                    const rol = res.data.rol;
+                    const adminOnly = [ROUTES.ADMIN];
+                    const noAdmin = [ROUTES.EXPLORAR, ROUTES.FAVORITOS, ROUTES.MIS_MASCOTAS, ROUTES.PUBLICAR, ROUTES.HOME];
+                    if (rol === "ADMINISTRADOR" && noAdmin.some((r) => pathname.startsWith(r))) {
+                        router.replace(ROUTES.ADMIN);
+                        return;
+                    }
+                    if (rol !== "ADMINISTRADOR" && adminOnly.some((r) => pathname.startsWith(r))) {
+                        router.replace(ROUTES.HOME);
+                        return;
+                    }
                     lastValidatedPath.current = pathname;
                     setChecking(false);
                 }
