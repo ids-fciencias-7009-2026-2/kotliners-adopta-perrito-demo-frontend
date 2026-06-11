@@ -95,3 +95,11 @@ export function actualizarPerfil(payload: ActualizarPerfilPayload) {
 export function verificarCorreo(token: string) {
   return apiClient.get('/usuarios/verificar-correo', { params: { token } })
 }
+
+/**
+ * Reenvía el correo de verificación.
+ * Endpoint: POST /usuarios/reenviar-verificacion
+ */
+export function reenviarVerificacion(email: string) {
+  return apiClient.post('/usuarios/reenviar-verificacion', { email })
+}

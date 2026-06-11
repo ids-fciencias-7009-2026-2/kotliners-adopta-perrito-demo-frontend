@@ -198,7 +198,7 @@ export default function MisMascotasPage() {
                     <option value="interesados">Interesados</option>
                   </select>
                   <button type="button"
-                    title={ordenDesc ? "Descendente" : "Ascendente"}
+                    title={ordenDesc ? "Cambiar a ascendente" : "Cambiar a descendente"}
                     onClick={() => setOrdenDesc((v) => !v)}
                     className="btn btn-sm btn-square btn-outline">
                     <ArrowUpDown size={14} className={ordenDesc ? "text-primary" : "text-base-content/40"} />

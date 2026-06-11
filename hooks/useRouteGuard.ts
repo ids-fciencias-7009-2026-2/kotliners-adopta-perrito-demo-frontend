@@ -46,9 +46,20 @@ export function useRouteGuard(): boolean {
             return;
         }
 
-        // Con token en ruta publica — redirigir al home
+        // Con token en ruta publica — validar y redirigir al home solo si es válido
         if (isPublicRoute && !!token) {
-            router.replace(ROUTES.HOME);
+            obtenerPerfil(token).then((res) => {
+                if (res.ok) {
+                    router.replace(ROUTES.HOME);
+                } else {
+                    // Token inválido — limpiar y dejar al usuario en la ruta pública
+                    removeToken();
+                    sessionStorage.removeItem("usuario");
+                    setChecking(false);
+                }
+            }).catch(() => {
+                setChecking(false);
+            });
             return;
         }
 

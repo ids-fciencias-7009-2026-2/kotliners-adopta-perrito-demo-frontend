@@ -34,8 +34,8 @@ interface FiltroForm {
   especie: string;
   sexo: string;
   esterilizado: boolean;
-  codigoPostal: string;
-  vacuna: string;
+  codigosPostales: string[];
+  vacunas: string[];
   sinPadecimientos: boolean;
   soloVacunados: boolean;
   ordenar: string;
@@ -54,8 +54,8 @@ const FILTRO_INICIAL: FiltroForm = {
   especie: "",
   sexo: "",
   esterilizado: false,
-  codigoPostal: "",
-  vacuna: "",
+  codigosPostales: [],
+  vacunas: [],
   sinPadecimientos: false,
   soloVacunados: false,
   ordenar: "",
@@ -71,8 +71,8 @@ function toFiltrosBackend(form: FiltroForm): FiltrosAnimales {
     especie: form.especie || undefined,
     sexo: form.sexo || undefined,
     esterilizado: form.esterilizado || undefined,
-    codigoPostal: form.codigoPostal.trim() || undefined,
-    vacuna: form.vacuna.trim() || undefined,
+    codigoPostal: form.codigosPostales.length > 0 ? form.codigosPostales.join(",") : undefined,
+    vacuna: form.vacunas.length > 0 ? form.vacunas.join(",") : undefined,
     sinPadecimientos: form.sinPadecimientos || undefined,
     soloVacunados: form.soloVacunados || undefined,
     ordenar: form.ordenar || undefined,
@@ -199,6 +199,47 @@ export default function ExplorarPage() {
                 </select>
               </div>
 
+              {/* Códigos postales */}
+              <div className="form-control">
+                <label className="label py-0"><span className="label-text text-xs">Códigos postales</span></label>
+                <div className="flex flex-wrap gap-1 mb-1">
+                  {filtroForm.codigosPostales.map((cp) => (
+                    <span key={cp} className="badge badge-primary badge-sm gap-1">
+                      {cp}
+                      <button type="button" onClick={() => setFiltroForm((f) => ({ ...f, codigosPostales: f.codigosPostales.filter((c) => c !== cp) }))}>
+                        <X size={10} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+                <div className="flex gap-1">
+                  <input type="text" placeholder="CP (5 dígitos)"
+                    id="cp-input"
+                    className="input input-bordered input-sm flex-1"
+                    maxLength={5}
+                    inputMode="numeric"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        const val = (e.target as HTMLInputElement).value.trim();
+                        if (val && /^\d{5}$/.test(val) && !filtroForm.codigosPostales.includes(val)) {
+                          setFiltroForm((f) => ({ ...f, codigosPostales: [...f.codigosPostales, val] }));
+                          (e.target as HTMLInputElement).value = "";
+                        }
+                      }
+                    }} />
+                  <button type="button" className="btn btn-sm btn-primary btn-square"
+                    onClick={() => {
+                      const input = document.getElementById("cp-input") as HTMLInputElement;
+                      const val = input?.value.trim();
+                      if (val && /^\d{5}$/.test(val) && !filtroForm.codigosPostales.includes(val)) {
+                        setFiltroForm((f) => ({ ...f, codigosPostales: [...f.codigosPostales, val] }));
+                        input.value = "";
+                      }
+                    }}>+</button>
+                </div>
+              </div>
+
               {/* Ordenar */}
               <div className="form-control">
                 <label className="label py-0"><span className="label-text text-xs">Ordenar por</span></label>
@@ -280,13 +321,43 @@ export default function ExplorarPage() {
                 </label>
               </div>
 
-              {/* Vacuna especifica */}
+              {/* Vacunas */}
               <div className="form-control">
-                <label className="label py-0"><span className="label-text text-xs">Vacuna especifica</span></label>
-                <input type="text" placeholder="Ej: Rabia, Moquillo..."
-                  className="input input-bordered input-sm"
-                  value={filtroForm.vacuna}
-                  onChange={(e) => setFiltroForm((f) => ({ ...f, vacuna: e.target.value }))} />
+                <label className="label py-0"><span className="label-text text-xs">Vacunas</span></label>
+                <div className="flex flex-wrap gap-1 mb-1">
+                  {filtroForm.vacunas.map((v) => (
+                    <span key={v} className="badge badge-success badge-sm gap-1">
+                      {v}
+                      <button type="button" onClick={() => setFiltroForm((f) => ({ ...f, vacunas: f.vacunas.filter((x) => x !== v) }))}>
+                        <X size={10} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+                <div className="flex gap-1">
+                  <input type="text" placeholder="Ej: Rabia"
+                    id="vacuna-input"
+                    className="input input-bordered input-sm flex-1"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        const val = (e.target as HTMLInputElement).value.trim();
+                        if (val && !filtroForm.vacunas.includes(val)) {
+                          setFiltroForm((f) => ({ ...f, vacunas: [...f.vacunas, val] }));
+                          (e.target as HTMLInputElement).value = "";
+                        }
+                      }
+                    }} />
+                  <button type="button" className="btn btn-sm btn-success btn-square"
+                    onClick={() => {
+                      const input = document.getElementById("vacuna-input") as HTMLInputElement;
+                      const val = input?.value.trim();
+                      if (val && !filtroForm.vacunas.includes(val)) {
+                        setFiltroForm((f) => ({ ...f, vacunas: [...f.vacunas, val] }));
+                        input.value = "";
+                      }
+                    }}>+</button>
+                </div>
               </div>
 
               {/* Botones */}

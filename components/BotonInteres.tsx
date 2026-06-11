@@ -15,6 +15,8 @@ interface BotonInteresProps {
   rolUsuario?: string;
   /** Si true, permite quitar el interes aunque el animal este adoptado */
   allowRemove?: boolean;
+  /** Callback cuando se quita o pone interés exitosamente */
+  onInteresChange?: (tieneInteres: boolean) => void;
 }
 
 /**
@@ -31,6 +33,7 @@ export default function BotonInteres({
   estatus,
   rolUsuario,
   allowRemove = false,
+  onInteresChange,
 }: BotonInteresProps) {
   const [tieneInteres, setTieneInteres] = useState(initialInteres);
   const [loading, setLoading] = useState(false);
@@ -40,7 +43,7 @@ export default function BotonInteres({
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTipo, setModalTipo] = useState<"agregar" | "quitar">("agregar");
 
-  if (rolUsuario === "CUIDADOR") return null;
+  if (rolUsuario === "CUIDADOR" || rolUsuario === "ADMINISTRADOR") return null;
 
   if (animalNoDisponible) {
     return (
@@ -65,10 +68,12 @@ export default function BotonInteres({
           setTieneInteres(false);
           setModalTipo("quitar");
           setModalOpen(true);
+          onInteresChange?.(false);
         } else {
           const msg = res.error.toLowerCase();
-          if (msg.includes("animal no encontrado") || msg.includes("adoptado")) {
+          if (msg.includes("no encontrad") || msg.includes("adoptado")) {
             setAnimalNoDisponible(true);
+            onInteresChange?.(false);
           } else {
             setError(res.error);
           }
@@ -79,10 +84,12 @@ export default function BotonInteres({
           setTieneInteres(true);
           setModalTipo("agregar");
           setModalOpen(true);
+          onInteresChange?.(true);
         } else {
           const msg = res.error.toLowerCase();
-          if (msg.includes("animal no encontrado") || msg.includes("adoptado") || msg.includes("no está disponible")) {
+          if (msg.includes("no encontrad") || msg.includes("adoptado") || msg.includes("no está disponible") || msg.includes("no disponible")) {
             setAnimalNoDisponible(true);
+            onInteresChange?.(false);
           } else if (msg.includes("ya manifestaste")) {
             setTieneInteres(true);
           } else {

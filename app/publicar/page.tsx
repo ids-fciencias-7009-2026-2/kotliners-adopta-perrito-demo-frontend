@@ -23,6 +23,7 @@ export default function PublicarPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [animalPublicadoId, setAnimalPublicadoId] = useState<string | null>(null);
   const [fotosAnimal, setFotosAnimal] = useState<string[]>([]);
+  const [subiendoFoto, setSubiendoFoto] = useState(false);
 
   const [form, setForm] = useState<CreateAnimalPayload & { razaId: string }>({
     nombre: "", especie: "", raza: "", razaId: "", fechaNacimiento: "",
@@ -122,12 +123,16 @@ export default function PublicarPage() {
               animalId={animalPublicadoId}
               fotos={fotosAnimal}
               onFotosChange={setFotosAnimal}
+              onUploadingChange={setSubiendoFoto}
             />
             <button
               onClick={() => router.push(ROUTES.MIS_MASCOTAS)}
+              disabled={subiendoFoto}
               className="btn btn-primary w-full gap-2"
             >
-              {fotosAnimal.length > 0 ? "Listo, ver mis mascotas" : "Omitir por ahora"}
+              {subiendoFoto
+                ? <><span className="loading loading-spinner loading-sm" /> Subiendo foto...</>
+                : fotosAnimal.length > 0 ? "Listo, ver mis mascotas" : "Omitir por ahora"}
             </button>
           </div>
         </div>
@@ -154,7 +159,7 @@ export default function PublicarPage() {
 
             <div className="form-control sm:col-span-2">
               <label className="label" htmlFor="nombre"><span className="label-text">Nombre <span className="text-error">*</span></span></label>
-              <input id="nombre" name="nombre" type="text" value={form.nombre} onChange={handleChange} placeholder="Ej: Luna"
+              <input id="nombre" name="nombre" type="text" value={form.nombre} onChange={handleChange} placeholder="Ej: Michu"
                 className={`input input-bordered w-full ${errors.nombre ? "input-error" : ""}`} />
               {errors.nombre && <span className="label-text-alt text-error mt-1">{errors.nombre}</span>}
             </div>

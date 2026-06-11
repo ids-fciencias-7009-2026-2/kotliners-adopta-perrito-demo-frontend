@@ -32,7 +32,7 @@ export default function MapView() {
     import("leaflet").then((L) => {
       import("leaflet/dist/leaflet.css");
 
-      if (!mapRef.current) return;
+      if (!mapRef.current || mapInstance.current) return;
       const map = L.map(mapRef.current, { zoomControl: false }).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
       mapInstance.current = map;
 
